@@ -1601,6 +1601,18 @@ function openMenu(anchor,{title,items,current,onPick,custom,clear}){
   const inp=m.querySelector(".mf input");
   if(inp){const ok=()=>{const v=inp.value.trim();if(v)done(v)};m.querySelector("[data-ok]").onclick=ok;inp.onkeydown=e=>{if(e.key==="Enter")ok();if(e.key==="Escape")closeMenu()};setTimeout(()=>inp.focus(),0)}
 }
+/* Печат. На компютъра — веднага. На iPhone/iPad Safari отваря печата само ако е извикан веднага след
+   натискане; след запис през интернет това „натискане“ е изтекло и нищо не става — затова там
+   показваме бутон „Печатай“ и печатът тръгва от неговото натискане. */
+const IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+function printNow(after){
+  const go=()=>{let done=false;const fin=()=>{if(done)return;done=true;window.removeEventListener("afterprint",fin);after&&after()};
+    window.addEventListener("afterprint",fin);window.print();if(!IOS)fin();else setTimeout(fin,120e3)};
+  if(!IOS){setTimeout(go,80);return}
+  openModal({title:"Печат",body:`<p style="margin:0 0 10px">Документът е готов. Натиснете <b>„Печатай“</b> — ще се отвори прозорецът за печат (принтер с AirPrint или „Запази като PDF“ от бутона „Сподели“ в него).</p>
+    ${navigator.standalone?`<p class="muted" style="margin:0">Ако не се отвори нищо: отворете програмата в <b>Safari</b> (не от иконката), влезте и печатайте оттам.</p>`:""}`,
+    actions:[{label:"Отказ",act:()=>{closeModal();after&&after()}},{label:"🖨 Печатай",cls:"primary",act:()=>{closeModal();go()}}]});
+}
 function closeMenu(){$("#menu").classList.add("hidden")}
 document.addEventListener("mousedown",e=>{if(!$("#menu").contains(e.target)&&!e.target.closest("[data-combo],[data-act=note],[data-act=stk]"))closeMenu()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMenu()});
@@ -1729,7 +1741,7 @@ $("#btnPrint").onclick=async()=>{if(CURRENT)audit("Печат на заявка"
   closeMenu();if(DIRTY&&!(await saveCurrent()))return;
   $("#printArea").innerHTML=buildPrint(CURRENT);
   const old=document.title;document.title=`Заявка_${CURRENT.number}`;
-  setTimeout(()=>{window.print();document.title=old},80);
+  printNow(()=>{document.title=old});
 };
 
 /* =====================================================================
@@ -1788,7 +1800,7 @@ $("#wsOpenReq").onclick=async()=>{await wsFlush();
   if(DIRTY&&CURRENT&&CURRENT.id!==WS.id&&!confirm("Имате незапазени промени в друга заявка. Да продължа ли БЕЗ запис?"))return;
   openRequest(structuredClone(await DB.get("requests",WS.id)));showTab("edit")};
 $("#wsPrint").onclick=async()=>{await wsFlush();audit("Печат на работен лист","№ "+WS.number,WS.id);$("#printArea").innerHTML=buildWsPrint(WS);
-  const old=document.title;document.title=`Работен_лист_${WS.number}`;setTimeout(()=>{window.print();document.title=old},80)};
+  const old=document.title;document.title=`Работен_лист_${WS.number}`;printNow(()=>{document.title=old})};
 
 const wM=(path,v,ph="")=>`<input class="ui-in money" data-w="${path}" value="${numIn(v)}" inputmode="decimal" placeholder="${esc(ph)}">`;
 const wT=(path,v,ph="")=>`<input class="ui-in" data-w="${path}" value="${esc(v)}" placeholder="${esc(ph)}">`;
@@ -1995,7 +2007,7 @@ $("#btnOffer").onclick=async()=>{if(CURRENT)audit("Печат на оферта"
   closeMenu();if(DIRTY&&!(await saveCurrent()))return;
   $("#printArea").innerHTML=buildOfferPrint(CURRENT);
   const old=document.title;document.title=`Оферта_${CURRENT.number}`;
-  setTimeout(()=>{window.print();document.title=old},80);
+  printNow(()=>{document.title=old});
 };
 
 /* =====================================================================
@@ -2065,7 +2077,7 @@ $("#invPrint").onclick=async()=>{if(!needEdit("docs","издаване на фа
   if(!(await invAssignNo()))return;
   invPending=true;await invFlush();renderInv();
   $("#printArea").innerHTML=buildInvPrint(INV);
-  audit("Печат на фактура","№ "+INV.inv.number+" към заявка № "+INV.number+" · "+eur(invCalc(INV).total),INV.id);const old=document.title;document.title=`Фактура_${INV.inv.number}`;setTimeout(()=>{window.print();document.title=old},80)};
+  audit("Печат на фактура","№ "+INV.inv.number+" към заявка № "+INV.number+" · "+eur(invCalc(INV).total),INV.id);const old=document.title;document.title=`Фактура_${INV.inv.number}`;printNow(()=>{document.title=old})};
 
 function renderInv(){
   const r=INV,I=r.inv,co=I.buyerType==="company",t=calc(r).total;
@@ -3107,7 +3119,7 @@ function printDoc(d){
   const o=$("#docPageCss");if(o)o.remove();document.head.appendChild(st);
   $("#printArea").innerHTML=`<div class="dochtml" style="${d.base||""}">${d.html}</div>`;audit("Печат на документ",d.name);
   const old=document.title;document.title=d.name;
-  setTimeout(()=>{window.print();document.title=old;st.remove()},80);
+  printNow(()=>{document.title=old;st.remove()});
 }
 
 /* =====================================================================
