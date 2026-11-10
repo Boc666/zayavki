@@ -158,10 +158,20 @@ td.acts{text-align:right;white-space:nowrap;width:1%}
 #auth{position:fixed;inset:0;z-index:150;background:radial-gradient(ellipse at 50% 0%,#1C1F23 0%,#0D0E10 70%);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
 .auth-box{width:min(410px,100%);background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:30px 30px 24px;box-shadow:0 40px 90px rgba(0,0,0,.6);animation:modalIn .25s var(--ease)}
 .auth-box.wide{width:min(470px,100%)}
-.auth-box.plat{width:min(980px,100%);align-self:flex-start}
+.auth-box.plat{width:min(1180px,100%);align-self:flex-start}
+.plat-scroll td{vertical-align:top}.plat-scroll .nw{white-space:nowrap}
 .plat-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.plat-bar .spacer{flex:1}
 .auth-form .plat-bar .btn.primary{margin-top:0;padding:8px 14px}
 .plat-scroll{overflow-x:auto}.plat-scroll code{font-size:12.5px}
+.nbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-radius:var(--r);margin-bottom:12px;font-size:13.5px;border:1px solid var(--border);line-height:1.5}
+.nbar>span{flex:1;min-width:200px}.nbar.own{background:var(--bronze-soft);border-color:transparent}
+.nbar.warn{background:rgba(214,138,48,.16);border-color:rgba(214,138,48,.55)}.nbar.info{background:rgba(90,150,230,.13);border-color:rgba(90,150,230,.4)}
+.plat-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--border-soft);margin:0 0 4px}
+.plat-tabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--text2);font:500 13.5px var(--ui);padding:8px 12px;cursor:pointer}
+.plat-tabs button.on{color:var(--text);border-bottom-color:var(--bronze-hi)}
+.acc-x{color:var(--err);font-weight:600}.acc-w{color:#d68a30;font-weight:600}.acc-ok{color:var(--text2)}
+.pd-sec{margin:18px 0 8px;font:600 12px var(--ui);text-transform:uppercase;letter-spacing:.7px;color:var(--text3)}
+.pd-btns{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 body.plat-mode #modalWrap{z-index:170}body.plat-mode #toast{z-index:180;left:50%}
 .auth-brand{display:flex;align-items:center;gap:13px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border-soft)}
 .auth-brand .plate{width:48px;height:48px;flex:none;border-radius:var(--r);background:#E9E6E0;display:flex;align-items:center;justify-content:center;overflow:hidden}
@@ -1154,13 +1164,18 @@ if(CLOUD)Object.assign(DB,{
   async putAtomic(ops){await rpc("put_atomic",{ops:ops.map(o=>({store:o.store,key:o.value[KEYPATH[o.store]],value:o.value}))})}});
 const toUser=p=>({id:p.id,username:p.username,name:p.name,role:p.role==="admin"?"admin":"user",perms:p.perms||{},active:p.active,created:p.created_at,lastLogin:p.last_login});
 const sbProfiles=async()=>(await sb("/rest/v1/profiles?select=*&order=created_at")).map(toUser);
-// след вход: собственик на платформата → {platform:true}; служител → профилът му (и AG = агенцията му)
+// след вход: собственик → {platform:true}; собственик, отворил агенция → администратор с owner:true; служител → профилът му (и AG = агенцията му)
+const noAccessMsg=ph=>"Вече нямате достъп до системата — свържете се с администратор: тел. "+(ph||"+359 893 008 182");
 async function cloudContext(){
   const c=await rpc("my_context");
-  if(c&&c.kind==="platform")return {platform:true,name:c.name,username:c.username};
+  if(c&&c.kind==="platform"){
+    if(!c.acting)return {platform:true,name:c.name,username:c.username};
+    AG={id:c.acting.agency_id,code:c.acting.code,name:c.acting.agency_name,owner:true};
+    DB.db=true;USERS=await sbProfiles();
+    return {id:SBS.uid,username:c.username,name:c.name+(/собственик/i.test(c.name)?"":" (собственик)"),role:"admin",perms:{},active:true,owner:true}}
   if(!c||!c.active){await sbLogout();DB.db=null;throw new Error("Този потребител е спрян. Обърнете се към администратора.")}
-  if(!c.agency_active){await sbLogout();DB.db=null;throw new Error("Достъпът на агенцията е спрян. Свържете се с администратора на платформата.")}
-  AG={id:c.agency_id,code:c.code,name:c.agency_name};
+  if(!c.agency_active||c.expired){await sbLogout();DB.db=null;throw new Error(noAccessMsg(c.support_phone))}
+  AG={id:c.agency_id,code:c.code,name:c.agency_name,until:c.access_until,warn:c.warn_days,phone:c.support_phone};
   DB.db=true;USERS=await sbProfiles();const x=USERS.find(z=>z.id===SBS.uid);
   if(!x||!x.active){await sbLogout();DB.db=null;throw new Error("Този потребител е спрян. Обърнете се към администратора.")}
   return x}
@@ -1168,10 +1183,12 @@ async function cloudContext(){
 async function cloudLogin(code,u,p){
   try{await sbLogin(code,u,p)}catch(e){if(e.bad)return null;throw e}
   try{localStorage.setItem(AG_KEY,normUser(code))}catch(e){}
+  if(!normUser(code))await rpc("platform_leave_agency").catch(()=>{}); // нов вход на собственика → винаги в панела
   return cloudContext()}
 async function cloudStart(){
   SETTINGS=migrateSettings(null);CATALOG=migrateCatalog(null);NECRO=migrateNecro(null);INVD=migrateInvd(null); // докато няма вход
   $("#sideWhere").textContent="Данните са в защитената база (ЕС)";
+  let startMsg="";
   try{
     if(SBS){try{await sbToken();
       // линк за друга агенция (…?a=код) — не отваряме запомнения вход, а показваме празен вход
@@ -1179,16 +1196,18 @@ async function cloudStart(){
       if(urlAg){const c=await rpc("my_context");if(!c||c.kind!=="agency"||c.code!==urlAg){sbSave(null);DB.db=null;authShow("login");return}}
       const u=await cloudContext();
       if(u.platform){platformShow(u);return}
-      ME=u;await loadShared();lastAct=Date.now();applyUser();showTab(firstTab());return}catch(e){if(e.net)throw e}
+      ME=u;await loadShared();lastAct=Date.now();applyUser();showTab(firstTab());agencyBars();return}catch(e){if(e.net)throw e;startMsg=e.message}
       sbSave(null);DB.db=null}
-    authShow((await rpc("needs_setup"))?"setup":"login");
+    authShow((await rpc("needs_setup"))?"setup":"login",{msg:startMsg});
   }catch(e){authShow("offline")}
 }
 
 /* Друг телефон/компютър може да е променил каталога, склада, настройките или потребителите —
    при смяна на раздел и при връщане в програмата ги четем отново. */
 async function srvRefresh(){if(!(SRV||CLOUD)||!DB.db||!ME)return;
-  try{SETTINGS=migrateSettings(await getMeta("settings",null));CATALOG=migrateCatalog(await getMeta("catalog",null));TEMPLATE=migrateTemplate(await getMeta("template",null));applyTemplate();
+  try{if(CLOUD&&AG&&!AG.owner){const c=await rpc("my_context"); // срокът може да изтече, докато програмата е отворена
+      if(c&&c.kind==="agency"&&(c.expired||!c.agency_active||!c.active)){sbSave(null);DB.db=null;ME=null;authShow("login",{msg:c.active?noAccessMsg(c.support_phone):"Този потребител е спрян. Обърнете се към администратора."});return}}
+    SETTINGS=migrateSettings(await getMeta("settings",null));CATALOG=migrateCatalog(await getMeta("catalog",null));TEMPLATE=migrateTemplate(await getMeta("template",null));applyTemplate();
     NECRO=migrateNecro(await getMeta("necro",null));if(!INV_BUSY)INVD=migrateInvd(await getMeta("inventory",null));
     const us=CLOUD?await sbProfiles():await getMeta("users",[]);if(us.length){USERS=us;if(ME){const m=us.find(x=>x.id===ME.id);if(m&&m.active)ME=m}}}catch(e){}}
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")srvRefresh()});
@@ -3332,6 +3351,7 @@ function authShow(mode,opt={}){
       <label class="f">Парола<input class="ui-in" type="password" id="liP" autocomplete="current-password"></label>
       <div class="auth-err"></div><button class="btn primary" type="submit">Вход</button>
       <button type="button" class="auth-link" id="liRec">Забравена парола на администратор</button></form>`;
+    if(opt.msg)$("#fLogin .auth-err").textContent=opt.msg;
     setTimeout(()=>(opt.user?$("#liP"):CLOUD&&!$("#liA").value?$("#liA"):$("#liU")).focus(),50);
     $("#liRec").onclick=()=>authShow("recover");
     $("#fLogin").onsubmit=async e=>{e.preventDefault();const er=$("#fLogin .auth-err");er.textContent="";
@@ -3372,7 +3392,7 @@ function authShow(mode,opt={}){
       catch(x){er.textContent=x.message}};
   }
 }
-/* ---------- собственик на платформата: агенциите (без достъп до заявките им) ---------- */
+/* ---------- собственик на платформата: агенции, срок на достъп, плащания, история, входове, съобщения ---------- */
 function platformShow(P){
   ME=null;AG=null;document.body.classList.add("plat-mode");rpc("touch_login").catch(()=>{});
   const box=$("#auth .auth-box");box.classList.remove("wide");box.classList.add("plat");
@@ -3381,34 +3401,110 @@ function platformShow(P){
   $("#authBody").innerHTML=`<div class="auth-form">
     <div class="plat-bar"><button class="btn primary" id="plNew" type="button">+ Нова агенция</button><span class="spacer"></span>
       <button class="btn" id="plPw" type="button">Моята парола</button><button class="btn" id="plRec" type="button">Код за възстановяване</button><button class="btn" id="plOut" type="button">Изход</button></div>
-    <p class="auth-note">Тук създавате и спирате агенции. Заявките и документите им <b>не се виждат</b> оттук — всяка агенция ги управлява със своя администратор.</p>
-    <div class="plat-scroll"><table class="list" id="plTable"><tbody><tr><td class="empty">Зареждане…</td></tr></tbody></table></div>
+    <div class="plat-tabs" id="plTabs"><button data-t="ag" class="on">Агенции</button><button data-t="acc">История на достъпа</button><button data-t="log">Входове</button><button data-t="msg">Съобщения</button><button data-t="set">Настройки</button></div>
+    <div class="plat-scroll" id="plView"></div>
     <div class="auth-err" id="plErr"></div></div>`;
   const dt=s=>s?new Date(s).toLocaleString("bg-BG",{dateStyle:"short",timeStyle:"short"}):"—";
-  let LIST=[];
-  async function load(){$("#plErr").textContent="";
-    try{LIST=await rpc("platform_agencies")}catch(e){$("#plErr").textContent=e.message;return}
-    $("#plTable").innerHTML=`<thead><tr><th>Агенция</th><th>Код за вход</th><th>Администратори</th><th class="money">Потреб.</th><th class="money">Заявки</th><th>Последен вход</th><th>Статус</th><th></th></tr></thead><tbody>${
-      LIST.map((a,i)=>`<tr><td><b>${esc(a.name)}</b></td><td><code>${esc(a.code)}</code></td><td>${esc((a.admins||[]).join(", ")||"—")}</td>
-        <td class="money">${a.users}</td><td class="money">${a.requests}</td><td class="muted">${dt(a.last_login)}</td>
+  const dd=s=>s?new Date(s).toLocaleDateString("bg-BG"):"—";
+  const money=v=>v==null||v===""?"—":Number(v).toFixed(2)+" €";
+  const loc=d=>{d=new Date(d);return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)}; // дата по местно време
+  const err=m=>{$("#plErr").textContent=m||""};
+  const accCell=a=>{if(!a.access_until)return `<span class="acc-ok">без срок</span>`;
+    const d=Math.ceil((new Date(a.access_until)-Date.now())/864e5);
+    if(a.expired)return `<span class="acc-x">изтекъл ${dd(a.access_until)}</span>`;
+    return `<span class="${d<=7?"acc-w":"acc-ok"}">до ${dd(a.access_until)}<br><small>още ${d} ${d===1?"ден":"дни"}</small></span>`};
+  let LIST=[],TAB="ag";
+  async function loadAgencies(){err();try{LIST=await rpc("platform_agencies")}catch(e){err(e.message);return}
+    if(TAB!=="ag")return;
+    $("#plView").innerHTML=`<table class="list"><thead><tr><th>Агенция</th><th>Достъп</th><th>Такса / платено</th><th class="money">Потреб.</th><th class="money">Заявки</th><th>Последен вход</th><th>Статус</th><th></th></tr></thead><tbody>${
+      LIST.map((a,i)=>`<tr><td><b>${esc(a.name)}</b><br><code>${esc(a.code)}</code></td><td class="nw">${accCell(a)}</td>
+        <td class="nw">${a.monthly_fee!=null?money(a.monthly_fee)+" / мес.":"—"}<br><small class="muted">платено ${money(a.paid_total)}${a.last_payment?" · посл. "+dd(a.last_payment):""}</small></td>
+        <td class="money">${a.users}</td><td class="money">${a.requests}</td><td class="muted nw">${dt(a.last_login)}</td>
         <td>${a.active?`<span class="tag">активна</span>`:`<span class="tag" style="color:var(--err)">спряна</span>`}</td>
-        <td style="white-space:nowrap"><button class="btn small" data-pw="${i}">Нова парола</button> <button class="btn small" data-act="${i}">${a.active?"Спри":"Пусни"}</button></td></tr>`).join("")
-      ||`<tr><td colspan="8" class="empty">Още няма агенции. Натиснете „+ Нова агенция“.</td></tr>`}</tbody>`;
-    $$("#plTable [data-act]").forEach(b=>b.onclick=async()=>{const a=LIST[+b.dataset.act];
+        <td style="white-space:nowrap"><button class="btn small primary" data-open="${i}" title="Влизате в агенцията като администратор">Отвори</button> <button class="btn small" data-det="${i}">Детайли</button> <button class="btn small" data-act="${i}">${a.active?"Спри":"Пусни"}</button></td></tr>`).join("")
+      ||`<tr><td colspan="8" class="empty">Още няма агенции. Натиснете „+ Нова агенция“.</td></tr>`}</tbody></table>`;
+    $$("#plView [data-act]").forEach(b=>b.onclick=async()=>{const a=LIST[+b.dataset.act];
       if(a.active&&!confirm(`Да спра ли достъпа на „${a.name}“?\n\nНикой от агенцията няма да може да влезе, докато не я пуснете отново. Данните остават.`))return;
-      try{await rpc("platform_set_agency_active",{p_agency:a.id,p_active:!a.active});toast(a.active?"Агенцията е спряна":"Агенцията е пусната ✔");load()}catch(e){alert(e.message)}});
-    $$("#plTable [data-pw]").forEach(b=>b.onclick=()=>{const a=LIST[+b.dataset.pw];
-      openModal({title:"Нова парола — "+a.name,body:`<div class="grid" style="grid-template-columns:1fr">
-        <p class="auth-note">За поддръжка: когато служител или администратор на агенцията е забравил паролата си.</p>
-        <label class="f">Потребителско име<input class="ui-in" id="prU" value="${esc((a.admins||[])[0]||"")}"></label>
-        <label class="f">Нова парола<input class="ui-in" type="password" id="prP" autocomplete="new-password"></label></div>`,
-        actions:[{label:"Отказ"},{label:"Смени паролата",cls:"primary",act:async m=>{
-          await rpc("platform_reset_password",{p_agency:a.id,p_username:normUser(m.q("#prU").value),p_password:m.q("#prP").value});toast("Паролата е сменена ✔")}}]})});
+      try{await rpc("platform_set_agency_active",{p_agency:a.id,p_active:!a.active});toast(a.active?"Агенцията е спряна":"Агенцията е пусната ✔");loadAgencies()}catch(e){alert(e.message)}});
+    $$("#plView [data-open]").forEach(b=>b.onclick=async()=>{const a=LIST[+b.dataset.open];
+      try{await rpc("platform_enter_agency",{p_agency:a.id});location.href=location.pathname}catch(e){alert(e.message)}});
+    $$("#plView [data-det]").forEach(b=>b.onclick=()=>details(LIST[+b.dataset.det]));
   }
+  async function details(a){
+    let D;try{D=await rpc("platform_agency_detail",{p_agency:a.id})}catch(e){alert(e.message);return}
+    const ext=(m,d,l)=>`<button class="btn small" data-ext="${m},${d}">${l}</button>`;
+    const m=openModal({title:a.name+" ("+a.code+")",wide:true,body:`
+      <div class="pd-sec">Срок на достъпа</div>
+      <p style="margin:0 0 8px">Сега: <b>${accCell(a)}</b></p>
+      <div class="pd-btns">Удължи: ${ext(0,14,"+2 седмици")}${ext(1,0,"+1 месец")}${ext(3,0,"+3 месеца")}${ext(12,0,"+1 година")}</div>
+      <div class="pd-btns" style="margin-top:8px">Или до дата: <input class="ui-in" type="date" id="pdUntil" style="width:170px" value="${a.access_until?loc(a.access_until):""}">
+        <button class="btn small" id="pdSetUntil">Задай</button><button class="btn small" id="pdNoLimit">Без срок</button></div>
+      <div class="pd-sec">Данни за контакт и такса</div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
+        <label class="f">Име на агенцията<input class="ui-in" id="pdName" value="${esc(a.name)}"></label>
+        <label class="f">Месечна такса (€)<input class="ui-in" id="pdFee" inputmode="decimal" value="${a.monthly_fee??""}"></label>
+        <label class="f">Лице за контакт<input class="ui-in" id="pdPerson" value="${esc(a.contact_person)}"></label>
+        <label class="f">Телефон<input class="ui-in" id="pdPhone" value="${esc(a.contact_phone)}"></label>
+        <label class="f">Имейл<input class="ui-in" id="pdEmail" value="${esc(a.contact_email)}"></label>
+        <label class="f">ЕИК<input class="ui-in" id="pdEik" value="${esc(a.eik)}"></label>
+        <label class="f" style="grid-column:1/-1">Адрес<input class="ui-in" id="pdAddr" value="${esc(a.address)}"></label>
+        <label class="f" style="grid-column:1/-1">Бележки (виждате само вие)<textarea class="ui-in" id="pdNotes" rows="2">${esc(a.notes)}</textarea></label></div>
+      <div class="pd-btns" style="margin-top:8px"><button class="btn small primary" id="pdSave">Запази данните</button></div>
+      <div class="pd-sec">Плащания — общо ${money(D.payments.reduce((s,p)=>s+Number(p.amount),0))}</div>
+      <div class="pd-btns"><input class="ui-in" type="date" id="pyDate" style="width:160px" value="${loc(Date.now())}">
+        <input class="ui-in" id="pyAmt" inputmode="decimal" placeholder="сума €" style="width:110px" value="${a.monthly_fee??""}">
+        <input class="ui-in" id="pyNote" placeholder="бележка (напр. ноември)" style="width:200px">
+        <label class="ck"><input type="checkbox" id="pyExt" checked> и удължи с</label><input class="ui-in" id="pyMonths" inputmode="numeric" value="1" style="width:50px"> мес.
+        <button class="btn small primary" id="pyAdd">Добави плащане</button></div>
+      <table class="list" style="margin-top:6px"><tbody>${D.payments.map(p=>`<tr><td>${dd(p.paid_on)}</td><td class="money">${money(p.amount)}</td><td class="muted">${esc(p.note)}</td><td style="text-align:right"><button class="btn small" data-pdel="${p.id}">Изтрий</button></td></tr>`).join("")||`<tr><td class="empty">Няма плащания.</td></tr>`}</tbody></table>
+      <div class="pd-sec">Потребители</div>
+      <table class="list"><tbody>${D.users.map(u=>`<tr><td><b>${esc(u.name)}</b> <span class="muted">${esc(u.username)}</span></td><td>${u.role==="admin"?"администратор":"служител"}${u.active?"":" · <span style='color:var(--err)'>спрян</span>"}</td><td class="muted">последен вход ${dt(u.last_login)}</td><td style="text-align:right"><button class="btn small" data-upw="${esc(u.username)}">Нова парола</button></td></tr>`).join("")}</tbody></table>
+      <div class="pd-sec">Входове (последни 100)</div>
+      <table class="list"><tbody>${D.logins.map(l=>`<tr><td class="muted" style="white-space:nowrap">${dt(l.at)}</td><td>${esc(l.name)} <span class="muted">${esc(l.username)}</span></td></tr>`).join("")||`<tr><td class="empty">Още няма входове.</td></tr>`}</tbody></table>
+      <div class="pd-sec">История на достъпа</div>
+      <table class="list"><tbody>${D.access.map(l=>`<tr><td class="muted" style="white-space:nowrap">${dt(l.at)}</td><td>${esc(l.action)}${l.note?` <span class="muted">— ${esc(l.note)}</span>`:""}</td><td class="muted">${l.until?"до "+dd(l.until):""}</td></tr>`).join("")||`<tr><td class="empty">Няма записи.</td></tr>`}</tbody></table>`,
+      actions:[{label:"Затвори"}]});
+    const again=async()=>{await loadAgencies();const n=LIST.find(x=>x.id===a.id);if(n)details(n)};
+    const run=async f=>{try{await f();toast("Записано ✔");m.close();again()}catch(e){m.err(e.message)}};
+    m.el.querySelectorAll("[data-ext]").forEach(b=>b.onclick=()=>{const [mo,da]=b.dataset.ext.split(",").map(Number);run(()=>rpc("platform_extend",{p_agency:a.id,p_months:mo,p_days:da,p_note:""}))});
+    m.q("#pdSetUntil").onclick=()=>{const v=m.q("#pdUntil").value;if(!v){m.err("Изберете дата.");return}
+      run(()=>rpc("platform_set_access",{p_agency:a.id,p_until:new Date(v+"T23:59:59").toISOString(),p_note:""}))};
+    m.q("#pdNoLimit").onclick=()=>run(()=>rpc("platform_set_access",{p_agency:a.id,p_until:null,p_note:""}));
+    m.q("#pdSave").onclick=()=>run(()=>rpc("platform_update_agency",{p_agency:a.id,p:{name:m.q("#pdName").value,monthly_fee:m.q("#pdFee").value.replace(",",".").trim(),
+      contact_person:m.q("#pdPerson").value,contact_phone:m.q("#pdPhone").value,contact_email:m.q("#pdEmail").value,eik:m.q("#pdEik").value,address:m.q("#pdAddr").value,notes:m.q("#pdNotes").value}}));
+    m.q("#pyAdd").onclick=()=>{const amt=Number(m.q("#pyAmt").value.replace(",","."));if(!(amt>0)){m.err("Въведете сума.");return}
+      run(()=>rpc("platform_add_payment",{p_agency:a.id,p_paid_on:m.q("#pyDate").value||null,p_amount:amt,p_note:m.q("#pyNote").value.trim(),p_extend_months:m.q("#pyExt").checked?(parseInt(m.q("#pyMonths").value)||0):0}))};
+    m.el.querySelectorAll("[data-pdel]").forEach(b=>b.onclick=()=>{if(confirm("Да изтрия ли това плащане?"))run(()=>rpc("platform_delete_payment",{p_id:+b.dataset.pdel}))});
+    m.el.querySelectorAll("[data-upw]").forEach(b=>b.onclick=()=>{const pw=prompt("Нова парола за "+b.dataset.upw+" (поне 6 знака):");if(pw)run(()=>rpc("platform_reset_password",{p_agency:a.id,p_username:b.dataset.upw,p_password:pw}))});
+  }
+  async function loadAccess(){err();let L;try{L=await rpc("platform_access_log",{p_limit:300})}catch(e){err(e.message);return}
+    $("#plView").innerHTML=`<table class="list"><thead><tr><th>Кога</th><th>Агенция</th><th>Действие</th><th>Достъп до</th></tr></thead><tbody>${
+      L.map(l=>`<tr><td class="muted" style="white-space:nowrap">${dt(l.at)}</td><td>${esc(l.agency)}</td><td>${esc(l.action)}${l.note?` <span class="muted">— ${esc(l.note)}</span>`:""}</td><td class="muted">${l.until?dd(l.until):""}</td></tr>`).join("")||`<tr><td colspan="4" class="empty">Няма записи.</td></tr>`}</tbody></table>`}
+  async function loadLogins(){err();let L;try{L=await rpc("platform_login_log",{p_limit:300})}catch(e){err(e.message);return}
+    $("#plView").innerHTML=`<table class="list"><thead><tr><th>Кога</th><th>Агенция</th><th>Служител</th></tr></thead><tbody>${
+      L.map(l=>`<tr><td class="muted" style="white-space:nowrap">${dt(l.at)}</td><td>${esc(l.agency)}</td><td>${esc(l.name)} <span class="muted">${esc(l.username)}</span></td></tr>`).join("")||`<tr><td colspan="3" class="empty">Още няма входове.</td></tr>`}</tbody></table>`}
+  async function loadMsgs(){err();let L;try{L=await rpc("platform_announcements");if(!LIST.length)LIST=await rpc("platform_agencies")}catch(e){err(e.message);return}
+    $("#plView").innerHTML=`<p class="auth-note">Съобщението излиза като лента най-горе в програмата на агенцията, докато го изключите.</p>
+      <div class="pd-btns" style="margin:8px 0"><select class="ui-in" id="anAg" style="width:240px"><option value="">Всички агенции</option>${LIST.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join("")}</select></div>
+      <textarea class="ui-in" id="anText" rows="2" placeholder="напр. В неделя от 22 до 23 ч. програмата ще бъде недостъпна заради поддръжка." style="width:100%"></textarea>
+      <div class="pd-btns" style="margin:8px 0 14px"><button class="btn small primary" id="anAdd">Публикувай</button></div>
+      <table class="list"><tbody>${L.map(n=>`<tr><td class="muted" style="white-space:nowrap">${dt(n.at)}</td><td>${esc(n.agency)}</td><td>${esc(n.text)}</td><td>${n.active?`<span class="tag">видимо</span>`:`<span class="muted">скрито</span>`}</td><td style="text-align:right"><button class="btn small" data-an="${n.id}" data-on="${n.active?0:1}">${n.active?"Скрий":"Покажи"}</button></td></tr>`).join("")||`<tr><td class="empty">Няма съобщения.</td></tr>`}</tbody></table>`;
+    $("#anAdd").onclick=async()=>{try{await rpc("platform_add_announcement",{p_agency:$("#anAg").value||null,p_text:$("#anText").value});toast("Публикувано ✔");loadMsgs()}catch(e){err(e.message)}};
+    $$("#plView [data-an]").forEach(b=>b.onclick=async()=>{try{await rpc("platform_set_announcement",{p_id:+b.dataset.an,p_active:b.dataset.on==="1"});loadMsgs()}catch(e){err(e.message)}})}
+  async function loadSettings(){err();let S;try{S=await rpc("platform_settings_get")}catch(e){err(e.message);return}
+    $("#plView").innerHTML=`<div class="grid" style="grid-template-columns:1fr 1fr 1fr;gap:12px;max-width:760px">
+      <label class="f">Телефон за връзка (в съобщението „нямате достъп“)<input class="ui-in" id="psPhone" value="${esc(S.support_phone)}"></label>
+      <label class="f">Пробен период за нова агенция (дни, 0 = без срок)<input class="ui-in" id="psTrial" inputmode="numeric" value="${S.trial_days}"></label>
+      <label class="f">Предупреждение преди края (дни)<input class="ui-in" id="psWarn" inputmode="numeric" value="${S.warn_days}"></label></div>
+      <div class="pd-btns" style="margin-top:10px"><button class="btn small primary" id="psSave">Запази</button></div>`;
+    $("#psSave").onclick=async()=>{try{await rpc("platform_settings_set",{p_phone:$("#psPhone").value,p_trial_days:parseInt($("#psTrial").value)||0,p_warn_days:parseInt($("#psWarn").value)||0});toast("Настройките са запазени ✔")}catch(e){err(e.message)}}}
+  const show=t=>{TAB=t;$$("#plTabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));$("#plView").innerHTML=`<p class="auth-note">Зареждане…</p>`;
+    ({ag:loadAgencies,acc:loadAccess,log:loadLogins,msg:loadMsgs,set:loadSettings})[t]()};
+  $$("#plTabs button").forEach(b=>b.onclick=()=>show(b.dataset.t));
   $("#plNew").onclick=()=>openModal({title:"Нова агенция",wide:true,body:`<div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
       <label class="f" style="grid-column:1/-1">Име на агенцията<input class="ui-in" id="naN" placeholder="напр. Погребална агенция Мир"></label>
       <label class="f" style="grid-column:1/-1">Код за вход<input class="ui-in" id="naC" autocapitalize="none" spellcheck="false" placeholder="напр. mir — малки латински букви, цифри, тире"></label>
-      <p class="auth-note" style="grid-column:1/-1">Служителите на агенцията пишат този код при вход. По-късно не може да се смени.</p>
+      <p class="auth-note" style="grid-column:1/-1">Служителите на агенцията пишат този код при вход. По-късно не може да се смени. Агенцията получава пробния период от „Настройки“.</p>
       <label class="f">Администратор — име и фамилия<input class="ui-in" id="naAN"></label>
       <label class="f">Потребителско име<input class="ui-in" id="naAU" autocapitalize="none"></label>
       <label class="f">Парола (поне 6 знака)<input class="ui-in" type="password" id="naAP" autocomplete="new-password"></label>
@@ -3417,7 +3513,7 @@ function platformShow(P){
       const code=normUser(m.q("#naC").value),un=normUser(m.q("#naAU").value),rc=m.q("#naR").value.trim();
       if(rc&&rc.length<8)throw new Error("Кодът за възстановяване трябва да е поне 8 знака (или го оставете празен).");
       await rpc("platform_create_agency",{p_code:code,p_name:m.q("#naN").value.trim(),p_admin_username:un,p_admin_name:m.q("#naAN").value.trim(),p_admin_password:m.q("#naAP").value,p_recovery:rc});
-      load();
+      show("ag");
       setTimeout(()=>openModal({title:"Агенцията е създадена ✔",body:`<p class="auth-note">Изпратете на администратора на агенцията данните за вход:</p>
         <p style="font-size:15px;line-height:1.9">Линк: <b>${esc(location.origin+location.pathname+"?a="+code)}</b><br>Код на агенцията: <b>${esc(code)}</b><br>Потребител: <b>${esc(un)}</b><br>Парола: тази, която въведохте</p>
         <p class="auth-note">След като влезе, той попълва адреса, телефоните и логото в „Настройки“ и добавя служителите си.</p>`,actions:[{label:"Готово",cls:"primary"}]}),50)}}]});
@@ -3435,14 +3531,28 @@ function platformShow(P){
     actions:[{label:"Отказ"},{label:"Запази кода",cls:"primary",act:async m=>{
       await rpc("set_recovery",{p_password:m.q("#rkP").value,p_code:m.q("#rkC").value.trim()});toast("Кодът е запазен ✔")}}]});
   $("#plOut").onclick=()=>{sbLogout().finally(()=>location.reload())};
-  load();
+  show("ag");
+}
+/* ленти най-горе: собственик в агенция, изтичащ достъп, съобщения от собственика */
+async function agencyBars(){
+  if(!CLOUD||!AG)return;let box=$("#noteBars");
+  if(!box){box=document.createElement("div");box.id="noteBars";$("main").prepend(box)}
+  const bars=[];
+  if(AG.owner)bars.push(`<div class="nbar own"><span>Вие сте в агенция <b>${esc(AG.name)}</b> като собственик — виждате и променяте всичко като администратор.</span><button class="btn small" id="nbBack">← Към панела на собственика</button></div>`);
+  else if(AG.until){const d=Math.ceil((new Date(AG.until)-Date.now())/864e5);
+    if(d<=(AG.warn??5))bars.push(`<div class="nbar warn"><span>Достъпът ви до системата изтича на <b>${new Date(AG.until).toLocaleDateString("bg-BG")}</b>${d>0?` (след ${d} ${d===1?"ден":"дни"})`:""}. За удължаване: тел. <b>${esc(AG.phone||"")}</b></span></div>`)}
+  if(!AG.owner)try{let seen=[];try{seen=JSON.parse(sessionStorage.getItem("zayavki-seen")||"[]")}catch(e){}
+    for(const n of await rpc("my_announcements"))if(!seen.includes(n.id))bars.push(`<div class="nbar info"><span>${esc(n.text)}</span><button class="btn small ghost" data-nx="${n.id}" title="Скрий">✕</button></div>`)}catch(e){}
+  box.innerHTML=bars.join("");
+  const bb=$("#nbBack");if(bb)bb.onclick=async()=>{try{await rpc("platform_leave_agency")}catch(e){}location.href=location.pathname};
+  $$("#noteBars [data-nx]").forEach(b=>b.onclick=()=>{try{const s=JSON.parse(sessionStorage.getItem("zayavki-seen")||"[]");s.push(+b.dataset.nx);sessionStorage.setItem("zayavki-seen",JSON.stringify(s))}catch(e){}b.closest(".nbar").style.display="none"});
 }
 async function loginAs(u,why){
   ME=u;u.lastLogin=new Date().toISOString();sessionStorage.setItem("uid",u.id);
   if(CLOUD){rpc("touch_login").catch(()=>{});if(!SHARED)await loadShared()}else await saveUsers();
   if(why==="Вход")audit("Вход");
   $("#auth").classList.add("hidden");lastAct=Date.now();
-  applyUser();showTab(firstTab());
+  applyUser();showTab(firstTab());agencyBars();
 }
 function applyUser(){
   $("#sideUser").classList.remove("hidden");$("#suName").textContent=ME.name;$("#suRole").textContent=isAdmin()?"Администратор":"Служител";
