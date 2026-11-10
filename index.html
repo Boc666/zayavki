@@ -3335,7 +3335,7 @@ function authShow(mode,opt={}){
 }
 /* ---------- собственик на платформата: агенциите (без достъп до заявките им) ---------- */
 function platformShow(P){
-  ME=null;AG=null;document.body.classList.add("plat-mode");
+  ME=null;AG=null;document.body.classList.add("plat-mode");rpc("touch_login").catch(()=>{});
   const box=$("#auth .auth-box");box.classList.remove("wide");box.classList.add("plat");
   $("#auth").classList.remove("hidden");$("#authLogo").classList.add("hidden");
   $("#authTitle").textContent="Платформа „Заявки“";$("#authSub").textContent="Собственик: "+P.name;
