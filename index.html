@@ -1068,7 +1068,7 @@ const DB={db:null,
 /* Режим „сървър“: когато програмата е отворена през http:// (START.bat пуска server.ps1 на компютъра в офиса),
    данните са в папка danni\server на компютъра и телефоните през Wi-Fi виждат същите данни.
    Отворена като файл (file://) — всичко остава както преди, в браузъра. */
-/* Режим „облак“ (Supabase, сървър във Франкфурт): програмата е отворена от https:// адрес (GitHub Pages).
+/* Режим „облак“ (Supabase, сървър в Париж): програмата е отворена от https:// адрес (GitHub Pages).
    Данните са в базата на Supabase и се виждат отвсякъде след вход. Без вход базата не дава нищо
    (правилата са в supabase/setup.sql). Ключът по-долу е публичен по замисъл — защитата е входът. */
 const SB={url:"https://tdgsyvqfpebexycjnwal.supabase.co",key:"sb_publishable_pEzUKVrv1P-ysyaBBC5KZA_LoDmnEkU"};
@@ -2801,7 +2801,7 @@ async function renderSettings(){
   if(CLOUD)$("input[name=logoMode][value=default]").closest("label").classList.toggle("hidden",S.logoMode!=="default"); // вграденото лого е на Тангра — другите агенции качват свое
   INV_SET.forEach(([id,k])=>$("#"+id).value=S[k]??"");$("#sInvVatOn").checked=!!S.invVatOn;
   const lp=$("#logoPrev");const src=S.logoMode==="none"?"":(S.logoMode==="custom"&&S.logo?S.logo:DEFAULT_LOGO);lp.src=src||"";lp.classList.toggle("hidden",!src);
-  if(CLOUD)$("#archNote").innerHTML="Данните се пазят в <b>защитена база данни (Supabase, сървър във Франкфурт, ЕС)</b>. Безплатният план <b>няма</b> автоматични резервни копия — правете архив поне веднъж седмично и го пазете на флашка.";
+  if(CLOUD)$("#archNote").innerHTML="Данните се пазят в <b>защитена база данни (Supabase, сървър в Париж, ЕС)</b>. Безплатният план <b>няма</b> автоматични резервни копия — правете архив поне веднъж седмично и го пазете на флашка.";
   else if(SRV)$("#archNote").innerHTML="Данните се пазят на <b>компютъра в офиса</b> (папка <b>danni\\server</b> до START.bat — на флашката). Нищо не се изпраща по интернет. Правете архив поне веднъж седмично.";
   renderPhones();
   $("#lastBackup").textContent=S.lastBackup?"Последен архив: "+new Date(S.lastBackup).toLocaleString("bg-BG"):"Още няма архив.";
