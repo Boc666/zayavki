@@ -158,6 +158,11 @@ td.acts{text-align:right;white-space:nowrap;width:1%}
 #auth{position:fixed;inset:0;z-index:150;background:radial-gradient(ellipse at 50% 0%,#1C1F23 0%,#0D0E10 70%);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
 .auth-box{width:min(410px,100%);background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:30px 30px 24px;box-shadow:0 40px 90px rgba(0,0,0,.6);animation:modalIn .25s var(--ease)}
 .auth-box.wide{width:min(470px,100%)}
+.auth-box.plat{width:min(980px,100%);align-self:flex-start}
+.plat-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.plat-bar .spacer{flex:1}
+.auth-form .plat-bar .btn.primary{margin-top:0;padding:8px 14px}
+.plat-scroll{overflow-x:auto}.plat-scroll code{font-size:12.5px}
+body.plat-mode #modalWrap{z-index:170}body.plat-mode #toast{z-index:180;left:50%}
 .auth-brand{display:flex;align-items:center;gap:13px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border-soft)}
 .auth-brand .plate{width:48px;height:48px;flex:none;border-radius:var(--r);background:#E9E6E0;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .auth-brand .plate img{width:42px;height:42px;object-fit:contain}
@@ -1034,11 +1039,12 @@ function defaultCatalog(){
   return {version:4,orgFee:null,doctorFee:null,lamPrice:2,transportFee:null,necro:{color:[null,null,null],bw:[null,null,null],none:[null,null,null]},
     items:ORIGINAL_NAMES.map((name,i)=>({no:i+1,name,unit:DEFAULT_UNITS[i+1]||"",price:null,presets:(DEFAULT_PRESETS[i+1]||[]).slice()}))};
 }
-function defaultSettings(){
-  return {agency:"ПОГРЕБАЛНА АГЕНЦИЯ “ТАНГРА”",short:"ТАНГРА",
-    addr:"София, ъгъла на бул. “Овча купел” и ул. “Житница”",
-    gsm:"GSM: 0885-220-815 / 0877-721-743 / 0888 991 129 / 0898 658 885",
-    city:"София",rep:"",staff:[],nextNo:1,digits:3,logo:"",logoMode:"default",showLily:true,
+const isMulti=()=>{try{return CLOUD}catch(e){return false}}; // в облака има много агенции — без данните на Тангра по подразбиране
+function defaultSettings(){const M=isMulti();
+  return {agency:M?"":"ПОГРЕБАЛНА АГЕНЦИЯ “ТАНГРА”",short:M?"":"ТАНГРА",
+    addr:M?"":"София, ъгъла на бул. “Овча купел” и ул. “Житница”",
+    gsm:M?"":"GSM: 0885-220-815 / 0877-721-743 / 0888 991 129 / 0898 658 885",
+    city:M?"":"София",rep:"",staff:[],nextNo:1,digits:3,logo:"",logoMode:M?"none":"default",showLily:true,
     tagline:"С уважение\nв най-трудните\nмоменти",lastBackup:null,
     invName:"",invAddr:"",invEik:"",invMol:"",invBank:"",invIban:"",invBic:"",invNext:1,invVatOn:false,invVatNo:"",invVatRate:20,offerDays:7,stockPin:"",lockMin:30};
 }
@@ -1102,15 +1108,22 @@ if(SRV)Object.assign(DB,{
 /* ---------- облак: вход и данни през Supabase (без библиотеки — само fetch) ---------- */
 let SBS=null;try{SBS=JSON.parse(sessionStorage.getItem("zayavki-sb")||"null")}catch(e){}
 const sbSave=s=>{SBS=s;try{s?sessionStorage.setItem("zayavki-sb",JSON.stringify(s)):sessionStorage.removeItem("zayavki-sb")}catch(e){}};
-// потребителското име → вътрешен „имейл“ (същото като username_email() в setup.sql; имейли не се пращат)
-const userEmail=u=>"u"+[...new TextEncoder().encode(normUser(u))].map(b=>b.toString(16).padStart(2,"0")).join("")+"@zayavki.local";
+// код на агенция + потребителско име → вътрешен „имейл“ (същото като username_email()/platform_email() в setup.sql; имейли не се пращат)
+// без код = собственик на платформата
+const hexOf=s=>[...new TextEncoder().encode(s)].map(b=>b.toString(16).padStart(2,"0")).join("");
+const userEmail=(code,u)=>(normUser(code)?"u"+hexOf(normUser(code)+"/"+normUser(u)):"p"+hexOf(normUser(u)))+"@zayavki.local";
+let AG=null; // агенцията на влезлия: {id, code, name}
+const docPath=k=>AG.id+"/"+enc_(k); // Word файловете — в папката на агенцията
+const AG_KEY="zayavki-agency",lastAgency=()=>{try{return localStorage.getItem(AG_KEY)||""}catch(e){return ""}};
+// линк от вида …/zayavki/?a=tangra попълва и запомня кода на агенцията
+try{const a=new URLSearchParams(location.search).get("a");if(a&&/^[a-z0-9-]{2,30}$/i.test(a))localStorage.setItem(AG_KEY,a.toLowerCase())}catch(e){}
 const netErr=()=>{srvDown();const e=new Error("Няма интернет връзка. Промяната НЕ е записана.");e.net=true;return e};
 async function sbAuth(grant,body){
   let r;try{r=await fetch(SB.url+"/auth/v1/token?grant_type="+grant,{method:"POST",headers:{apikey:SB.key,"Content-Type":"application/json"},body:JSON.stringify(body)})}catch(e){throw netErr()}
   const j=await r.json().catch(()=>({}));
   if(!r.ok){const e=new Error(r.status===400?"Грешно потребителско име или парола.":r.status===429?"Твърде много опити. Изчакайте няколко минути.":"Грешка при вход ("+r.status+").");e.bad=r.status===400;throw e}
   sbSave({access:j.access_token,refresh:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000,uid:j.user&&j.user.id});return SBS}
-const sbLogin=(u,p)=>sbAuth("password",{email:userEmail(u),password:p});
+const sbLogin=(code,u,p)=>sbAuth("password",{email:userEmail(code,u),password:p});
 async function sbToken(){if(!SBS)return null;
   if(Date.now()>SBS.exp-90e3){try{await sbAuth("refresh_token",{refresh_token:SBS.refresh})}catch(e){if(!e.net)sbSave(null);throw e}}
   return SBS&&SBS.access}
@@ -1130,27 +1143,39 @@ if(CLOUD)Object.assign(DB,{
   async all(s){const out=[];for(let off=0;;off+=1000){const p=await sb(`/rest/v1/records?select=value&store=eq.${enc_(s)}&order=key&limit=1000&offset=${off}`);out.push(...p.map(x=>x.value));if(p.length<1000)break}
     return s==="docs"?out.map(d=>({...d,file:null})):out}, // самите Word файлове се теглят само при отваряне на документ
   async get(s,k){const p=await sb(`/rest/v1/records?select=value&store=eq.${enc_(s)}&key=eq.${enc_(k)}`),v=p[0]?p[0].value:undefined;
-    if(v&&s==="docs"){v.file=null;try{v.file=await (await sb("/storage/v1/object/authenticated/docs/"+enc_(k),{raw:true})).blob();DOC_BLOBS.add(v.file)}catch(e){}}
+    if(v&&s==="docs"){v.file=null;
+      for(const p of [docPath(k),enc_(k)]) // старите файлове на Тангра са без папка на агенция
+        try{v.file=await (await sb("/storage/v1/object/authenticated/docs/"+p,{raw:true})).blob();DOC_BLOBS.add(v.file);break}catch(e){if(e.net)break}}
     return v},
   async put(s,o){const k=o[KEYPATH[s]];let v=o;
-    if(s==="docs"){if(o.file instanceof Blob&&!DOC_BLOBS.has(o.file)){await sb("/storage/v1/object/docs/"+enc_(k),{method:"POST",body:o.file,headers:{"x-upsert":"true","Content-Type":o.file.type||"application/octet-stream"}});DOC_BLOBS.add(o.file)}v={...o,file:null}}
+    if(s==="docs"){if(o.file instanceof Blob&&!DOC_BLOBS.has(o.file)){await sb("/storage/v1/object/docs/"+docPath(k),{method:"POST",body:o.file,headers:{"x-upsert":"true","Content-Type":o.file.type||"application/octet-stream"}});DOC_BLOBS.add(o.file)}v={...o,file:null}}
     await sb("/rest/v1/records",{method:"POST",body:{store:s,key:k,value:v},headers:{Prefer:(s==="audit"?"":"resolution=merge-duplicates,")+"return=minimal"}})},
-  async del(s,k){await sb(`/rest/v1/records?store=eq.${enc_(s)}&key=eq.${enc_(k)}`,{method:"DELETE"});if(s==="docs")try{await sb("/storage/v1/object/docs/"+enc_(k),{method:"DELETE"})}catch(e){}},
+  async del(s,k){await sb(`/rest/v1/records?store=eq.${enc_(s)}&key=eq.${enc_(k)}`,{method:"DELETE"});if(s==="docs")for(const p of [docPath(k),enc_(k)])try{await sb("/storage/v1/object/docs/"+p,{method:"DELETE"})}catch(e){}},
   async putAtomic(ops){await rpc("put_atomic",{ops:ops.map(o=>({store:o.store,key:o.value[KEYPATH[o.store]],value:o.value}))})}});
 const toUser=p=>({id:p.id,username:p.username,name:p.name,role:p.role==="admin"?"admin":"user",perms:p.perms||{},active:p.active,created:p.created_at,lastLogin:p.last_login});
 const sbProfiles=async()=>(await sb("/rest/v1/profiles?select=*&order=created_at")).map(toUser);
-// вход в облака: връща потребителя, null при грешна парола; грешка, ако е спрян / няма връзка
-async function cloudLogin(u,p){
-  try{await sbLogin(u,p)}catch(e){if(e.bad)return null;throw e}
+// след вход: собственик на платформата → {platform:true}; служител → профилът му (и AG = агенцията му)
+async function cloudContext(){
+  const c=await rpc("my_context");
+  if(c&&c.kind==="platform")return {platform:true,name:c.name,username:c.username};
+  if(!c||!c.active){await sbLogout();DB.db=null;throw new Error("Този потребител е спрян. Обърнете се към администратора.")}
+  if(!c.agency_active){await sbLogout();DB.db=null;throw new Error("Достъпът на агенцията е спрян. Свържете се с администратора на платформата.")}
+  AG={id:c.agency_id,code:c.code,name:c.agency_name};
   DB.db=true;USERS=await sbProfiles();const x=USERS.find(z=>z.id===SBS.uid);
   if(!x||!x.active){await sbLogout();DB.db=null;throw new Error("Този потребител е спрян. Обърнете се към администратора.")}
   return x}
+// вход в облака: връща потребителя, null при грешна парола; грешка, ако е спрян / няма връзка
+async function cloudLogin(code,u,p){
+  try{await sbLogin(code,u,p)}catch(e){if(e.bad)return null;throw e}
+  try{localStorage.setItem(AG_KEY,normUser(code))}catch(e){}
+  return cloudContext()}
 async function cloudStart(){
   SETTINGS=migrateSettings(null);CATALOG=migrateCatalog(null);NECRO=migrateNecro(null);INVD=migrateInvd(null); // докато няма вход
   $("#sideWhere").textContent="Данните са в защитената база (ЕС)";
   try{
-    if(SBS){try{await sbToken();DB.db=true;USERS=await sbProfiles();const u=USERS.find(x=>x.id===SBS.uid&&x.active);
-      if(u){ME=u;await loadShared();lastAct=Date.now();applyUser();showTab(firstTab());return}}catch(e){if(e.net)throw e}
+    if(SBS){try{await sbToken();const u=await cloudContext();
+      if(u.platform){platformShow(u);return}
+      ME=u;await loadShared();lastAct=Date.now();applyUser();showTab(firstTab());return}catch(e){if(e.net)throw e}
       sbSave(null);DB.db=null}
     authShow((await rpc("needs_setup"))?"setup":"login");
   }catch(e){authShow("offline")}
@@ -2769,6 +2794,7 @@ async function renderSettings(){
   $("#sAgency").value=S.agency;$("#sAddr").value=S.addr;$("#sGsm").value=S.gsm;$("#sShort").value=S.short;$("#sCity").value=S.city;$("#sRep").value=S.rep;$("#sStaff").value=(S.staff||[]).join("\n");
   $("#sNext").value=S.nextNo;$("#sDigits").value=S.digits;$("#sOfferDays").value=S.offerDays;$("#sStockPin").value=S.stockPin||"";$("#sLockMin").value=S.lockMin??30;$("#sLily").checked=!!S.showLily;$("#sTag").value=S.tagline||"";
   $$("input[name=logoMode]").forEach(x=>x.checked=x.value===S.logoMode);
+  if(CLOUD)$("input[name=logoMode][value=default]").closest("label").classList.toggle("hidden",S.logoMode!=="default"); // вграденото лого е на Тангра — другите агенции качват свое
   INV_SET.forEach(([id,k])=>$("#"+id).value=S[k]??"");$("#sInvVatOn").checked=!!S.invVatOn;
   const lp=$("#logoPrev");const src=S.logoMode==="none"?"":(S.logoMode==="custom"&&S.logo?S.logo:DEFAULT_LOGO);lp.src=src||"";lp.classList.toggle("hidden",!src);
   if(CLOUD)$("#archNote").innerHTML="Данните се пазят в <b>защитена база данни (Supabase, сървър във Франкфурт, ЕС)</b>. Безплатният план <b>няма</b> автоматични резервни копия — правете архив поне веднъж седмично и го пазете на флашка.";
@@ -2898,7 +2924,7 @@ function migrateCatalog(c){
   c.version=7;return c;
 }
 function migrateNecro(n){n=n||{};if(!Array.isArray(n.orders))n.orders=[];if(!Array.isArray(n.expenses))n.expenses=[];return n}
-function migrateSettings(s){const S=Object.assign(defaultSettings(),s||{});if(!s||!s.logoMode)S.logoMode=S.logo?"custom":"default";return S}
+function migrateSettings(s){const S=Object.assign(defaultSettings(),s||{});if(!s||!s.logoMode)S.logoMode=S.logo?"custom":isMulti()?"none":"default";return S}
 function applyTitle(){LISTS.staff=SETTINGS.staff||[];
   $("#appTitle").textContent=SETTINGS.short?`Агенция „${SETTINGS.short}“`:"Погребална агенция";
   const logo=SETTINGS.logoMode==="none"?"":(SETTINGS.logoMode==="custom"&&SETTINGS.logo?SETTINGS.logo:DEFAULT_LOGO),pl=$("#sideLogo");
@@ -3232,40 +3258,43 @@ function authShow(mode,opt={}){
     return}
   if(mode==="setup"){$("#authSub").textContent="Първоначална настройка";
     B.innerHTML=`<form class="auth-form" id="fSetup" autocomplete="off">
-      <p class="auth-note">Създайте <b>администратор</b> — това сте вие. После от раздел „Потребители“ добавяте служителите и избирате какво могат да виждат и променят.</p>
+      ${CLOUD?`<p class="auth-note">Създайте <b>собственика на платформата</b> — това сте вие. С него създавате агенциите и техните администратори. Собственикът <b>не вижда</b> заявките на агенциите.</p>`
+      :`<p class="auth-note">Създайте <b>администратор</b> — това сте вие. После от раздел „Потребители“ добавяте служителите и избирате какво могат да виждат и променят.</p>`}
       <label class="f">Име и фамилия<input class="ui-in" id="suN" required></label>
       <label class="f">Потребителско име<input class="ui-in" id="suU" autocomplete="username" required></label>
       <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px"><label class="f">Парола<input class="ui-in" type="password" id="suP" autocomplete="new-password"></label>
         <label class="f">Повтори паролата<input class="ui-in" type="password" id="suP2" autocomplete="new-password"></label></div>
       <label class="f">Код за възстановяване<input class="ui-in" type="password" id="suR" autocomplete="off" placeholder="поне 8 знака — запишете го на хартия"></label>
       <p class="auth-note">С кода за възстановяване сменяте паролата на администратора, ако я забравите. Програмата пази само отпечатък от него — <b>не може да ви го покаже по-късно</b>.</p>
-      <div class="auth-err"></div><button class="btn primary" type="submit">Създай администратор и влез</button>
-      ${CLOUD?`<p class="auth-note">Имате архив от досегашната програма? След като влезете: Настройки → „Възстанови от архив“.</p>`:`<button type="button" class="auth-link" id="suImp">Имам архив от досегашната програма — възстанови го</button>`}</form>`;
+      <div class="auth-err"></div><button class="btn primary" type="submit">${CLOUD?"Създай собственик и влез":"Създай администратор и влез"}</button>
+      ${CLOUD?"":`<button type="button" class="auth-link" id="suImp">Имам архив от досегашната програма — възстанови го</button>`}</form>`;
     if(!CLOUD)$("#suImp").onclick=()=>$("#importFile").click();
     $("#fSetup").onsubmit=async e=>{e.preventDefault();const er=$("#fSetup .auth-err");er.textContent="";
       try{const n=$("#suN").value.trim(),u=normUser($("#suU").value),p=$("#suP").value,rc=$("#suR").value.trim();
         if(!n||!u)throw new Error("Попълнете име и потребителско име.");if(p!==$("#suP2").value)throw new Error("Паролите не съвпадат.");
         if(rc.length<8)throw new Error("Кодът за възстановяване трябва да е поне 8 знака.");
         if(CLOUD){await rpc("setup_first_admin",{p_username:u,p_name:n,p_password:p,p_recovery:rc});
-          const a=await cloudLogin(u,p);if(!a)throw new Error("Администраторът е създаден, но входът не успя. Опитайте да влезете.");
-          await loginAs(a,"Създаден администратор");audit("Създаден администратор",n+" ("+u+")");return}
+          const a=await cloudLogin("",u,p);if(!a)throw new Error("Собственикът е създаден, но входът не успя. Опитайте да влезете.");
+          platformShow(a);return}
         const a={id:uid(),username:u,name:n,role:"admin",perms:{},active:true,created:new Date().toISOString(),lastLogin:null};await setPw(a,p);
         const rs=newSalt();await setMeta("auth",{recSalt:rs,recHash:await pwHash(rc,rs)});
         USERS=[a];await saveUsers();await loginAs(a,"Създаден администратор");audit("Създаден администратор",n+" ("+u+")")}
       catch(x){er.textContent=x.message}};
   }
   else if(mode==="login"){$("#authSub").textContent=opt.locked?"Заключено поради бездействие":"Вход в програмата";
+    const lockedAg=opt.locked&&AG?AG.code:null; // при заключване — същата агенция
     B.innerHTML=`<form class="auth-form" id="fLogin">
+      ${CLOUD?`<label class="f">Код на агенцията<input class="ui-in" id="liA" autocomplete="organization" autocapitalize="none" spellcheck="false" placeholder="напр. tangra" value="${esc(lockedAg??lastAgency())}" ${lockedAg?"readonly":""}></label>`:""}
       <label class="f">Потребителско име<input class="ui-in" id="liU" autocomplete="username" value="${esc(opt.user||"")}"></label>
       <label class="f">Парола<input class="ui-in" type="password" id="liP" autocomplete="current-password"></label>
       <div class="auth-err"></div><button class="btn primary" type="submit">Вход</button>
       <button type="button" class="auth-link" id="liRec">Забравена парола на администратор</button></form>`;
-    setTimeout(()=>(opt.user?$("#liP"):$("#liU")).focus(),50);
+    setTimeout(()=>(opt.user?$("#liP"):CLOUD&&!$("#liA").value?$("#liA"):$("#liU")).focus(),50);
     $("#liRec").onclick=()=>authShow("recover");
     $("#fLogin").onsubmit=async e=>{e.preventDefault();const er=$("#fLogin .auth-err");er.textContent="";
       if(Date.now()<LOCK_UNTIL){er.textContent=`Твърде много грешни опити. Опитайте след ${Math.ceil((LOCK_UNTIL-Date.now())/1000)} сек.`;return}
       const u=normUser($("#liU").value),p=$("#liP").value;let x=null;
-      try{if(CLOUD)x=await cloudLogin(u,p);else{x=USERS.find(z=>z.username===u&&z.active);if(x&&(await pwHash(p,x.salt))!==x.hash)x=null}}
+      try{if(CLOUD){x=await cloudLogin($("#liA").value,u,p);if(x&&x.platform){if(opt.locked&&ME)location.reload();else platformShow(x);return}}else{x=USERS.find(z=>z.username===u&&z.active);if(x&&(await pwHash(p,x.salt))!==x.hash)x=null}}
       catch(err){er.textContent=err.message;return}
       if(!x){FAILS++;if(FAILS>=5){LOCK_UNTIL=Date.now()+30e3;FAILS=0}audit("Неуспешен вход","потребител: "+u);er.textContent="Грешно потребителско име или парола.";$("#liP").value="";return}
       FAILS=0;
@@ -3277,6 +3306,7 @@ function authShow(mode,opt={}){
   else if(mode==="recover"){$("#authSub").textContent="Възстановяване на достъпа";
     B.innerHTML=`<form class="auth-form" id="fRec" autocomplete="off">
       <p class="auth-note">Въведете кода за възстановяване, който сте задали при създаването на администратора, и нова парола.</p>
+      ${CLOUD?`<label class="f">Код на агенцията<input class="ui-in" id="rcA" autocapitalize="none" spellcheck="false" value="${esc(lastAgency())}"></label>`:""}
       <label class="f">Потребителско име на администратор<input class="ui-in" id="rcU"></label>
       <label class="f">Код за възстановяване<input class="ui-in" type="password" id="rcC" autocomplete="off"></label>
       <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px"><label class="f">Нова парола<input class="ui-in" type="password" id="rcP" autocomplete="new-password"></label>
@@ -3287,8 +3317,10 @@ function authShow(mode,opt={}){
     $("#fRec").onsubmit=async e=>{e.preventDefault();const er=$("#fRec .auth-err");er.textContent="";
       try{if(Date.now()<LOCK_UNTIL)throw new Error("Твърде много грешни опити. Изчакайте малко.");
         if(CLOUD){if($("#rcP").value!==$("#rcP2").value)throw new Error("Паролите не съвпадат.");
-          const un=normUser($("#rcU").value);await rpc("recover_admin",{p_username:un,p_code:$("#rcC").value.trim(),p_password:$("#rcP").value});
-          const a=await cloudLogin(un,$("#rcP").value);if(!a)throw new Error("Паролата е сменена. Влезте с новата парола.");
+          const un=normUser($("#rcU").value),ac=normUser($("#rcA").value);
+          await rpc("recover_admin",{p_agency:ac,p_username:un,p_code:$("#rcC").value.trim(),p_password:$("#rcP").value});
+          const a=await cloudLogin(ac,un,$("#rcP").value);if(!a)throw new Error("Паролата е сменена. Влезте с новата парола.");
+          if(a.platform){platformShow(a);return}
           await loginAs(a,"Вход");audit("Паролата е сменена с код за възстановяване",a.name);return}
         const a=USERS.find(z=>z.username===normUser($("#rcU").value)&&z.role==="admin"),A=await getMeta("auth",null);
         if(!a||!A||(await pwHash($("#rcC").value.trim(),A.recSalt))!==A.recHash){FAILS++;if(FAILS>=5){LOCK_UNTIL=Date.now()+30e3;FAILS=0}audit("Неуспешно възстановяване","потребител: "+$("#rcU").value);throw new Error("Грешно потребителско име или код.")}
@@ -3296,6 +3328,71 @@ function authShow(mode,opt={}){
         await setPw(a,$("#rcP").value);a.active=true;await saveUsers();await loginAs(a,"Вход");audit("Паролата е сменена с код за възстановяване",a.name)}
       catch(x){er.textContent=x.message}};
   }
+}
+/* ---------- собственик на платформата: агенциите (без достъп до заявките им) ---------- */
+function platformShow(P){
+  ME=null;AG=null;document.body.classList.add("plat-mode");
+  const box=$("#auth .auth-box");box.classList.remove("wide");box.classList.add("plat");
+  $("#auth").classList.remove("hidden");$("#authLogo").classList.add("hidden");
+  $("#authTitle").textContent="Платформа „Заявки“";$("#authSub").textContent="Собственик: "+P.name;
+  $("#authBody").innerHTML=`<div class="auth-form">
+    <div class="plat-bar"><button class="btn primary" id="plNew" type="button">+ Нова агенция</button><span class="spacer"></span>
+      <button class="btn" id="plPw" type="button">Моята парола</button><button class="btn" id="plRec" type="button">Код за възстановяване</button><button class="btn" id="plOut" type="button">Изход</button></div>
+    <p class="auth-note">Тук създавате и спирате агенции. Заявките и документите им <b>не се виждат</b> оттук — всяка агенция ги управлява със своя администратор.</p>
+    <div class="plat-scroll"><table class="list" id="plTable"><tbody><tr><td class="empty">Зареждане…</td></tr></tbody></table></div>
+    <div class="auth-err" id="plErr"></div></div>`;
+  const dt=s=>s?new Date(s).toLocaleString("bg-BG",{dateStyle:"short",timeStyle:"short"}):"—";
+  let LIST=[];
+  async function load(){$("#plErr").textContent="";
+    try{LIST=await rpc("platform_agencies")}catch(e){$("#plErr").textContent=e.message;return}
+    $("#plTable").innerHTML=`<thead><tr><th>Агенция</th><th>Код за вход</th><th>Администратори</th><th class="money">Потреб.</th><th class="money">Заявки</th><th>Последен вход</th><th>Статус</th><th></th></tr></thead><tbody>${
+      LIST.map((a,i)=>`<tr><td><b>${esc(a.name)}</b></td><td><code>${esc(a.code)}</code></td><td>${esc((a.admins||[]).join(", ")||"—")}</td>
+        <td class="money">${a.users}</td><td class="money">${a.requests}</td><td class="muted">${dt(a.last_login)}</td>
+        <td>${a.active?`<span class="tag">активна</span>`:`<span class="tag" style="color:var(--err)">спряна</span>`}</td>
+        <td style="white-space:nowrap"><button class="btn small" data-pw="${i}">Нова парола</button> <button class="btn small" data-act="${i}">${a.active?"Спри":"Пусни"}</button></td></tr>`).join("")
+      ||`<tr><td colspan="8" class="empty">Още няма агенции. Натиснете „+ Нова агенция“.</td></tr>`}</tbody>`;
+    $$("#plTable [data-act]").forEach(b=>b.onclick=async()=>{const a=LIST[+b.dataset.act];
+      if(a.active&&!confirm(`Да спра ли достъпа на „${a.name}“?\n\nНикой от агенцията няма да може да влезе, докато не я пуснете отново. Данните остават.`))return;
+      try{await rpc("platform_set_agency_active",{p_agency:a.id,p_active:!a.active});toast(a.active?"Агенцията е спряна":"Агенцията е пусната ✔");load()}catch(e){alert(e.message)}});
+    $$("#plTable [data-pw]").forEach(b=>b.onclick=()=>{const a=LIST[+b.dataset.pw];
+      openModal({title:"Нова парола — "+a.name,body:`<div class="grid" style="grid-template-columns:1fr">
+        <p class="auth-note">За поддръжка: когато служител или администратор на агенцията е забравил паролата си.</p>
+        <label class="f">Потребителско име<input class="ui-in" id="prU" value="${esc((a.admins||[])[0]||"")}"></label>
+        <label class="f">Нова парола<input class="ui-in" type="password" id="prP" autocomplete="new-password"></label></div>`,
+        actions:[{label:"Отказ"},{label:"Смени паролата",cls:"primary",act:async m=>{
+          await rpc("platform_reset_password",{p_agency:a.id,p_username:normUser(m.q("#prU").value),p_password:m.q("#prP").value});toast("Паролата е сменена ✔")}}]})});
+  }
+  $("#plNew").onclick=()=>openModal({title:"Нова агенция",wide:true,body:`<div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
+      <label class="f" style="grid-column:1/-1">Име на агенцията<input class="ui-in" id="naN" placeholder="напр. Погребална агенция Мир"></label>
+      <label class="f" style="grid-column:1/-1">Код за вход<input class="ui-in" id="naC" autocapitalize="none" spellcheck="false" placeholder="напр. mir — малки латински букви, цифри, тире"></label>
+      <p class="auth-note" style="grid-column:1/-1">Служителите на агенцията пишат този код при вход. По-късно не може да се смени.</p>
+      <label class="f">Администратор — име и фамилия<input class="ui-in" id="naAN"></label>
+      <label class="f">Потребителско име<input class="ui-in" id="naAU" autocapitalize="none"></label>
+      <label class="f">Парола (поне 6 знака)<input class="ui-in" type="password" id="naAP" autocomplete="new-password"></label>
+      <label class="f">Код за възстановяване (по желание, 8+)<input class="ui-in" type="password" id="naR" autocomplete="off"></label></div>`,
+    actions:[{label:"Отказ"},{label:"Създай агенцията",cls:"primary",act:async m=>{
+      const code=normUser(m.q("#naC").value),un=normUser(m.q("#naAU").value),rc=m.q("#naR").value.trim();
+      if(rc&&rc.length<8)throw new Error("Кодът за възстановяване трябва да е поне 8 знака (или го оставете празен).");
+      await rpc("platform_create_agency",{p_code:code,p_name:m.q("#naN").value.trim(),p_admin_username:un,p_admin_name:m.q("#naAN").value.trim(),p_admin_password:m.q("#naAP").value,p_recovery:rc});
+      load();
+      setTimeout(()=>openModal({title:"Агенцията е създадена ✔",body:`<p class="auth-note">Изпратете на администратора на агенцията данните за вход:</p>
+        <p style="font-size:15px;line-height:1.9">Адрес: <b>${esc(location.origin+location.pathname)}</b><br>Код на агенцията: <b>${esc(code)}</b><br>Потребител: <b>${esc(un)}</b><br>Парола: тази, която въведохте</p>
+        <p class="auth-note">След като влезе, той попълва адреса, телефоните и логото в „Настройки“ и добавя служителите си.</p>`,actions:[{label:"Готово",cls:"primary"}]}),50)}}]});
+  $("#plPw").onclick=()=>openModal({title:"Смяна на паролата",body:`<div class="grid" style="grid-template-columns:1fr">
+      <label class="f">Сегашна парола<input class="ui-in" type="password" id="ppO" autocomplete="current-password"></label>
+      <label class="f">Нова парола<input class="ui-in" type="password" id="ppN" autocomplete="new-password"></label>
+      <label class="f">Повтори новата<input class="ui-in" type="password" id="ppN2" autocomplete="new-password"></label></div>`,
+    actions:[{label:"Отказ"},{label:"Смени паролата",cls:"primary",act:async m=>{
+      if(m.q("#ppN").value!==m.q("#ppN2").value)throw new Error("Новите пароли не съвпадат.");
+      await rpc("change_my_password",{p_old:m.q("#ppO").value,p_new:m.q("#ppN").value});toast("Паролата е сменена ✔")}}]});
+  $("#plRec").onclick=()=>openModal({title:"Код за възстановяване",body:`<div class="grid" style="grid-template-columns:1fr">
+      <p class="auth-note">С този код сменяте паролата си, ако я забравите (от „Забравена парола“ при вход, с празен код на агенция).</p>
+      <label class="f">Вашата парола<input class="ui-in" type="password" id="rkP" autocomplete="current-password"></label>
+      <label class="f">Нов код (поне 8 знака)<input class="ui-in" type="password" id="rkC" autocomplete="off"></label></div>`,
+    actions:[{label:"Отказ"},{label:"Запази кода",cls:"primary",act:async m=>{
+      await rpc("set_recovery",{p_password:m.q("#rkP").value,p_code:m.q("#rkC").value.trim()});toast("Кодът е запазен ✔")}}]});
+  $("#plOut").onclick=()=>{sbLogout().finally(()=>location.reload())};
+  load();
 }
 async function loginAs(u,why){
   ME=u;u.lastLogin=new Date().toISOString();sessionStorage.setItem("uid",u.id);
