@@ -1188,7 +1188,7 @@ async function cloudStart(){
 /* Друг телефон/компютър може да е променил каталога, склада, настройките или потребителите —
    при смяна на раздел и при връщане в програмата ги четем отново. */
 async function srvRefresh(){if(!(SRV||CLOUD)||!DB.db||!ME)return;
-  try{SETTINGS=migrateSettings(await getMeta("settings",null));CATALOG=migrateCatalog(await getMeta("catalog",null));
+  try{SETTINGS=migrateSettings(await getMeta("settings",null));CATALOG=migrateCatalog(await getMeta("catalog",null));TEMPLATE=migrateTemplate(await getMeta("template",null));applyTemplate();
     NECRO=migrateNecro(await getMeta("necro",null));if(!INV_BUSY)INVD=migrateInvd(await getMeta("inventory",null));
     const us=CLOUD?await sbProfiles():await getMeta("users",[]);if(us.length){USERS=us;if(ME){const m=us.find(x=>x.id===ME.id);if(m&&m.active)ME=m}}}catch(e){}}
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")srvRefresh()});
@@ -1258,16 +1258,19 @@ function normalizeRequest(r){ // за заявки, записани с по-с�
 }
 
 /* ---------------- СМЕТКИ ---------------- */
-const LAM_NO=18; // „Некролози“
+// Специалните пера идват от каталога на агенцията (при Тангра: 18 некролози, 24 извозване, 9 кетъринг).
+// Перата се търсят по номер, не по позиция — така агенция може да има свои пера, в свой ред.
+const lineOf=(r,no)=>no==null?undefined:(r.lines||[]).find(l=>l.no===no);
+const itemOf=no=>no==null?undefined:CATALOG.items.find(it=>it.no===no);
+const reqLink=()=>CATALOG.reqLink||REQ_LINK;
 const lamPriceOf=l=>l.lamPrice??CATALOG.lamPrice??0;
 const lamAmount=l=>l.used&&l.lam?r2(l.lam*lamPriceOf(l)):0;
-const TR_NO=24; // „Извозване на покойник + транспорт на км“
-const qtyOf=l=>l.qty!=null?l.qty:(l.no===TR_NO&&l.base!=null?0:1); // при извозване без км -> 0 км
-const lineAmount=l=>l.used?r2(qtyOf(l)*(l.price||0)+lamAmount(l)+(l.no===TR_NO?(l.base||0):0)):0;
+const qtyOf=l=>l.qty!=null?l.qty:(l.no===CATALOG.trNo&&l.base!=null?0:1); // при извозване без км -> 0 км
+const lineAmount=l=>l.used?r2(qtyOf(l)*(l.price||0)+lamAmount(l)+(l.no===CATALOG.trNo?(l.base||0):0)):0;
 function activateLine(l,it){ // попълва цените от каталога, когато услугата се включи
   l.used=true;
   if(l.price==null&&it.price!=null)l.price=it.price;
-  if(it.no===TR_NO&&l.base==null&&CATALOG.transportFee!=null)l.base=CATALOG.transportFee;
+  if(it.no===CATALOG.trNo&&l.base==null&&CATALOG.transportFee!=null)l.base=CATALOG.transportFee;
 }
 function calc(r){
   const services=r2(r.lines.reduce((s,l)=>s+lineAmount(l),0));
@@ -1316,62 +1319,97 @@ function headHTML(){
     <div class="s-tag">${esc(S.tagline||"")}</div>
   </div>`;
 }
-function page1(r,mode){
+/* ---------- ШАБЛОН НА ЗАЯВКАТА — всяка агенция има свой (meta „template“); по подразбиране е бланката на Тангра ----------
+   p1: блокове на страница 1:
+     {t:"sec",text}                       — заглавие на раздел (номерира се само)
+     {t:"row",f:[поле…]}                  — ред с полета; поле = {k,l,type?,list?,opts?,w?,nopad?}
+                                            k — ключ в заявката (свои ключове: с „x_“); без k = само надпис;
+                                            type: text|date|select|check; list — падащ списък от LISTS/шаблона; opts — избори за select
+     {t:"sentence"}                       — „… направи заявка за … на погребална агенция …“
+     {t:"burial"}                         — вид, ритуал, гроб, гробища, двоен гроб (кремация скрива гробищата)
+     {t:"bottom"}                         — забележки и подпис
+   Полетата appName, decName, ritDate, ritTime, kind, appPhone се ползват и от други раздели — дръжте ги във всеки шаблон. */
+const P1_OPTS={kind:[["","—"],["погребение","погребение"],["кремация","кремация"]],ritual:[["","—"],["граждански","граждански"],["черковен","черковен"]],
+  grave:[["","—"],["стар","стар"],["нов","нов"]],digSide:[["","— изберете —"],["лявата","лявата страна"],["дясната","дясната страна"]]};
+function defaultTemplate(){return {version:1,title:"ЗАЯВКА",sub:"ЗА ПОГРЕБЕНИЕ ИЛИ КРЕМАЦИЯ",bar2:"ОРГАНИЗАЦИЯ НА ПОГРЕБЕНИЕ ИЛИ КРЕМАЦИЯ",
+  payText:"Уведомен съм за остатъка от сумата, която трябва да изплатя ПРЕДИШНИЯ ден преди ритуала.",lists:{},p1:[
+  {t:"sec",text:"ДАННИ ЗА ЗАЯВИТЕЛЯ"},
+  {t:"row",f:[{k:"appName",l:"Име и фамилия"},{k:"appRelation",l:"Родство",list:"relation",w:"w38"}]},
+  {t:"row",f:[{k:"appCity",l:"Жив. в гр.",w:"w34"},{k:"appStreet",l:"ул. / ж.к."},{k:"appNo",l:"№ / бл.",w:"w26"}]},
+  {t:"row",f:[{k:"appPhone",l:"Телефон",w:"w60"}]},
+  {t:"sentence"},
+  {t:"row",f:[{k:"representative",l:"представлявана от:",list:"staff",w:"w60"}]},
+  {t:"sec",text:"АКТ ЗА СМЪРТ — ДАННИ ЗА ПОЧИНАЛИЯ"},
+  {t:"row",f:[{k:"decName",l:"Име и фамилия"}]},
+  {t:"row",f:[{k:"decEgn",l:"ЕГН",w:"w34"},{k:"decBirth",l:"Дата на раждане",type:"date",w:"w34"},{k:"decAge",l:"Възраст",w:"w14"},{l:"год.",nopad:true}]},
+  {t:"row",f:[{k:"decCitizen",l:"Гражданство",list:"citizen"},{k:"decMarital",l:"Сем. положение",list:"marital",w:"w30"},{k:"decSoc",l:"Соц. група",list:"soc",w:"w30"}]},
+  {t:"row",f:[{k:"decEdu",l:"Образование",list:"edu",w:"w30"},{k:"decProf",l:"Професия"},{k:"decWork",l:"Работи в"}]},
+  {t:"row",f:[{k:"birthPlace",l:"Месторождение: гр./с."},{k:"birthMun",l:"Община",w:"w44"}]},
+  {t:"row",f:[{k:"resPlace",l:"Местожителство: гр./с."},{k:"resMun",l:"Община",w:"w44"}]},
+  {t:"row",f:[{k:"resStreet",l:"Ул. (ж.к.)"},{k:"resNo",l:"№ (бл.)",w:"w18"},{k:"resEntr",l:"Вх.",w:"w10",nopad:true},{k:"resFloor",l:"Ет.",w:"w10",nopad:true},{k:"resApt",l:"Ап.",w:"w10",nopad:true}]},
+  {t:"row",f:[{k:"mother",l:"Майка"},{k:"motherEgn",l:"ЕГН",w:"w34"}]},
+  {t:"row",f:[{k:"father",l:"Баща"},{k:"fatherEgn",l:"ЕГН",w:"w34"}]},
+  {t:"row",f:[{k:"parentsAddr",l:"Адрес на родителите"}]},
+  {t:"sec",text:"СЪОБЩЕНИЕ ЗА СМЪРТ"},
+  {t:"row",f:[{k:"noticeNo",l:"№",w:"w30"},{k:"noticeDate",l:"от дата",type:"date",w:"w34"},{k:"noticeDoctor",l:"Д-р"}]},
+  {t:"row",f:[{k:"noticeBy",l:"Издадено от"}]},
+  {t:"sec",text:"ОРГАНИЗАЦИЯ НА ПОГРЕБЕНИЕ / КРЕМАЦИЯ"},
+  {t:"burial"},
+  {t:"row",f:[{k:"ritDate",l:"Дата",type:"date",w:"w34"},{k:"ritDay",l:"Ден",list:"day",w:"w34"},{k:"ritTime",l:"Час",list:"time",w:"w26"}]},
+  {t:"bottom"}]}}
+let TEMPLATE=defaultTemplate();
+function migrateTemplate(t){
+  const d=defaultTemplate();if(!t||!Array.isArray(t.p1))return d;
+  for(const k of ["title","sub","bar2","payText"])if(t[k]===undefined)t[k]=d[k];
+  if(!t.lists||typeof t.lists!=="object")t.lists={};
+  return t}
+function applyTemplate(){for(const k in TEMPLATE.lists)if(Array.isArray(TEMPLATE.lists[k]))LISTS[k]=TEMPLATE.lists[k]} // свои падащи списъци на агенцията
+const tplFields=()=>TEMPLATE.p1.flatMap(b=>b.t==="row"?b.f.filter(f=>f.k):[]); // всички полета от шаблона (за нови заявки)
+function p1Row(r,mode,b){
   const P=(k,o)=>fld(r,mode,k,o);
-  const KIND=[["","—"],["погребение","погребение"],["кремация","кремация"]];
-  const RIT=[["","—"],["граждански","граждански"],["черковен","черковен"]];
-  const GR=[["","—"],["стар","стар"],["нов","нов"]];
-  const SIDE=[["","— изберете —"],["лявата","лявата страна"],["дясната","дясната страна"]];
-  const cremation=r.kind==="кремация";
-  const dbl=r.doubleGrave&&!cremation;
-  return `<div class="sheet ${mode==="print"?"pm":"em"}">
-  ${headHTML()}
-  <div class="t-block">
-    <div class="t-main"><div class="t-title">ЗАЯВКА</div><div class="t-sub">ЗА ПОГРЕБЕНИЕ ИЛИ КРЕМАЦИЯ</div></div>
-    <div class="t-side"><span class="lb">№</span>${P("number")}<span class="lb">Дата</span>${P("reqDate",{type:"date"})}<span class="lb">гр.</span>${P("reqCity")}</div>
-  </div>
-
-  <div class="sec"><span class="n">1.</span>ДАННИ ЗА ЗАЯВИТЕЛЯ</div>
-  <div class="r"><span class="lb">Име и фамилия</span>${P("appName")}<span class="lb pad">Родство</span>${P("appRelation",{list:"relation",w:"w38"})}</div>
-  <div class="r"><span class="lb">Жив. в гр.</span>${P("appCity",{w:"w34"})}<span class="lb pad">ул. / ж.к.</span>${P("appStreet")}<span class="lb pad">№ / бл.</span>${P("appNo",{w:"w26"})}</div>
-  <div class="r"><span class="lb">Телефон</span>${P("appPhone",{w:"w60"})}</div>
+  return `<div class="r">${b.f.map((f,i)=>{
+    if(f.type==="check")return ck(r,mode,f.k,esc(f.l||""));
+    const lb=f.l?`<span class="lb${i>0&&!f.nopad?" pad":""}">${esc(f.l)}</span>`:"";
+    if(!f.k)return lb;
+    const o={};if(f.w)o.w=f.w;if(f.type&&f.type!=="text")o.type=f.type;if(f.list)o.list=f.list;
+    if(f.type==="select")o.opts=Array.isArray(f.opts)?f.opts.map(x=>Array.isArray(x)?x:[x,x||"—"]):(P1_OPTS[f.opts||f.k]||[["",""]]);
+    return lb+P(f.k,o)}).join("")}</div>`}
+function p1Block(r,mode,b,n){
+  const P=(k,o)=>fld(r,mode,k,o),O=P1_OPTS;
+  const cremation=r.kind==="кремация",dbl=r.doubleGrave&&!cremation;
+  if(b.t==="sec")return `
+  <div class="sec"><span class="n">${n}.</span>${esc(b.text)}</div>`;
+  if(b.t==="row")return `
+  `+p1Row(r,mode,b);
+  if(b.t==="sentence")return `
   <div class="r sent"><b class="nm" data-mirror="appName">${esc(r.appName)||(mode==="print"?"…………………………":"")}</b>
-    <span class="lb">направи заявка за <span data-mirror="kindText">${esc(r.kind||"погребение/кремация")}</span> на погребална агенция „${esc(SETTINGS.short)}“,</span></div>
-  <div class="r"><span class="lb">представлявана от:</span>${P("representative",{list:"staff",w:"w60"})}</div>
-
-  <div class="sec"><span class="n">2.</span>АКТ ЗА СМЪРТ — ДАННИ ЗА ПОЧИНАЛИЯ</div>
-  <div class="r"><span class="lb">Име и фамилия</span>${P("decName")}</div>
-  <div class="r"><span class="lb">ЕГН</span>${P("decEgn",{w:"w34"})}<span class="lb pad">Дата на раждане</span>${P("decBirth",{type:"date",w:"w34"})}<span class="lb pad">Възраст</span>${P("decAge",{w:"w14"})}<span class="lb">год.</span></div>
-  <div class="r"><span class="lb">Гражданство</span>${P("decCitizen",{list:"citizen"})}<span class="lb pad">Сем. положение</span>${P("decMarital",{list:"marital",w:"w30"})}<span class="lb pad">Соц. група</span>${P("decSoc",{list:"soc",w:"w30"})}</div>
-  <div class="r"><span class="lb">Образование</span>${P("decEdu",{list:"edu",w:"w30"})}<span class="lb pad">Професия</span>${P("decProf")}<span class="lb pad">Работи в</span>${P("decWork")}</div>
-  <div class="r"><span class="lb">Месторождение: гр./с.</span>${P("birthPlace")}<span class="lb pad">Община</span>${P("birthMun",{w:"w44"})}</div>
-  <div class="r"><span class="lb">Местожителство: гр./с.</span>${P("resPlace")}<span class="lb pad">Община</span>${P("resMun",{w:"w44"})}</div>
-  <div class="r"><span class="lb">Ул. (ж.к.)</span>${P("resStreet")}<span class="lb pad">№ (бл.)</span>${P("resNo",{w:"w18"})}<span class="lb">Вх.</span>${P("resEntr",{w:"w10"})}<span class="lb">Ет.</span>${P("resFloor",{w:"w10"})}<span class="lb">Ап.</span>${P("resApt",{w:"w10"})}</div>
-  <div class="r"><span class="lb">Майка</span>${P("mother")}<span class="lb pad">ЕГН</span>${P("motherEgn",{w:"w34"})}</div>
-  <div class="r"><span class="lb">Баща</span>${P("father")}<span class="lb pad">ЕГН</span>${P("fatherEgn",{w:"w34"})}</div>
-  <div class="r"><span class="lb">Адрес на родителите</span>${P("parentsAddr")}</div>
-
-  <div class="sec"><span class="n">3.</span>СЪОБЩЕНИЕ ЗА СМЪРТ</div>
-  <div class="r"><span class="lb">№</span>${P("noticeNo",{w:"w30"})}<span class="lb pad">от дата</span>${P("noticeDate",{type:"date",w:"w34"})}<span class="lb pad">Д-р</span>${P("noticeDoctor")}</div>
-  <div class="r"><span class="lb">Издадено от</span>${P("noticeBy")}</div>
-
-  <div class="sec"><span class="n">4.</span>ОРГАНИЗАЦИЯ НА ПОГРЕБЕНИЕ / КРЕМАЦИЯ</div>
-  ${cremation?`
-  <div class="r"><span class="lb">Да заяви</span>${P("kind",{type:"select",opts:KIND,w:"w34"})}<span class="lb pad">Ритуал</span>${P("ritual",{type:"select",opts:RIT,w:"w34"})}</div>
+    <span class="lb">направи заявка за <span data-mirror="kindText">${esc(r.kind||"погребение/кремация")}</span> на погребална агенция „${esc(SETTINGS.short)}“,</span></div>`;
+  if(b.t==="burial")return cremation?`
+  <div class="r"><span class="lb">Да заяви</span>${P("kind",{type:"select",opts:O.kind,w:"w34"})}<span class="lb pad">Ритуал</span>${P("ritual",{type:"select",opts:O.ritual,w:"w34"})}</div>
   <div class="r"><span class="lb">Място на ритуала</span>${P("ritualPlace")}<span style="margin-left:3mm"></span>${ck(r,mode,"atHome","в дома")}</div>`
   :`
-  <div class="r"><span class="lb">Да заяви</span>${P("kind",{type:"select",opts:KIND,w:"w34"})}<span class="lb pad">Ритуал</span>${P("ritual",{type:"select",opts:RIT,w:"w34"})}<span class="lb pad">Гроб</span>${P("grave",{type:"select",opts:GR,w:"w22"})}</div>
+  <div class="r"><span class="lb">Да заяви</span>${P("kind",{type:"select",opts:O.kind,w:"w34"})}<span class="lb pad">Ритуал</span>${P("ritual",{type:"select",opts:O.ritual,w:"w34"})}<span class="lb pad">Гроб</span>${P("grave",{type:"select",opts:O.grave,w:"w22"})}</div>
   <div class="r"><span class="lb">Гробища</span>${P("cemetery")}<span class="lb pad">Парцел</span>${P("cemParcel",{w:"w14"})}<span class="lb pad">Ред</span>${P("cemRow",{w:"w14"})}<span class="lb pad">Гроб №</span>${P("cemGrave",{w:"w14"})}</div>
   ${mode==="print"
      ?(dbl?`<div class="r"><span class="lb">Двоен гроб — копае се:</span><span class="in w50"><b>${esc(r.digSide?r.digSide+" страна":"")}</b></span></div>`:"")
-     :`<div class="r">${ck(r,mode,"doubleGrave","Двоен гроб")}${dbl?`<span class="lb pad">копае се</span>${P("digSide",{type:"select",opts:SIDE,w:"w44"})}`:`<span class="lb pad" style="color:#9a9288;font-style:italic">отметнете, ако гробът е двоен</span>`}</div>`}`}
-  <div class="r"><span class="lb">Дата</span>${P("ritDate",{type:"date",w:"w34"})}<span class="lb pad">Ден</span>${P("ritDay",{list:"day",w:"w34"})}<span class="lb pad">Час</span>${P("ritTime",{list:"time",w:"w26"})}</div>
+     :`<div class="r">${ck(r,mode,"doubleGrave","Двоен гроб")}${dbl?`<span class="lb pad">копае се</span>${P("digSide",{type:"select",opts:O.digSide,w:"w44"})}`:`<span class="lb pad" style="color:#9a9288;font-style:italic">отметнете, ако гробът е двоен</span>`}</div>`}`;
+  if(b.t==="bottom")return `
 
   <div class="bottom1">
     <div class="notes"><span class="nl">Забележки</span>${mode==="print"?`<div class="nv">${esc(r.notes)}</div>`:`<textarea data-k="notes" rows="3">${esc(r.notes)}</textarea>`}</div>
     ${dbl?`<div class="dbl"><div class="g"><div class="${r.digSide==="лявата"?"on":""}">Л</div><div class="${r.digSide==="дясната"?"on":""}">Д</div></div><span>двоен гроб</span></div>`:""}
     <div class="sign">ЗАЯВИТЕЛ:<span class="sl"></span></div>
+  </div>`;
+  return ""}
+function page1(r,mode){
+  const P=(k,o)=>fld(r,mode,k,o);let n=0;
+  return `<div class="sheet ${mode==="print"?"pm":"em"}">
+  ${headHTML()}
+  <div class="t-block">
+    <div class="t-main"><div class="t-title">${esc(TEMPLATE.title)}</div><div class="t-sub">${esc(TEMPLATE.sub)}</div></div>
+    <div class="t-side"><span class="lb">№</span>${P("number")}<span class="lb">Дата</span>${P("reqDate",{type:"date"})}<span class="lb">гр.</span>${P("reqCity")}</div>
   </div>
+${TEMPLATE.p1.map(b=>p1Block(r,mode,b,b.t==="sec"?++n:n)).join("")}
   <div class="s-foot">Страница 1 / 2</div>
   </div>`;
 }
@@ -1380,8 +1418,8 @@ function page2(r,mode){
   const rows=CATALOG.items.map((it,i)=>{
     const l=r.lines[i];
     const note=l.note?`<span class="nt">— ${esc(l.note)}</span>`:"";
-    const isLam=it.no===LAM_NO;
-    const isTr=it.no===TR_NO;
+    const isLam=it.no===CATALOG.lamNo;
+    const isTr=it.no===CATALOG.trNo;
     const trTxt=isTr&&l.used&&l.base?`<span class="lamt">такса ${fmt(l.base)} €${l.qty?` + ${numIn(l.qty)} км × ${fmt(l.price||0)} €`:""}</span>`:"";
     const lamTxt=isLam&&l.used&&(l.lam||l.necType)?`<span class="lamt">${[NEC_SHORT[l.necType]||"",l.lam?`+ ${numIn(l.lam)} ламинирани × ${fmt(lamPriceOf(l))} €`:""].filter(Boolean).join(" · ")}</span>`:"";
     if(mode==="print"){
@@ -1409,7 +1447,7 @@ function page2(r,mode){
     :`<col style="width:9mm"><col><col style="width:17mm"><col style="width:22mm"><col style="width:22mm"><col style="width:33mm">`;
   return `<div class="sheet ${mode==="print"?"pm":"em"}">
   ${headHTML()}
-  <div class="t2"><div class="bar">ОРГАНИЗАЦИЯ НА ПОГРЕБЕНИЕ ИЛИ КРЕМАЦИЯ</div>
+  <div class="t2"><div class="bar">${esc(TEMPLATE.bar2)}</div>
     <span class="lb">№</span><span class="in w18" data-mirror="number">${esc(r.number)}</span>
     <span class="lb">Дата</span><span class="in w22" data-mirror="reqDate">${bgDate(r.reqDate)}</span></div>
   <div class="fees"><span class="lb">Цена за организация</span>${P("orgFee",{w:"w26"})}<span class="lb">€</span>
@@ -1427,7 +1465,7 @@ function page2(r,mode){
     <div class="pb"><span class="lb">АВАНС (€)</span>${P("advance")}
       <span class="lb">ОСТАТЪК (€)</span><span class="in money" data-t="rest" style="font-weight:700">${c.total||r.paid?fmt(c.rest):""}</span>
       ${r.paid&&mode!=="print"?`<div class="paidline">✔ Платена изцяло на ${fld(r,mode,"paidDate",{type:"date"})}</div>`:""}</div>
-    <div class="txt">Уведомен съм за остатъка от сумата, която трябва да изплатя ПРЕДИШНИЯ ден преди ритуала.
+    <div class="txt">${esc(TEMPLATE.payText)}
       <div class="sign">ПОДПИС:<span class="sl"></span></div></div>
     ${r.paid&&mode==="print"?`<div class="stamp"><b>ПЛАТЕНО</b><span>изцяло${r.paidDate?" на "+bgDate(r.paidDate):""}</span></div>`:""}
   </div>
@@ -1461,7 +1499,7 @@ function renderSheets(){
 function refresh(){ // преизчислява сумите без да прерисува полетата
   if(!CURRENT)return;const c=calc(CURRENT);
   CURRENT.lines.forEach((l,i)=>{const s=$(`[data-sum="${i}"]`);if(s)s.textContent=l.used?fmt(lineAmount(l)):"–";const tr=$(`tr[data-row="${i}"]`);tr&&tr.classList.toggle("used",l.used)});
-  const li=$(`#sheets [data-f=lam]`);if(li){const l=CURRENT.lines[LAM_NO-1];const over=l.lam>(l.qty==null?1:l.qty);li.classList.toggle("bad",!!over);li.title=over?"Ламинираните са повече от общия брой некролози!":""}
+  const li=$(`#sheets [data-f=lam]`);if(li){const l=lineOf(CURRENT,CATALOG.lamNo);const over=l.lam>(l.qty==null?1:l.qty);li.classList.toggle("bad",!!over);li.title=over?"Ламинираните са повече от общия брой некролози!":""}
   markOverMax();stkRefresh();
   const t=$('#sheets [data-t=total]');if(t)t.textContent=fmt(c.total);
   const ts=$('#sheets [data-t=sub]');if(ts)ts.textContent=fmt(c.sub);
@@ -1522,10 +1560,10 @@ function lineInput(i,f,val){
     necAuto(i);return;
   }
   if(f==="qty"||f==="price"){
-    l[f]=num(val);if(f==="qty"&&it.no===LAM_NO)setTimeout(()=>{necAuto(i);refresh()},0);
+    l[f]=num(val);if(f==="qty"&&it.no===CATALOG.lamNo)setTimeout(()=>{necAuto(i);refresh()},0);
     if(val!==""&&!l.used){const hadPrice=l.price!=null;activateLine(l,it);if(f==="price")l.price=num(val);
       if(f==="qty"&&!hadPrice&&l.price!=null){const p=$(`[data-line="${i}"][data-f="price"]`);if(p)p.value=numIn(l.price)}
-      if(it.no===TR_NO&&l.base!=null){const bi=$(`[data-line="${i}"][data-f="base"]`);if(bi)bi.value=numIn(l.base)}
+      if(it.no===CATALOG.trNo&&l.base!=null){const bi=$(`[data-line="${i}"][data-f="base"]`);if(bi)bi.value=numIn(l.base)}
       const btn=$(`tr[data-row="${i}"] [data-act=add]`);if(btn){btn.outerHTML=`<button class="ib" data-act="clear" data-i="${i}" title="Изчисти реда">🗑</button>`}}
   }
 }
@@ -1572,12 +1610,12 @@ sheets.addEventListener("click",e=>{
 /* ---------------- препоръчителни цени ---------------- */
 function applyRecommended(i,single){
   const l=CURRENT.lines[i],it=CATALOG.items[i];
-  if(it.price==null&&!(it.no===TR_NO&&CATALOG.transportFee!=null)){
+  if(it.price==null&&!(it.no===CATALOG.trNo&&CATALOG.transportFee!=null)){
     if(single)toast(`Няма зададена препоръчителна цена за „${it.name}“. Задайте я в „Услуги и артикули“.`,true);return false}
   l.used=true;
   if(it.price!=null)l.price=it.price;
-  if(it.no===TR_NO&&CATALOG.transportFee!=null)l.base=CATALOG.transportFee;
-  if(it.no===LAM_NO&&l.lam)l.lamPrice=CATALOG.lamPrice??0;
+  if(it.no===CATALOG.trNo&&CATALOG.transportFee!=null)l.base=CATALOG.transportFee;
+  if(it.no===CATALOG.lamNo&&l.lam)l.lamPrice=CATALOG.lamPrice??0;
   if(single){renderSheets();setDirty(true);toast(`★ ${it.name}: ${it.price!=null?fmt(it.price)+" €":""}`)}
   return true;
 }
@@ -1777,22 +1815,22 @@ $("#btnPrint").onclick=async()=>{if(CURRENT)audit("Печат на заявка"
    РАБОТЕН ЛИСТ — разходи по погребението
    ===================================================================== */
 const CAMERA_ITEMS=[["coffin","Ковчег"],["cross","Кръст"],["drapery","Драперия"],["transport","Извозване"],["hearse","Извозване с бус/катафалка"],["table","Маса"],["dressing","Обличане"],["makeup","Грим"]];
-const CATERING_NO=9;
+
 function emptyWs(){return{camera:Object.fromEntries(CAMERA_ITEMS.map(([k])=>[k,null])),
   catering:{model:"",modelName:"",unitCost:null,qty:null},other:{desc:"",cost:null},doctor:null,
   flowers:{desc:"",type:"",ribbon:false,ribbonText:"",cost:null},portrait:{format:"",model:"",cost:null},
   custom:[],given:null,givenIsCost:false,note:"",done:{},desc:{}}}
 /* връзка между разход в работния лист и ред от заявката (за подсказка „от заявката: …“) */
 const REQ_LINK={camera_coffin:[2],camera_cross:[12],camera_drapery:[4,21],camera_transport:[24],camera_hearse:[27],camera_dressing:[22],camera_makeup:[22],catering:[9],flowers:[5,6],portrait:[19],doctor:[]};
-function reqHint(r,key){for(const no of REQ_LINK[key]||[]){const l=r.lines[no-1];if(l&&l.used&&l.note)return l.note}return""}
+function reqHint(r,key){for(const no of reqLink()[key]||[]){const l=lineOf(r,no);if(l&&l.used&&l.note)return l.note}return""}
 function ensureWs(r){const e=emptyWs();r.ws=r.ws||{};
   for(const k in e){if(r.ws[k]===undefined||r.ws[k]===null&&typeof e[k]==="object"&&e[k]!==null)r.ws[k]=e[k];
     else if(e[k]&&typeof e[k]==="object"&&!Array.isArray(e[k]))r.ws[k]=Object.assign({},e[k],r.ws[k])}
   if(!Array.isArray(r.ws.custom))r.ws.custom=[];return r}
-function cateringReqQty(r){const l=r.lines[CATERING_NO-1];return l&&l.used?qtyOf(l):0}
+function cateringReqQty(r){const l=lineOf(r,CATALOG.cateringNo);return l&&l.used?qtyOf(l):0}
 function cateringQty(r){const q=r.ws.catering.qty;return q!=null?q:cateringReqQty(r)}
 /* разход от склада за пера, свързани с полето в работния лист — тогава ръчната сума не се брои (без двойно отчитане) */
-const stockLinked=(r,key)=>(REQ_LINK[key]||[]).some(no=>issuedCost(r.lines[no-1])>0);
+const stockLinked=(r,key)=>(reqLink()[key]||[]).some(no=>issuedCost(lineOf(r,no))>0);
 function wsCalc(r){
   const w=r.ws,n=v=>+v||0,sl=k=>stockLinked(r,k);
   const camera=r2(CAMERA_ITEMS.reduce((s,[k])=>s+(sl("camera_"+k)?0:n(w.camera[k])),0));
@@ -2002,9 +2040,9 @@ function buildOfferPrint(r){
   if(r.orgFee)add("Организация на "+(r.kind||"погребение / кремация"),"",1,"услуга",r.orgFee,r.orgFee);
   if(r.doctorOn&&r.doctorFee)add("Лекарско присъствие","",1,"услуга",r.doctorFee,r.doctorFee);
   CATALOG.items.forEach((it,i)=>{const l=r.lines[i];if(!l.used)return;
-    const ex=[l.note,it.no===LAM_NO&&l.necType?NEC_SHORT[l.necType]:"",it.no===LAM_NO&&l.lam?`+ ${numIn(l.lam)} ламинирани × ${fmt(lamPriceOf(l))} €`:"",
-      it.no===TR_NO&&l.base?`такса ${fmt(l.base)} €`:""].filter(Boolean).join(" · ");
-    const plain=!(it.no===LAM_NO&&l.lam)&&!(it.no===TR_NO&&l.base);
+    const ex=[l.note,it.no===CATALOG.lamNo&&l.necType?NEC_SHORT[l.necType]:"",it.no===CATALOG.lamNo&&l.lam?`+ ${numIn(l.lam)} ламинирани × ${fmt(lamPriceOf(l))} €`:"",
+      it.no===CATALOG.trNo&&l.base?`такса ${fmt(l.base)} €`:""].filter(Boolean).join(" · ");
+    const plain=!(it.no===CATALOG.lamNo&&l.lam)&&!(it.no===CATALOG.trNo&&l.base);
     const q=qtyOf(l),u=it.unit==="ден"&&q!==1?"дни":it.unit||"бр."; // 1 ден, 2 дни
     add(it.name,ex,q,u,plain?l.price||0:null,lineAmount(l))});
   const days=parseInt(S.offerDays,10)||7;
@@ -2339,7 +2377,7 @@ nkExpEl.addEventListener("click",e=>{const b=e.target.closest("[data-edel]");if(
 async function necroItems(inclS){
   const reqs=(await DB.all("requests")).map(x=>normalizeRequest(structuredClone(x))).filter(r=>inclS||!r.sample);
   const items=[];
-  reqs.forEach(r=>{const l=r.lines[LAM_NO-1];if(l&&l.used)items.push({src:"req",no:r.number,name:r.appName||r.decName||"",date:r.reqDate||(r.created||"").slice(0,10),type:l.necType||"",qty:qtyOf(l),lam:l.lam||0,income:lineAmount(l)})});
+  reqs.forEach(r=>{const l=lineOf(r,CATALOG.lamNo);if(l&&l.used)items.push({src:"req",no:r.number,name:r.appName||r.decName||"",date:r.reqDate||(r.created||"").slice(0,10),type:l.necType||"",qty:qtyOf(l),lam:l.lam||0,income:lineAmount(l)})});
   NECRO.orders.forEach(o=>items.push({src:"own",name:o.name||"",date:o.date||"",type:o.type||"",qty:o.qty||0,lam:o.lam||0,income:necOrderAmount(o)}));
   return items;
 }
@@ -2501,7 +2539,7 @@ const posNum=(v,label,allowZero)=>{const n=num(v);if(n==null||!isFinite(n)||n<0|
 let STK_SORT={k:"name",dir:1};
 const stockValue=()=>r2(INVD.items.reduce((s,i)=>s+Math.max(0,i.stock)*(i.avgCost||0),0));
 const isLow=it=>it.status==="active"&&(it.minStock||0)>0&&it.stock<it.minStock;
-const lineNames=it=>(it.lines||[]).map(no=>CATALOG.items[no-1]?CATALOG.items[no-1].name:"ред "+no);
+const lineNames=it=>(it.lines||[]).map(no=>itemOf(no)?itemOf(no).name:"ред "+no);
 async function usedInRequests(id){return(await DB.all("requests")).filter(r=>(r.lines||[]).some(l=>l.item===id||(l.issued&&l.issued.itemId===id)))}
 function renderStock(){
   const act=INVD.items.filter(i=>i.status==="active"),low=act.filter(isLow);
@@ -2881,7 +2919,7 @@ $("#importFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;e.tar
 
 /* ---------------- примерни (измислени) данни ---------------- */
 function sampleRequests(){
-  const set=(r,no,o)=>Object.assign(r.lines[no-1],{used:true},o);
+  const set=(r,no,o)=>{const l=lineOf(r,no);if(l)Object.assign(l,{used:true},o)};
   const a=newRequest();Object.assign(a,{sample:true,number:"ПР-001",reqDate:"2026-10-20",
     appName:"Тестов Примеров Измислев",appRelation:"син",appStreet:"ж.к. Примерен",appNo:"бл. 100, вх. А",appPhone:"0800 000 001",
     decName:"Мария Тестова Измислева",decBirth:"1942-03-15",decAge:"84",decEdu:"висше",decProf:"учител",decWork:"—",decSoc:"пенсионер",decMarital:"вдовица",
@@ -2918,6 +2956,7 @@ function migrateCatalog(c){
     if(it.unit===undefined)it.unit=DEFAULT_UNITS[it.no]||"";
     delete it.hint;
   });
+  if(c.lamNo===undefined)c.lamNo=18;if(c.trNo===undefined)c.trNo=24;if(c.cateringNo===undefined)c.cateringNo=9; // специални пера (за Тангра)
   if(c.lamPrice===undefined)c.lamPrice=2; // ламиниране на некролог — 2 € на брой по подразбиране
   if(c.transportFee===undefined)c.transportFee=null;
   c.items.forEach(it=>{if(it.max===undefined)it.max=null});
@@ -3538,6 +3577,7 @@ let SHARED=false;
 async function loadShared(){ // настройки, каталог, некролози, склад (+ примерни заявки при първо пускане)
   SETTINGS=migrateSettings(await getMeta("settings",null));
   CATALOG=migrateCatalog(await getMeta("catalog",null));
+  TEMPLATE=migrateTemplate(await getMeta("template",null));applyTemplate();
   NECRO=migrateNecro(await getMeta("necro",null));
   INVD=migrateInvd(await getMeta("inventory",null));
   await setMeta("settings",SETTINGS);await setMeta("catalog",CATALOG);
