@@ -1173,7 +1173,11 @@ async function cloudStart(){
   SETTINGS=migrateSettings(null);CATALOG=migrateCatalog(null);NECRO=migrateNecro(null);INVD=migrateInvd(null); // докато няма вход
   $("#sideWhere").textContent="Данните са в защитената база (ЕС)";
   try{
-    if(SBS){try{await sbToken();const u=await cloudContext();
+    if(SBS){try{await sbToken();
+      // линк за друга агенция (…?a=код) — не отваряме запомнения вход, а показваме празен вход
+      const urlAg=(new URLSearchParams(location.search).get("a")||"").toLowerCase();
+      if(urlAg){const c=await rpc("my_context");if(!c||c.kind!=="agency"||c.code!==urlAg){sbSave(null);DB.db=null;authShow("login");return}}
+      const u=await cloudContext();
       if(u.platform){platformShow(u);return}
       ME=u;await loadShared();lastAct=Date.now();applyUser();showTab(firstTab());return}catch(e){if(e.net)throw e}
       sbSave(null);DB.db=null}
@@ -3376,7 +3380,7 @@ function platformShow(P){
       await rpc("platform_create_agency",{p_code:code,p_name:m.q("#naN").value.trim(),p_admin_username:un,p_admin_name:m.q("#naAN").value.trim(),p_admin_password:m.q("#naAP").value,p_recovery:rc});
       load();
       setTimeout(()=>openModal({title:"Агенцията е създадена ✔",body:`<p class="auth-note">Изпратете на администратора на агенцията данните за вход:</p>
-        <p style="font-size:15px;line-height:1.9">Адрес: <b>${esc(location.origin+location.pathname)}</b><br>Код на агенцията: <b>${esc(code)}</b><br>Потребител: <b>${esc(un)}</b><br>Парола: тази, която въведохте</p>
+        <p style="font-size:15px;line-height:1.9">Линк: <b>${esc(location.origin+location.pathname+"?a="+code)}</b><br>Код на агенцията: <b>${esc(code)}</b><br>Потребител: <b>${esc(un)}</b><br>Парола: тази, която въведохте</p>
         <p class="auth-note">След като влезе, той попълва адреса, телефоните и логото в „Настройки“ и добавя служителите си.</p>`,actions:[{label:"Готово",cls:"primary"}]}),50)}}]});
   $("#plPw").onclick=()=>openModal({title:"Смяна на паролата",body:`<div class="grid" style="grid-template-columns:1fr">
       <label class="f">Сегашна парола<input class="ui-in" type="password" id="ppO" autocomplete="current-password"></label>
