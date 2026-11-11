@@ -2,7 +2,7 @@
 <html lang="bg">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Заявки">
 <meta name="theme-color" content="#111315"><meta name="format-detection" content="telephone=no">
@@ -51,8 +51,7 @@ nav.tabs{display:flex;flex-direction:column;gap:1px;padding:14px 10px;flex:1;ove
 nav.tabs .nsec{font-size:10.5px;letter-spacing:1.1px;text-transform:uppercase;color:var(--text3);padding:14px 10px 6px}
 nav.tabs .nsec:first-child{padding-top:2px}
 nav.tabs button{position:relative;display:flex;align-items:center;gap:11px;width:100%;background:transparent;border:0;color:var(--text2);padding:8px 10px;border-radius:var(--r-sm);cursor:pointer;font:500 13.5px var(--ui);text-align:left;transition:background .15s,color .15s}
-nav.tabs button svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
-nav.tabs button:hover{background:rgba(255,255,255,.035);color:var(--text)}
+nav.tabs button svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;opacity:.85}@media(hover:hover) and (pointer:fine){nav.tabs button:hover{background:rgba(255,255,255,.035);color:var(--text)}}
 nav.tabs button.on{background:var(--panel);color:var(--text)}
 nav.tabs button.on svg{color:var(--bronze);opacity:1}
 nav.tabs button.on::before{content:"";position:absolute;left:-10px;top:7px;bottom:7px;width:2px;border-radius:2px;background:var(--bronze)}
@@ -81,26 +80,20 @@ main>section:not(.hidden){animation:pageIn .24s var(--ease)}
 p{line-height:1.55}
 
 /* ---------- бутони ---------- */
-.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border);background:var(--panel2);color:var(--text);padding:7px 13px;border-radius:var(--r-sm);cursor:pointer;font:500 13px var(--ui);white-space:nowrap;transition:background .15s,border-color .15s,color .15s,transform .08s}
-.btn:hover{background:#2E3238;border-color:#454A51}
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border);background:var(--panel2);color:var(--text);padding:7px 13px;border-radius:var(--r-sm);cursor:pointer;font:500 13px var(--ui);white-space:nowrap;transition:background .15s,border-color .15s,color .15s,transform .08s}@media(hover:hover) and (pointer:fine){.btn:hover{background:#2E3238;border-color:#454A51}}
 .btn:active{transform:translateY(1px) scale(.985)}
 .btn:focus-visible,nav.tabs button:focus-visible{outline:2px solid var(--bronze);outline-offset:2px}
 .btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.btn.primary{background:var(--bronze);border-color:var(--bronze);color:#17130C;font-weight:600}
-.btn.primary:hover{background:var(--bronze-hi);border-color:var(--bronze-hi)}
-.btn.dark{background:transparent;border-color:var(--bronze);color:var(--bronze-hi)}
-.btn.dark:hover{background:var(--bronze-soft)}
-.btn.danger{color:var(--err);border-color:rgba(217,103,93,.35);background:transparent}
-.btn.danger:hover{background:var(--err-soft);border-color:var(--err)}
+.btn.primary{background:var(--bronze);border-color:var(--bronze);color:#17130C;font-weight:600}@media(hover:hover) and (pointer:fine){.btn.primary:hover{background:var(--bronze-hi);border-color:var(--bronze-hi)}}
+.btn.dark{background:transparent;border-color:var(--bronze);color:var(--bronze-hi)}@media(hover:hover) and (pointer:fine){.btn.dark:hover{background:var(--bronze-soft)}}
+.btn.danger{color:var(--err);border-color:rgba(217,103,93,.35);background:transparent}@media(hover:hover) and (pointer:fine){.btn.danger:hover{background:var(--err-soft);border-color:var(--err)}}
 .btn.small{padding:4px 9px;font-size:12px}
-.btn.ghost{background:transparent;border-color:transparent;color:var(--text2)}
-.btn.ghost:hover{color:var(--text);background:var(--panel2)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--text2)}@media(hover:hover) and (pointer:fine){.btn.ghost:hover{color:var(--text);background:var(--panel2)}}
 .btn.on{background:var(--bronze-soft);border-color:var(--bronze);color:var(--bronze-hi)}
 
 /* ---------- полета ---------- */
 .ui-in{font:inherit;font-size:13.5px;color:var(--text);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;background:var(--field);width:100%;transition:border-color .15s,box-shadow .15s}
-.ui-in::placeholder{color:var(--text3)}
-.ui-in:hover{border-color:#454A51}
+.ui-in::placeholder{color:var(--text3)}@media(hover:hover) and (pointer:fine){.ui-in:hover{border-color:#454A51}}
 .ui-in:focus{outline:none;border-color:var(--bronze);box-shadow:0 0 0 3px rgba(176,141,87,.18)}
 select.ui-in{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2392979E' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer}
 select.ui-in option{background:var(--panel);color:var(--text)}
@@ -119,8 +112,7 @@ table.list{width:100%;border-collapse:collapse}
 table.list th,table.list td{text-align:left;padding:10px 10px;border-bottom:1px solid var(--border-soft);font-size:13.5px}
 table.list th{color:var(--text3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;border-bottom-color:var(--border);padding-top:6px}
 table.list th.money,table.list td.money{text-align:right}
-table.list tbody tr{transition:background .12s}
-table.list tbody tr:hover td{background:rgba(255,255,255,.022)}
+table.list tbody tr{transition:background .12s}@media(hover:hover) and (pointer:fine){table.list tbody tr:hover td{background:rgba(255,255,255,.022)}}
 table.list tr.click{cursor:pointer}
 .money,td.money{text-align:right;font-variant-numeric:tabular-nums}
 .num{font-variant-numeric:tabular-nums}
@@ -154,8 +146,7 @@ td.acts{text-align:right;white-space:nowrap;width:1%}
 #docPaper .pgbr::after{content:"нова страница";position:absolute;right:0;top:-9px;font:10px var(--ui);color:#999;background:#fff;padding:0 4px}
 .fmt{display:inline-flex;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden}
 .fmt button{background:var(--panel2);color:var(--text);border:0;border-right:1px solid var(--border);min-width:30px;height:30px;cursor:pointer;font:13px var(--ui)}
-.fmt button:last-child{border-right:0}
-.fmt button:hover{background:#2E3238}
+.fmt button:last-child{border-right:0}@media(hover:hover) and (pointer:fine){.fmt button:hover{background:#2E3238}}
 .docname{font-weight:600}
 .docname small{display:block;color:var(--text3);font-weight:400;font-size:11.5px}
 .tag.ed{background:var(--bronze-soft);color:var(--bronze-hi);border-color:transparent}
@@ -186,8 +177,7 @@ body.plat-mode #modalWrap{z-index:170}body.plat-mode #toast{z-index:180;left:50%
 .auth-form{display:flex;flex-direction:column;gap:14px}
 .auth-form .btn.primary{justify-content:center;padding:10px;font-size:14px;margin-top:4px}
 .auth-err{color:var(--err);font-size:12.5px;min-height:17px;font-weight:500}
-.auth-link{align-self:center;background:none;border:0;color:var(--text2);font:12.5px var(--ui);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
-.auth-link:hover{color:var(--text)}
+.auth-link{align-self:center;background:none;border:0;color:var(--text2);font:12.5px var(--ui);cursor:pointer;text-decoration:underline;text-underline-offset:3px}@media(hover:hover) and (pointer:fine){.auth-link:hover{color:var(--text)}}
 .auth-link.auth-small{font-size:11.5px;color:var(--text3);margin-top:6px;text-decoration:none;border-top:1px solid var(--border-soft);padding-top:12px;align-self:stretch}
 .auth-note{font-size:12.5px;color:var(--text2);line-height:1.55;margin:0}
 .auth-pin{font:600 28px/1 var(--mono,ui-monospace,monospace);letter-spacing:.35em;text-align:center}
@@ -222,12 +212,10 @@ body.plat-mode #modalWrap{z-index:170}body.plat-mode #toast{z-index:180;left:50%
 .modal .kpi .v{font-size:19px}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .lines-pick{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 14px;font-size:12.5px}
-.lines-pick label{display:flex;gap:6px;align-items:center;padding:3px 4px;border-radius:3px;cursor:pointer}
-.lines-pick label:hover{background:var(--panel2)}
+.lines-pick label{display:flex;gap:6px;align-items:center;padding:3px 4px;border-radius:3px;cursor:pointer}@media(hover:hover) and (pointer:fine){.lines-pick label:hover{background:var(--panel2)}}
 .lnk{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .lnk span{font-size:10.5px;color:var(--text3);border:1px solid var(--border-soft);border-radius:3px;padding:0 5px}
-th.sortable{cursor:pointer;user-select:none}
-th.sortable:hover{color:var(--text)}
+th.sortable{cursor:pointer;user-select:none}@media(hover:hover) and (pointer:fine){th.sortable:hover{color:var(--text)}}
 tr.arch td{opacity:.55}
 /* склад в реда на заявката (само на екрана) */
 .stk{font:600 7.6pt var(--ui);border-radius:1mm;padding:.3mm 1.4mm;white-space:nowrap;background:#e8eef6;color:#2f4377}
@@ -236,8 +224,7 @@ tr.arch td{opacity:.55}
 .ib.stkb{color:#2f4377}
 #btnIssue{border-color:var(--caution);color:var(--caution);background:var(--caution-soft)}
 .btn.ico{padding:5px 6px}
-.btn.ico svg{width:16px;height:16px}
-.btn.ico.del:hover{color:var(--err);background:var(--err-soft)}
+.btn.ico svg{width:16px;height:16px}@media(hover:hover) and (pointer:fine){.btn.ico.del:hover{color:var(--err);background:var(--err-soft)}}
 table.list td.money,table.list td.num{white-space:nowrap}
 
 /* ---------- известия ---------- */
@@ -292,8 +279,7 @@ table.list td.money,table.list td.num{white-space:nowrap}
 .datecell span{color:var(--text3);font-size:12px}
 .filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .seg{display:inline-flex;background:var(--field);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px}
-.seg button{background:transparent;border:0;color:var(--text2);font:500 12.5px var(--ui);padding:6px 12px;border-radius:3px;cursor:pointer;transition:background .15s,color .15s}
-.seg button:hover{color:var(--text)}
+.seg button{background:transparent;border:0;color:var(--text2);font:500 12.5px var(--ui);padding:6px 12px;border-radius:3px;cursor:pointer;transition:background .15s,color .15s}@media(hover:hover) and (pointer:fine){.seg button:hover{color:var(--text)}}
 .seg button.on{background:var(--panel2);color:var(--bronze-hi);box-shadow:inset 0 0 0 1px var(--border)}
 
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
@@ -426,8 +412,7 @@ table.svc .cb input.in{padding-right:6mm;text-align:left}
 .sheet.em table.svc tr.tot td{background:var(--beige)}
 table.svc input.in{height:5.6mm;font-size:9pt;padding:0 1.2mm;text-align:right}
 .act{display:flex;gap:1mm;justify-content:center}
-.ib{border:1px solid #cfc7bb;background:#fff;border-radius:1mm;height:5.4mm;min-width:6mm;padding:0 1.2mm;cursor:pointer;font-size:9pt;color:#4a4036;line-height:1}
-.ib:hover{background:var(--beige2)}
+.ib{border:1px solid #cfc7bb;background:#fff;border-radius:1mm;height:5.4mm;min-width:6mm;padding:0 1.2mm;cursor:pointer;font-size:9pt;color:#4a4036;line-height:1}@media(hover:hover) and (pointer:fine){.ib:hover{background:var(--beige2)}}
 .ib.has{background:#e7ecf7;border-color:#9fb0d6;color:#2f4377}
 .pay{display:flex;gap:6mm;margin-top:4mm;align-items:flex-start}
 .pay .pb{flex:0 0 78mm;background:var(--beige2);border:.6pt solid #d9d0c3;border-radius:1mm;padding:2mm 3mm;display:grid;grid-template-columns:auto 1fr;gap:2mm 3mm;align-items:center}
@@ -553,12 +538,10 @@ table.inv-t .d{color:#4b5a8a;font-style:italic;font-size:9pt}
 .chart .gl{position:absolute;left:0;right:0;border-top:1px solid var(--border-soft)}
 .chart .gl.zero{border-top:1px solid #4A4F56}
 .chart .yl{position:absolute;left:-66px;width:58px;text-align:right;font-size:11px;color:var(--text3);transform:translateY(-50%);font-variant-numeric:tabular-nums}
-.chart .slot{position:absolute;top:0;bottom:0;cursor:default;transition:background .15s}
-.chart .slot:hover{background:rgba(255,255,255,.03)}
+.chart .slot{position:absolute;top:0;bottom:0;cursor:default;transition:background .15s}@media(hover:hover) and (pointer:fine){.chart .slot:hover{background:rgba(255,255,255,.03)}}
 .chart .bar{position:absolute;left:26%;right:26%;background:var(--bronze);animation:barUp .5s var(--ease) both}
 .chart .bar.p{border-radius:2px 2px 0 0;transform-origin:bottom}
-.chart .bar.n{background:var(--err);border-radius:0 0 2px 2px;transform-origin:top}
-.chart .slot:hover .bar.p{background:var(--bronze-hi)}
+.chart .bar.n{background:var(--err);border-radius:0 0 2px 2px;transform-origin:top}@media(hover:hover) and (pointer:fine){.chart .slot:hover .bar.p{background:var(--bronze-hi)}}
 @keyframes barUp{from{transform:scaleY(0)}to{transform:scaleY(1)}}
 .chart .xl{position:absolute;bottom:-22px;left:0;right:0;text-align:center;font-size:11.5px;color:var(--text3)}
 #chartTip{position:fixed;z-index:70;background:#2A2E33;border:1px solid var(--border);border-radius:var(--r);box-shadow:0 10px 26px rgba(0,0,0,.45);padding:9px 12px;font:12.5px/1.6 var(--ui);pointer-events:none;color:var(--text);font-variant-numeric:tabular-nums}
@@ -570,8 +553,7 @@ table.inv-t .d{color:#4b5a8a;font-style:italic;font-size:9pt}
 #menu{position:absolute;z-index:60;background:#24272C;border:1px solid var(--border);border-radius:var(--r);box-shadow:0 14px 34px rgba(0,0,0,.5);min-width:190px;max-width:320px;padding:5px;font:13.5px var(--ui);color:var(--text);animation:popIn .15s var(--ease)}
 @keyframes popIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 #menu .mh{font-size:11px;color:var(--text3);padding:5px 9px 7px;border-bottom:1px solid var(--border-soft);margin-bottom:4px;text-transform:uppercase;letter-spacing:.6px}
-#menu .mi{padding:7px 10px;border-radius:var(--r-sm);cursor:pointer;transition:background .12s}
-#menu .mi:hover,#menu .mi.sel{background:var(--panel2)}
+#menu .mi{padding:7px 10px;border-radius:var(--r-sm);cursor:pointer;transition:background .12s}#menu .mi.sel{background:var(--panel2)}@media(hover:hover) and (pointer:fine){#menu .mi:hover{background:var(--panel2)}}
 #menu .mi.sel::after{content:" ✓";color:var(--bronze)}
 #menu .mf{display:flex;gap:4px;padding:7px 4px 3px;border-top:1px solid var(--border-soft);margin-top:4px}
 #menu .mf input{flex:1;font:inherit;border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 7px;min-width:0;background:var(--field);color:var(--text)}
@@ -593,6 +575,63 @@ table.inv-t .d{color:#4b5a8a;font-style:italic;font-size:9pt}
 }
 #printArea{display:none}
 #preview .sheet{transform-origin:top center}
+
+/* =====================================================================
+   ИЗПИПВАНЕ — по emil-design-eng, apple-design и mobile-native
+   ===================================================================== */
+:root{--ease-out:cubic-bezier(.23,1,.32,1);--ease-in-out:cubic-bezier(.77,0,.175,1);--ease:var(--ease-out)}
+/* телефон: без сив проблясък, без раздуване на шрифта, без pull-to-refresh (рефрешът изисква нов вход) */
+html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+html,body{overscroll-behavior-y:none}
+.modal .mb,#menu,.side.open,.plat-scroll{overscroll-behavior:contain}
+/* натискаемите елементи: без 300ms забавяне, без маркиране на текста при задържане, отклик при натискане */
+button,.btn,[role=button],.ck,.auth-link,nav.tabs button,.seg button,#menu .mi{touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.btn,nav.tabs button,.seg button,.side-burger,#menu .mi,.ib,.cbb{transition-property:background,border-color,color,box-shadow,transform;transition-duration:.15s,.15s,.15s,.15s,.12s;transition-timing-function:ease,ease,ease,ease,var(--ease-out)}
+.btn:active,nav.tabs button:active,.seg button:active,.side-burger:active,#menu .mi:active,.ib:active,.cbb:active{transform:scale(.97)}
+.btn:disabled:active{transform:none}
+/* смяната на раздел е десетки пъти на ден — без анимация */
+main>section:not(.hidden){animation:none}
+/* падащото меню идва от бутона, който го отваря */
+#menu{transform-origin:top center;animation:menuIn .15s var(--ease-out)}
+@keyframes menuIn{from{opacity:0;transform:scale(.97) translateY(-3px)}to{opacity:1;transform:none}}
+.chart .bar{animation-duration:.35s}
+/* числата в таблиците не подскачат */
+table.list td.money,table.list td.num,.kpi b,.chip b{font-variant-numeric:tabular-nums}
+/* известието не се крие под лентата на iPhone */
+#toast{bottom:calc(26px + env(safe-area-inset-bottom,0px))}
+.side{height:100vh;height:100dvh}
+/* на всеки сензорен екран (и телефон хоризонтално, и таблет) — 16px в полетата, иначе iPhone увеличава */
+@media(pointer:coarse){.ui-in,#auth input,.modal input,.modal select,.modal textarea{font-size:16px!important}}
+
+/* ---------- break-ui: дълги имена, големи суми, телефон ---------- */
+/* името на агенцията горе — най-много 2 реда (цялото е в подсказката) */
+#appTitle{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+@media(max-width:760px){
+  /* сумите в плочките на таблото се побират и при 6-цифрени суми */
+  .kpi .v,.kpi.lead .v{font-size:min(26px,5.2vw);white-space:nowrap}
+  /* таблото: имената се пренасят на нов ред, вместо да се режат */
+  #tab-dash table.list{white-space:normal}
+  #tab-dash table.list td.datecell,#tab-dash table.list td.money{white-space:nowrap}
+  /* списъкът със заявки — карти вместо широка таблица */
+  #tab-list table.list{display:block;overflow:visible;white-space:normal}
+  #tab-list table.list thead{display:none}
+  #tab-list table.list tbody{display:block}
+  #listBody tr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;column-gap:10px;row-gap:3px;padding:12px 2px;border-bottom:1px solid var(--border-soft)}
+  #listBody tr td{display:block;border:0;padding:0;min-width:0;width:auto!important}
+  #listBody tr td:nth-child(1){grid-column:1;grid-row:1}
+  #listBody tr td:nth-child(2){grid-column:2;grid-row:1;color:var(--text3);font-size:12.5px;align-self:center}
+  #listBody tr td:nth-child(6){grid-column:3;grid-row:1;font-weight:600}
+  #listBody tr td:nth-child(3){grid-column:1/-1;grid-row:2;font-weight:600;overflow-wrap:anywhere}
+  #listBody tr td:nth-child(4){grid-column:1/-1;grid-row:3;color:var(--text2);overflow-wrap:anywhere}
+  #listBody tr td:nth-child(4):not(:empty)::before{content:"† "}
+  #listBody tr td:nth-child(5){grid-column:1/3;grid-row:4;color:var(--text3);font-size:12.5px}
+  #listBody tr td:nth-child(7){grid-column:3;grid-row:4;font-size:12.5px;color:var(--text2)}
+  #listBody tr td:nth-child(7):not(:empty):not(.paidcell)::before{content:"остатък "}
+  #listBody tr td:nth-child(8){display:none}
+  #listBody tr td.acts{grid-column:1/-1;grid-row:5;display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:6px;margin-top:6px;white-space:nowrap;width:auto!important}
+  #listBody tr td.acts>*{flex:none;margin:0}
+  #listBody tr td[colspan]{grid-column:1/-1}
+}
 </style>
 </head>
 <body>
@@ -1789,7 +1828,7 @@ async function renderList(){
   for(const raw of all){const r=normalizeRequest(structuredClone(raw)),c=calc(r),tr=document.createElement("tr");
     tr.innerHTML=`<td><b>${esc(r.number)}</b>${r.sample?'<span class="pill">ПРИМЕР</span>':""}</td><td>${bgDate(r.reqDate)}</td>
       <td>${esc(r.appName)}</td><td>${esc(r.decName)}</td><td>${esc(r.kind)}</td><td class="money">${eur(c.total)}</td>
-      <td class="money" style="color:${c.rest>0?"var(--caution)":"var(--ok)"}">${r.paid?"✔ Платена":eur(c.rest)}</td>
+      <td class="money${r.paid?" paidcell":""}" style="color:${c.rest>0?"var(--caution)":"var(--ok)"}">${r.paid?"✔ Платена":eur(c.rest)}</td>
       ${(()=>{const w=wsCalc(r);return w.has?`<td class="money listProfit ${w.profit<0?"neg":"pos"}" title="Приход ${eur(w.income)} − разходи ${eur(w.expenses)}">${eur(w.profit)}</td>`
         :`<td class="money muted" title="Няма попълнен работен лист">—</td>`})()}
       <td class="acts"><button class="btn small" data-a="open">Отвори</button>
@@ -3025,7 +3064,7 @@ function migrateCatalog(c){
 function migrateNecro(n){n=n||{};if(!Array.isArray(n.orders))n.orders=[];if(!Array.isArray(n.expenses))n.expenses=[];return n}
 function migrateSettings(s){const S=Object.assign(defaultSettings(),s||{});if(!s||!s.logoMode)S.logoMode=S.logo?"custom":isMulti()?"none":"default";return S}
 function applyTitle(){LISTS.staff=SETTINGS.staff||[];
-  $("#appTitle").textContent=SETTINGS.short?`Агенция „${SETTINGS.short}“`:"Погребална агенция";
+  $("#appTitle").textContent=SETTINGS.short?`Агенция „${SETTINGS.short}“`:"Погребална агенция";$("#appTitle").title=$("#appTitle").textContent;
   const logo=SETTINGS.logoMode==="none"?"":(SETTINGS.logoMode==="custom"&&SETTINGS.logo?SETTINGS.logo:DEFAULT_LOGO),pl=$("#sideLogo");
   pl.querySelector("img").src=logo||"";pl.querySelector("img").classList.toggle("hidden",!logo);pl.classList.toggle("empty",!logo);pl.title=logo?"":"Логото се добавя от Настройки";
   $("#sideBackup").textContent=SETTINGS.lastBackup?"Архив: "+new Date(SETTINGS.lastBackup).toLocaleDateString("bg-BG"):"Още няма архив"}
