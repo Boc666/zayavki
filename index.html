@@ -183,6 +183,7 @@ body.plat-mode #modalWrap{z-index:170}body.plat-mode #toast{z-index:180;left:50%
 .auth-err{color:var(--err);font-size:12.5px;min-height:17px;font-weight:500}
 .auth-link{align-self:center;background:none;border:0;color:var(--text2);font:12.5px var(--ui);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .auth-link:hover{color:var(--text)}
+.auth-link.auth-small{font-size:11.5px;color:var(--text3);margin-top:6px;text-decoration:none;border-top:1px solid var(--border-soft);padding-top:12px;align-self:stretch}
 .auth-note{font-size:12.5px;color:var(--text2);line-height:1.55;margin:0}
 .auth-pin{font:600 28px/1 var(--mono,ui-monospace,monospace);letter-spacing:.35em;text-align:center}
 #srvBar{position:fixed;left:0;right:0;top:0;z-index:300;background:var(--err);color:#fff;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));font-size:13.5px;text-align:center}
@@ -1198,7 +1199,7 @@ async function cloudStart(){
       if(u.platform){platformShow(u);return}
       ME=u;await loadShared();lastAct=Date.now();applyUser();showTab(firstTab());agencyBars();return}catch(e){if(e.net)throw e;startMsg=e.message}
       sbSave(null);DB.db=null}
-    authShow((await rpc("needs_setup"))?"setup":"login",{msg:startMsg});
+    authShow((await rpc("needs_setup"))?"setup":"login",{msg:startMsg,admin:new URLSearchParams(location.search).has("admin")});
   }catch(e){authShow("offline")}
 }
 
@@ -3343,21 +3344,28 @@ function authShow(mode,opt={}){
         USERS=[a];await saveUsers();await loginAs(a,"Създаден администратор");audit("Създаден администратор",n+" ("+u+")")}
       catch(x){er.textContent=x.message}};
   }
-  else if(mode==="login"){$("#authSub").textContent=opt.locked?"Заключено поради бездействие":"Вход в програмата";
+  else if(mode==="login"){
     const lockedAg=opt.locked&&AG?AG.code:null; // при заключване — същата агенция
+    const adm=CLOUD&&!!opt.admin&&!lockedAg;   // вход за администратор на платформата — без код на агенция
+    $("#authSub").textContent=opt.locked?"Заключено поради бездействие":adm?"Вход за администратор на платформата":"Вход в програмата";
+    if(CLOUD&&!opt.locked)$("#authTitle").textContent=adm?"Платформа „Заявки“":"Погребална агенция";
     B.innerHTML=`<form class="auth-form" id="fLogin">
-      ${CLOUD?`<label class="f">Код на агенцията<input class="ui-in" id="liA" autocomplete="organization" autocapitalize="none" spellcheck="false" placeholder="напр. tangra" value="${esc(lockedAg??lastAgency())}" ${lockedAg?"readonly":""}></label>`:""}
+      ${CLOUD&&!adm?`<label class="f">Код на агенцията<input class="ui-in" id="liA" autocomplete="organization" autocapitalize="none" spellcheck="false" placeholder="напр. tangra" value="${esc(lockedAg??lastAgency())}" ${lockedAg?"readonly":""}></label>`:""}
       <label class="f">Потребителско име<input class="ui-in" id="liU" autocomplete="username" value="${esc(opt.user||"")}"></label>
       <label class="f">Парола<input class="ui-in" type="password" id="liP" autocomplete="current-password"></label>
       <div class="auth-err"></div><button class="btn primary" type="submit">Вход</button>
-      <button type="button" class="auth-link" id="liRec">Забравена парола на администратор</button></form>`;
+      <button type="button" class="auth-link" id="liRec">${adm?"Забравена парола":"Забравена парола на администратор"}</button>
+      ${CLOUD&&!opt.locked?`<button type="button" class="auth-link auth-small" id="liAdm">${adm?"← Вход за агенция":"Вход за администратор"}</button>`:""}</form>`;
     if(opt.msg)$("#fLogin .auth-err").textContent=opt.msg;
-    setTimeout(()=>(opt.user?$("#liP"):CLOUD&&!$("#liA").value?$("#liA"):$("#liU")).focus(),50);
-    $("#liRec").onclick=()=>authShow("recover");
+    setTimeout(()=>(opt.user?$("#liP"):CLOUD&&!adm&&!$("#liA").value?$("#liA"):$("#liU")).focus(),50);
+    $("#liRec").onclick=()=>authShow("recover",{admin:adm});
+    if($("#liAdm"))$("#liAdm").onclick=()=>authShow("login",{admin:!adm});
     $("#fLogin").onsubmit=async e=>{e.preventDefault();const er=$("#fLogin .auth-err");er.textContent="";
       if(Date.now()<LOCK_UNTIL){er.textContent=`Твърде много грешни опити. Опитайте след ${Math.ceil((LOCK_UNTIL-Date.now())/1000)} сек.`;return}
       const u=normUser($("#liU").value),p=$("#liP").value;let x=null;
-      try{if(CLOUD){x=await cloudLogin($("#liA").value,u,p);if(x&&x.platform){if(opt.locked&&ME)location.reload();else platformShow(x);return}}else{x=USERS.find(z=>z.username===u&&z.active);if(x&&(await pwHash(p,x.salt))!==x.hash)x=null}}
+      const code=adm?"":($("#liA")?$("#liA").value:"");
+      if(CLOUD&&!adm&&!normUser(code)){er.textContent="Въведете кода на агенцията.";$("#liA").focus();return}
+      try{if(CLOUD){x=await cloudLogin(code,u,p);if(x&&x.platform){if(opt.locked&&ME)location.reload();else platformShow(x);return}}else{x=USERS.find(z=>z.username===u&&z.active);if(x&&(await pwHash(p,x.salt))!==x.hash)x=null}}
       catch(err){er.textContent=err.message;return}
       if(!x){FAILS++;if(FAILS>=5){LOCK_UNTIL=Date.now()+30e3;FAILS=0}audit("Неуспешен вход","потребител: "+u);er.textContent="Грешно потребителско име или парола.";$("#liP").value="";return}
       FAILS=0;
@@ -3369,18 +3377,18 @@ function authShow(mode,opt={}){
   else if(mode==="recover"){$("#authSub").textContent="Възстановяване на достъпа";
     B.innerHTML=`<form class="auth-form" id="fRec" autocomplete="off">
       <p class="auth-note">Въведете кода за възстановяване, който сте задали при създаването на администратора, и нова парола.</p>
-      ${CLOUD?`<label class="f">Код на агенцията<input class="ui-in" id="rcA" autocapitalize="none" spellcheck="false" value="${esc(lastAgency())}"></label>`:""}
+      ${CLOUD&&!opt.admin?`<label class="f">Код на агенцията<input class="ui-in" id="rcA" autocapitalize="none" spellcheck="false" value="${esc(lastAgency())}"></label>`:""}
       <label class="f">Потребителско име на администратор<input class="ui-in" id="rcU"></label>
       <label class="f">Код за възстановяване<input class="ui-in" type="password" id="rcC" autocomplete="off"></label>
       <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px"><label class="f">Нова парола<input class="ui-in" type="password" id="rcP" autocomplete="new-password"></label>
         <label class="f">Повтори<input class="ui-in" type="password" id="rcP2" autocomplete="new-password"></label></div>
       <div class="auth-err"></div><button class="btn primary" type="submit">Смени паролата и влез</button>
       <button type="button" class="auth-link" id="rcBack">← Назад към входа</button></form>`;
-    $("#rcBack").onclick=()=>authShow("login");
+    $("#rcBack").onclick=()=>authShow("login",{admin:opt.admin});
     $("#fRec").onsubmit=async e=>{e.preventDefault();const er=$("#fRec .auth-err");er.textContent="";
       try{if(Date.now()<LOCK_UNTIL)throw new Error("Твърде много грешни опити. Изчакайте малко.");
         if(CLOUD){if($("#rcP").value!==$("#rcP2").value)throw new Error("Паролите не съвпадат.");
-          const un=normUser($("#rcU").value),ac=normUser($("#rcA").value);
+          const un=normUser($("#rcU").value),ac=$("#rcA")?normUser($("#rcA").value):"";
           await rpc("recover_admin",{p_agency:ac,p_username:un,p_code:$("#rcC").value.trim(),p_password:$("#rcP").value});
           const a=await cloudLogin(ac,un,$("#rcP").value);if(!a)throw new Error("Паролата е сменена. Влезте с новата парола.");
           if(a.platform){platformShow(a);return}
