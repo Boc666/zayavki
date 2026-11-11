@@ -1657,13 +1657,25 @@ async function cloudStart(){
 
 /* Друг телефон/компютър може да е променил каталога, склада, настройките или потребителите —
    при смяна на раздел и при връщане в програмата ги четем отново. */
-async function srvRefresh(){if(!(SRV||CLOUD)||!DB.db||!ME)return;
-  try{if(CLOUD&&AG&&!AG.owner){const c=await rpc("my_context"); // срокът може да изтече, докато програмата е отворена
-      if(c&&c.kind==="agency"&&(c.expired||!c.agency_active||!c.active)){sbSave(null);DB.db=null;ME=null;authShow("login",{msg:c.active?noAccessMsg(c.support_phone):"Този потребител е спрян. Обърнете се към администратора."});return}}
-    SETTINGS=migrateSettings(await getMeta("settings",null));CATALOG=migrateCatalog(await getMeta("catalog",null));TEMPLATE=migrateTemplate(await getMeta("template",null));applyTemplate();
-    NECRO=migrateNecro(await getMeta("necro",null));if(!INV_BUSY)INVD=migrateInvd(await getMeta("inventory",null));
-    const us=CLOUD?await sbProfiles():await getMeta("users",[]);if(us.length){USERS=us;if(ME){const m=us.find(x=>x.id===ME.id);if(m&&m.active)ME=m}}}catch(e){}}
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")srvRefresh()});
+// p_force — при връщане в програмата; иначе (смяна на раздел) най-много веднъж на 30 сек. и във фона
+let SRV_LAST=0,SRV_P=null;
+async function srvRefresh(force){if(!(SRV||CLOUD)||!DB.db||!ME)return;
+  if(SRV_P)return SRV_P;if(!force&&Date.now()-SRV_LAST<30e3)return;
+  SRV_P=(async()=>{try{
+    // всичко наведнъж (успоредно), а не едно след друго
+    const [c,metaRows,us]=await Promise.all([
+      CLOUD&&AG&&!AG.owner?rpc("my_context"):null, // срокът може да изтече, докато програмата е отворена
+      CLOUD?sb("/rest/v1/records?select=key,value&store=eq.meta&key=in.(settings,catalog,template,necro,inventory)"):null,
+      CLOUD?sbProfiles():getMeta("users",[])]);
+    if(c&&c.kind==="agency"&&(c.expired||!c.agency_active||!c.active)){sbSave(null);DB.db=null;ME=null;authShow("login",{msg:c.active?noAccessMsg(c.support_phone):"Този потребител е спрян. Обърнете се към администратора."});return}
+    const M={};if(metaRows)for(const r of metaRows)M[r.key]=r.value?r.value.value:undefined;
+    const gm=async k=>CLOUD?(M[k]??null):getMeta(k,null);
+    SETTINGS=migrateSettings(await gm("settings"));CATALOG=migrateCatalog(await gm("catalog"));TEMPLATE=migrateTemplate(await gm("template"));applyTemplate();
+    NECRO=migrateNecro(await gm("necro"));if(!INV_BUSY)INVD=migrateInvd(await gm("inventory"));
+    if(us&&us.length){USERS=us;if(ME){const m=us.find(x=>x.id===ME.id);if(m&&m.active)ME=m}}
+    SRV_LAST=Date.now()}catch(e){}finally{SRV_P=null}})();
+  return SRV_P}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){srvRefresh(true);if(DB.memRefresh&&ME)DB.memRefresh()}});
 const getMeta=async(k,d)=>{const r=await DB.get("meta",k);return r?r.value:d};
 const setMeta=(k,v)=>DB.put("meta",{key:k,value:v});
 
@@ -2305,7 +2317,7 @@ $$("nav.tabs button").forEach(b=>b.onclick=async()=>{
   if(DOC_EDIT)docEditMode(false);
   if(b.dataset.tab!=="edit"&&DIRTY){if(!confirm("Имате незапазени промени. Да продължа ли БЕЗ запис?"))return;
     const s=CURRENT&&await DB.get("requests",CURRENT.id);CURRENT=s?normalizeRequest(s):null;setDirty(false)}
-  await srvRefresh();showTab(b.dataset.tab)});
+  showTab(b.dataset.tab);srvRefresh()}); // разделът — веднага; настройките и достъпът се проверяват във фона
 function openRequest(r,isNew=false){
   if(!isNew)rememberBase(r);
   CURRENT=normalizeRequest(r);
@@ -2727,6 +2739,38 @@ if(CLOUD){
       catch(e){if(e.net||!/save_record|PGRST202|schema cache/i.test(e.message))throw e;HAS_SAVE_RPC=false}}
     await DB.put(s,o);return{ok:true}};
 }else DB.putChecked=async(s,o)=>{await DB.put(s,o);return{ok:true}};
+/* Памет за списъците (облак). Всеки раздел досега теглеше наново всички заявки от базата — 150–300 мс при всяко щракване.
+   Сега: показва се веднага от паметта; ако е по-стара от няколко секунди, базата се проверява във фона и при промяна
+   (от друг служител) текущият раздел се изрисува наново. Собствените записи обновяват паметта веднага.
+   Отварянето на заявка и записът (проверката за чужди промени) винаги четат от базата. */
+if(CLOUD){
+  const MEM={},STORES=new Set(["requests","events","clients","partners","docs"]),FRESH_MS=6000;
+  const base={all:DB.all,put:DB.put,del:DB.del,atomic:DB.putAtomic,checked:DB.putChecked};
+  const sig=d=>{try{return JSON.stringify(d)}catch(e){return Math.random()}};
+  const load=s=>{const c=MEM[s]||(MEM[s]={});if(c.p)return c.p;
+    c.p=base.all(s).then(d=>{const old=c.sig;c.data=d;c.at=Date.now();c.sig=sig(d);c.p=null;if(old!==undefined&&old!==c.sig)memChanged(s);return d})
+      .catch(e=>{c.p=null;throw e});return c.p};
+  const copy=d=>structuredClone(d);
+  DB.all=async s=>{if(!STORES.has(s))return base.all(s);const c=MEM[s];
+    if(c&&c.data){if(Date.now()-c.at>FRESH_MS)load(s).catch(()=>{});return copy(c.data)}
+    return copy(await load(s))};
+  const touch=(s,v,delKey)=>{const c=MEM[s];if(!c||!c.data)return;const kp=KEYPATH[s],k=delKey!==undefined?delKey:v&&v[kp],i=c.data.findIndex(x=>x&&x[kp]===k);
+    if(delKey!==undefined){if(i>=0)c.data.splice(i,1)}else{const val=s==="docs"?{...v,file:null}:structuredClone(v);if(i>=0)c.data[i]=val;else c.data.push(val)}
+    c.sig=sig(c.data)};
+  DB.put=async(s,o)=>{await base.put(s,o);if(STORES.has(s))touch(s,o)};
+  DB.del=async(s,k)=>{await base.del(s,k);if(STORES.has(s))touch(s,null,k)};
+  DB.putAtomic=async ops=>{await base.atomic(ops);for(const o of ops)if(STORES.has(o.store))touch(o.store,o.value)};
+  DB.putChecked=async(s,o,exp)=>{const r=await base.checked(s,o,exp);if(r&&r.ok&&STORES.has(s))touch(s,o);return r};
+  DB.memRefresh=s=>{for(const k of s?[s]:Object.keys(MEM))if(MEM[k]&&MEM[k].data)load(k).catch(()=>{})};
+  DB.memClear=()=>{for(const k in MEM)delete MEM[k]};
+}
+// друг служител е променил данни → изрисува се наново само видимият раздел (без да затваря прозорци и без да мести страницата)
+const MEM_TABS={requests:["list","cal","dash","fin","wsl","clients","days40","stats"],events:["cal","days40"],clients:["clients"],partners:["partners"],docs:["files"]};
+let MEM_T=0;
+function memChanged(s){clearTimeout(MEM_T);MEM_T=setTimeout(()=>{if(!ME||$("#modalWrap"))return;
+  const vis=[...document.querySelectorAll("main > section[id^=tab-]:not(.hidden)")].map(x=>x.id.slice(4))[0];if(!vis||!(MEM_TABS[s]||[]).includes(vis))return;
+  const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)&&a.closest("#tab-"+vis)&&a.type!=="search"&&a.id!=="search")return; // не пречим, докато се пише
+  ({list:renderList,cal:renderCal,dash:renderDash,fin:renderFin,wsl:renderWsl,clients:renderClients,days40:renderPomeni,stats:renderStats,partners:renderPartners,files:renderDocs})[vis]?.()},250)}
 // служителите увеличават само номерацията — четем свежите настройки и сменяме само нея
 async function bumpCounter(k,val){try{const st=await getMeta("settings",null);if(!st){SETTINGS[k]=val;return}
   if((st[k]||0)>=val){SETTINGS[k]=st[k];return}st[k]=val;await setMeta("settings",st);SETTINGS[k]=val}catch(e){console.warn("номерация:",e.message)}}
@@ -4814,7 +4858,7 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="2026-11-12.5"; // сменя се при всяко публикуване
+const APP_VERSION="2026-11-12.6"; // сменя се при всяко публикуване
 /* ---------- инсталиране като приложение (иконка на телефона / компютъра) ---------- */
 let PWA_EV=null;
 const PWA_STANDALONE=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
@@ -5002,19 +5046,24 @@ $("#lgUser").onchange=$("#lgFrom").onchange=$("#lgTo").onchange=renderLog;$("#lg
 /* ---------------- старт ---------------- */
 let SHARED=false;
 async function loadShared(){ // настройки, каталог, некролози, склад (+ примерни заявки при първо пускане)
-  SETTINGS=migrateSettings(await getMeta("settings",null));
-  CATALOG=migrateCatalog(await getMeta("catalog",null));
-  TEMPLATE=migrateTemplate(await getMeta("template",null));applyTemplate();
-  NECRO=migrateNecro(await getMeta("necro",null));
-  INVD=migrateInvd(await getMeta("inventory",null));
-  await loadPartners();
+  // в облака — всички настройки наведнъж (една заявка вместо десет); партньорите и клиентите — успоредно
+  const M={};let bulk=false;
+  if(CLOUD)try{for(const r of await sb("/rest/v1/records?select=key,value&store=eq.meta&key=neq.auth"))M[r.key]=r.value?r.value.value:undefined;bulk=true}catch(e){if(e.net)throw e}
+  const gm=async(k,d)=>bulk?(M[k]===undefined?d:M[k]):getMeta(k,d);
+  const side=Promise.all([loadPartners(),loadClients(),CLOUD?DB.all("requests").catch(()=>{}):null,CLOUD?DB.all("events").catch(()=>{}):null]); // заявките — предварително, за първия раздел
+  const raw={settings:await gm("settings",null),catalog:await gm("catalog",null)};
+  SETTINGS=migrateSettings(raw.settings);
+  CATALOG=migrateCatalog(raw.catalog);
+  TEMPLATE=migrateTemplate(await gm("template",null));applyTemplate();
+  NECRO=migrateNecro(await gm("necro",null));
+  INVD=migrateInvd(await gm("inventory",null));
   // записваме само ако липсват (първо пускане) — не при всеки вход; базата проверява правата
-  if(!(await getMeta("settings",null)))await setMeta("settings",SETTINGS).catch(()=>{});
-  if(!(await getMeta("catalog",null)))await setMeta("catalog",CATALOG).catch(()=>{});
-  if(!(await getMeta("initialized",false)))await setMeta("initialized",true).catch(()=>{}); // примерни заявки — само по избор
-  ONBOARDED=!!(await getMeta("onboarded",false))||!!(SETTINGS.addr&&SETTINGS.gsm);
-  await loadClients();
-  SHARED=true;applyTitle();
+  if(!raw.settings)await setMeta("settings",SETTINGS).catch(()=>{});
+  if(!raw.catalog)await setMeta("catalog",CATALOG).catch(()=>{});
+  if(!(await gm("initialized",false)))await setMeta("initialized",true).catch(()=>{}); // примерни заявки — само по избор
+  ONBOARDED=!!(await gm("onboarded",false))||!!(SETTINGS.addr&&SETTINGS.gsm);
+  await side;
+  SHARED=true;applyTitle();SRV_LAST=Date.now(); // току-що заредено — следващата проверка след 30 сек.
 }
 $("#btnOnboard").onclick=()=>openOnboarding(0);
 $$("[data-sub]").forEach(b=>b.onclick=()=>showTab(b.dataset.sub));
