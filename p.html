@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Оферта и отзив</title>
+<style>
+/* Страница за клиента: оферта (потвърждение) или кратък отзив. Без вход, само по линк. */
+:root{--bg:#f4f2ee;--paper:#ffffff;--ink:#23201b;--muted:#6b645a;--line:#e3ddd2;--acc:#7a5a2b;--acc-ink:#ffffff;--ok:#2f6b2a;--ok-bg:#e8f2e3;--err:#9a3412;--err-bg:#fdeee4;--star:#c08a2e;
+  --ui:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--doc:Georgia,"Times New Roman",serif}
+@media (prefers-color-scheme:dark){:root{--bg:#151412;--paper:#1f1d1a;--ink:#ece7de;--muted:#a59d90;--line:#36322c;--acc:#d2b07a;--acc-ink:#1a1712;--ok:#9fd38f;--ok-bg:#1f2e1b;--err:#f3b48d;--err-bg:#3a2316;--star:#e0b25c;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--ui);padding:max(20px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+.wrap{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px}
+.ag{font:600 13px/1.4 var(--ui);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+h1{font:700 24px/1.25 var(--doc);margin:4px 0 0;text-wrap:balance}
+.meta{color:var(--muted);font-size:14px;margin-top:6px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px}
+td,th{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font:600 12px var(--ui);color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.m{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.d{color:var(--muted);font-size:13px}
+.tot td{border-bottom:0;font-weight:700;font-size:18px;padding-top:12px}
+.terms{font-size:13px;color:var(--muted)}
+label{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted)}
+input,textarea{font:16px var(--ui);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px 12px;width:100%}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+button{font:600 16px var(--ui);border-radius:10px;padding:12px 18px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer}
+button.pri{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
+button:disabled{opacity:.6}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.stars{display:flex;gap:6px}
+.stars button{font-size:30px;line-height:1;padding:6px 8px;background:none;border:0;color:var(--line)}
+.stars button.on{color:var(--star)}
+.ok{background:var(--ok-bg);color:var(--ok);border-radius:10px;padding:14px 16px}
+.err{background:var(--err-bg);color:var(--err);border-radius:10px;padding:14px 16px}
+.form{display:flex;flex-direction:column;gap:12px}
+.foot{font-size:12px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="card">Зареждане…</div></div>
+<script>
+// базата: същата като в програмата (публичен ключ); при локални тестове — тестовата база
+const SB={url:"https://tdgsyvqfpebexycjnwal.supabase.co",key:"sb_publishable_pEzUKVrv1P-ysyaBBC5KZA_LoDmnEkU"};
+if(location.protocol==="http:")try{const t=JSON.parse(localStorage.getItem("zayavki-sb-test")||"null");if(t){SB.url=t.url;SB.key=t.key}}catch(e){}
+const TOKEN=new URLSearchParams(location.search).get("t")||"";
+const $=s=>document.querySelector(s),app=$("#app");
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=n=>Number(n||0).toLocaleString("bg-BG",{minimumFractionDigits:2,maximumFractionDigits:2});
+const bgDate=d=>{if(!d)return"";const [y,m,x]=String(d).slice(0,10).split("-");return `${x}.${m}.${y}`};
+async function rpc(fn,args){const r=await fetch(SB.url+"/rest/v1/rpc/"+fn,{method:"POST",headers:{apikey:SB.key,Authorization:"Bearer "+SB.key,"Content-Type":"application/json"},body:JSON.stringify(args)});
+  const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
+  if(!r.ok)throw new Error((j&&(j.message||j.hint))||"Няма връзка. Опитайте отново.");return j}
+const msg=(cls,html)=>`<div class="card"><div class="${cls}">${html}</div></div>`;
+function head(L,title,meta){const a=(L.data&&L.data.agency)||{};return `<div class="card"><div class="ag">${esc(a.name||L.agency||"")}</div><h1>${esc(title)}</h1>${meta?`<div class="meta">${meta}</div>`:""}</div>`}
+function contact(L){const a=(L.data&&L.data.agency)||{};return a.gsm?`<p class="foot">Въпроси: тел. <a href="tel:${esc(a.gsm.replace(/[^\d+]/g,""))}">${esc(a.gsm)}</a></p>`:""}
+
+function offer(L){const d=L.data||{},rows=d.rows||[];
+  document.title="Оферта — "+((d.agency&&d.agency.short)||L.agency||"");
+  let h=head(L,"Оферта",[d.decName?"относно "+esc(d.kind||"погребение / кремация")+" на "+esc(d.decName):"",d.when?esc(d.when):"",d.date?"от "+bgDate(d.date):""].filter(Boolean).join(" · "));
+  h+=`<div class="card"><div class="tw"><table><thead><tr><th>Услуга / продукт</th><th class="m">К-во</th><th class="m">Сума</th></tr></thead><tbody>${
+    rows.map(x=>`<tr><td>${esc(x.name)}${x.desc?`<div class="d">${esc(x.desc)}</div>`:""}</td><td class="m">${esc(x.q??"")} ${esc(x.unit||"")}</td><td class="m">${fmt(x.amt)} €</td></tr>`).join("")||`<tr><td colspan="3" class="d">Няма избрани услуги.</td></tr>`}
+    ${d.discount>0?`<tr><td colspan="2">Отстъпка ${esc(d.pct)} %</td><td class="m">− ${fmt(d.discount)} €</td></tr>`:""}
+    <tr class="tot"><td colspan="2">Общо</td><td class="m">${fmt(d.total)} €</td></tr></tbody></table></div>
+    <p class="terms">Офертата е валидна ${esc(d.days||7)} дни. Цените са в евро. Офертата е информативна и не е документ за плащане.</p></div>`;
+  if(L.response){h+=msg("ok",L.response.answer==="accept"?`Офертата е потвърдена${L.responded_at?" на "+bgDate(L.responded_at):""}. Благодарим!`:"Въпросът Ви е изпратен. Агенцията ще се свърже с Вас.")}
+  else h+=`<div class="card form" id="f"><label>Вашето име<input id="nm" autocomplete="name" value="${esc(d.appName||"")}"></label>
+    <label>Бележка или въпрос (по желание)<textarea id="nt" rows="3"></textarea></label>
+    <div class="btns"><button class="pri" id="yes" type="button">Потвърждавам офертата</button><button id="q" type="button">Имам въпрос</button></div><div id="e"></div></div>`;
+  app.innerHTML=h+contact(L);
+  if(!L.response){const send=async ans=>{const b=[$("#yes"),$("#q")];b.forEach(x=>x.disabled=true);
+      try{await rpc("public_link_respond",{p_token:TOKEN,p:{answer:ans,name:$("#nm").value,note:$("#nt").value}});L.response={answer:ans};L.responded_at=new Date().toISOString();offer(L)}
+      catch(e){$("#e").innerHTML=`<div class="err">${esc(e.message)}</div>`;b.forEach(x=>x.disabled=false)}};
+    $("#yes").onclick=()=>send("accept");$("#q").onclick=()=>{if(!$("#nt").value.trim()){$("#nt").focus();$("#e").innerHTML=`<div class="err">Напишете въпроса си в полето „Бележка или въпрос“.</div>`;return}send("question")}}}
+
+function review(L){const d=L.data||{};let rating=0;
+  document.title="Отзив — "+((d.agency&&d.agency.short)||L.agency||"");
+  let h=head(L,"Как се справихме?",d.decName?"Благодарим, че ни се доверихте за изпращането на "+esc(d.decName)+".":"Благодарим, че ни се доверихте.");
+  if(L.response){h+=msg("ok","Благодарим за оценката! Тя е получена.")}
+  else h+=`<div class="card form"><div><div style="font-size:14px;color:var(--muted);margin-bottom:4px">Оценка</div><div class="stars" id="st">${[1,2,3,4,5].map(i=>`<button type="button" data-v="${i}" aria-label="${i} от 5">★</button>`).join("")}</div></div>
+    <label>Какво бихте искали да кажете? (по желание)<textarea id="nt" rows="4"></textarea></label>
+    <label>Име (по желание)<input id="nm" autocomplete="name"></label>
+    <div class="btns"><button class="pri" id="snd" type="button">Изпрати</button></div><div id="e"></div></div>`;
+  app.innerHTML=h+contact(L);
+  if(!L.response){document.querySelectorAll("#st button").forEach(b=>b.onclick=()=>{rating=+b.dataset.v;document.querySelectorAll("#st button").forEach(x=>x.classList.toggle("on",+x.dataset.v<=rating))});
+    $("#snd").onclick=async()=>{if(!rating){$("#e").innerHTML=`<div class="err">Изберете оценка от 1 до 5 звезди.</div>`;return}$("#snd").disabled=true;
+      try{await rpc("public_link_respond",{p_token:TOKEN,p:{rating,note:$("#nt").value,name:$("#nm").value}});L.response={rating};review(L)}
+      catch(e){$("#e").innerHTML=`<div class="err">${esc(e.message)}</div>`;$("#snd").disabled=false}}}}
+
+(async()=>{
+  if(!TOKEN){app.innerHTML=msg("err","Линкът е непълен. Отворете го отново от съобщението.");return}
+  try{const L=await rpc("public_link_get",{p_token:TOKEN});
+    if(!L||L.error==="missing"){app.innerHTML=msg("err","Линкът не е намерен. Проверете дали е копиран изцяло.");return}
+    if(L.error==="expired"){app.innerHTML=msg("err","Линкът е изтекъл. Свържете се с агенцията за нов.");return}
+    (L.kind==="offer"?offer:review)(L)}
+  catch(e){app.innerHTML=msg("err",esc(e.message))}
+})();
+</script>
+</body>
+</html>

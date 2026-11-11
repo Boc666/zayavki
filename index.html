@@ -287,6 +287,27 @@ table.list td.money,table.list td.num{white-space:nowrap}
 @media(max-width:900px){body{grid-template-columns:1fr}aside.side{position:static;height:auto}nav.tabs{flex-direction:row;flex-wrap:wrap}nav.tabs .nsec{display:none}main{padding:18px}.toolbar{margin:-18px -18px 14px;padding:12px 18px}}
 /* ---- телефон: менюто става горна лента с бутон ☰; бланките A4 се местят настрани с пръст ---- */
 .side-burger{display:none}
+.te{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media(max-width:1000px){.te{grid-template-columns:minmax(0,1fr)}.te-prev{display:none}}
+.te-list{display:flex;flex-direction:column;gap:8px;max-height:62vh;overflow-y:auto;padding-right:4px}
+.te-b{border:1px solid var(--border-soft);border-radius:var(--r-sm);padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.te-b.sec{background:var(--panel2)}
+.te-h{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--text2)}.te-h .spacer{flex:1}
+.te-h button,.te-f button{background:none;border:1px solid var(--border-soft);border-radius:6px;color:var(--text2);font:12px var(--ui);padding:2px 7px;cursor:pointer}
+.te-f{display:grid;grid-template-columns:minmax(0,1.4fr) 92px 108px auto;gap:6px;align-items:center}
+.te-f input,.te-f select,.te-b>input{font:13px var(--ui);padding:5px 7px;border:1px solid var(--border-soft);border-radius:6px;background:var(--field,transparent);color:var(--text);width:100%;min-width:0}
+.te-f .opts{grid-column:1/-1}
+.te-prev{position:sticky;top:0;max-height:66vh;overflow:auto;border:1px solid var(--border-soft);border-radius:var(--r-sm);background:#fff}
+.te-prev .sheet{zoom:.55;margin:0 auto;box-shadow:none}
+.pl-badge{display:inline-block;min-width:18px;margin-left:6px;padding:0 5px;border-radius:9px;background:var(--bronze);color:var(--bg);font:600 11px/18px var(--ui);text-align:center}
+.pl-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.pl-kpi{border:1px solid var(--border-soft);border-radius:var(--r-sm);padding:10px 12px}.pl-kpi b{display:block;font:600 22px/1.2 var(--ui);font-variant-numeric:tabular-nums}.pl-kpi small{color:var(--text2)}
+.pl-bars{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;align-items:end;height:150px;margin:6px 0 4px}
+.pl-bars div{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:3px;font:11px var(--ui);color:var(--text3)}
+.pl-bars i{display:block;width:100%;max-width:34px;background:var(--bronze);border-radius:3px 3px 0 0;min-height:2px}
+.pl-bars em{font-style:normal;color:var(--text2);font-variant-numeric:tabular-nums}
+.side-install{margin-top:8px;background:none;border:1px solid var(--border-soft);border-radius:var(--r-sm);color:var(--text2);font:12px var(--ui);padding:5px 9px;cursor:pointer}
+@media(hover:hover) and (pointer:fine){.side-install:hover{color:var(--text);border-color:var(--border)}}
 .gs-btn{display:flex;align-items:center;gap:9px;margin:10px 10px 0;padding:8px 10px;border:1px solid var(--border-soft);border-radius:var(--r-sm);background:transparent;color:var(--text2);font:13px var(--ui);cursor:pointer;text-align:left}
 .gs-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;flex:none}.gs-btn span{flex:1}
 .gs-btn kbd{font:11px var(--ui);color:var(--text3);border:1px solid var(--border-soft);border-radius:5px;padding:1px 5px}
@@ -579,7 +600,7 @@ table.inv-t .d{color:#4b5a8a;font-style:italic;font-size:9pt}
   html,body{background:#fff;margin:0}
   html,body{display:block}
   html{color-scheme:light;background:#fff} /* полетата на страницата да са бели (тъмната тема не се печата) */
-  aside.side,#app,#toast,#menu,#boot,#chartTip{display:none!important}
+  aside.side,#app,#toast,#menu,#boot,#chartTip,#auth,#modalWrap,#modalWrapOut{display:none!important}
   #printArea{display:block!important}
   .sheet{box-shadow:none;margin:0;break-after:page;page-break-after:always}
   .sheet:last-child{break-after:auto;page-break-after:auto}
@@ -976,7 +997,7 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
     <button class="btn ghost small ico" id="suPw" title="Смени паролата си"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg></button>
     <button class="btn ghost small ico" id="suOut" title="Изход"><svg viewBox="0 0 24 24"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 16l-4-4 4-4M6 12h11"/></svg></button>
   </div>
-  <div class="side-foot"><span id="sideWhere">Данните са само на този компютър</span><br><b id="sideBackup">—</b><br><span class="appver" id="appVer"></span></div>
+  <div class="side-foot"><span id="sideWhere">Данните са само на този компютър</span><br><b id="sideBackup">—</b><br><span class="appver" id="appVer"></span><br><button class="side-install hidden" id="pwaBtn" type="button">Инсталирай като приложение</button></div>
 </aside>
 
 <div id="app">
@@ -1064,7 +1085,8 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
   <div class="ph"><div><h2>Календар на ритуалите</h2><p id="calSum"></p></div><span class="spacer"></span>
     <div class="filters"><button class="btn small" id="calPrev" title="Предишен месец">←</button><input type="month" id="calMonth" class="ui-in" style="width:170px"><button class="btn small" id="calNext" title="Следващ месец">→</button><button class="btn small ghost" id="calToday">Днес</button><button class="btn small primary" id="calAdd">+ Събитие</button>
       <select id="calOwner" class="ui-in" style="width:auto"></select>
-      <select id="calSt" class="ui-in" style="width:auto"><option value="">Всички статуси</option><option value="new">Нова заявка</option><option value="prep">Подготовка</option><option value="confirmed">Потвърден ритуал</option><option value="done">Приключена</option></select></div></div>
+      <select id="calSt" class="ui-in" style="width:auto"><option value="">Всички статуси</option><option value="new">Нова заявка</option><option value="prep">Подготовка</option><option value="confirmed">Потвърден ритуал</option><option value="done">Приключена</option></select>
+      <button class="btn small" id="calFeed" type="button" title="Ритуалите и събитията в календара на телефона (Google, Apple, Outlook)">В телефона</button></div></div>
   <div class="card cal" id="calGrid"></div>
 </section>
 <section id="tab-files" class="hidden">
@@ -1173,6 +1195,7 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
     <button class="btn ghost" id="btnWs">Работен лист</button>
     <button class="btn ghost" id="btnInv">Фактура</button>
     <button class="btn ghost" id="btnOffer" title="Ценово предложение за клиента — не е документ за плащане">Оферта</button>
+    <button class="btn ghost" id="btnLink" title="Оферта по линк или молба за отзив — клиентът отваря линка на телефона си">Линк към клиента</button>
     <span class="tsep"></span>
     <button class="btn" id="btnPaid">Плащания</button>
     <button class="btn" id="btnPreview">Преглед</button>
@@ -1372,6 +1395,11 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
   <div class="card" id="phonesCard">
     <h2>📱 Телефони</h2>
     <div id="phonesBody"></div>
+  </div>
+  <div class="card" id="tplCard">
+    <h2>Шаблон на заявката</h2>
+    <p class="muted" style="margin:0 0 10px">Полетата и разделите на първата страница на заявката. Промените важат за всички нови и стари заявки на агенцията; вече въведените данни не се губят, дори да махнете поле.</p>
+    <div class="row"><button class="btn" id="tplOpen" type="button">Промени шаблона</button><span class="muted" id="tplInfo"></span></div>
   </div>
   <div class="card" id="retCard">
     <h2>Пазене на лични данни</h2>
@@ -2600,6 +2628,22 @@ async function renderCal(){
   $$("#calGrid .cal-e[data-ev]").forEach(b=>b.onclick=async()=>{const e=(await loadEvents()).find(x=>x.id===b.dataset.ev);if(e)openEvent(e)});
   $$("#calGrid .cal-add").forEach(b=>b.onclick=ev=>{ev.stopPropagation();openEvent(null,b.dataset.day)});
 }
+// линк за календара на телефона (функцията „ical“ в базата)
+async function openCalFeed(fresh,onlyMine){
+  let T;try{T=await rpc("my_calendar_token",{p_new:!!fresh,p_only_mine:onlyMine??null})}catch(e){toast(/Could not find the function|PGRST202/.test(e.message)?"Тази функция още не е включена в базата.":e.message,true);return}
+  const https=SB.url+"/functions/v1/ical?t="+encodeURIComponent(T.token),webcal=https.replace(/^https:/,"webcal:");
+  const m=openModal({title:"Календарът в телефона",wide:true,body:`
+    <p style="margin:0 0 10px">Ритуалите и събитията от програмата се появяват в календара на телефона ви и се обновяват сами (на около час). Промените се правят тук, в програмата.</p>
+    <label class="ck" style="margin:0 0 10px"><input type="checkbox" id="cfMine" ${T.only_mine?"checked":""}> само тези, на които съм отговорник</label>
+    <div class="row" style="gap:8px;flex-wrap:wrap"><a class="btn primary" href="${esc(webcal)}">Добави в календара (iPhone / Mac)</a><button class="btn" id="cfCopy" type="button">Копирай линка</button></div>
+    <code style="display:block;word-break:break-all;margin:10px 0;font-size:12px">${esc(https)}</code>
+    <div class="pd-sec">Google Календар (Android)</div>
+    <ol style="margin:0;padding-left:20px;line-height:1.7"><li>Копирайте линка.</li><li>На компютър отворете <b>calendar.google.com</b> → „Други календари“ → <b>+</b> → „От URL адрес“.</li><li>Поставете линка и натиснете „Добавяне на календар“. На телефона се появява сам.</li></ol>
+    <p class="muted" style="margin:12px 0 0;font-size:12.5px">Линкът е личен — който го има, вижда графика на ритуалите (без телефони и ЕГН). Ако го изпратите по погрешка, натиснете „Нов линк“ — старият спира веднага.</p>`,
+    actions:[{label:"Нов линк",act:async()=>{if(!confirm("Старият линк ще спре да работи и ще трябва да добавите новия в телефона. Продължаване?"))return false;m.close();openCalFeed(true)}},{label:"Затвори",cls:"primary"}]});
+  m.q("#cfCopy").onclick=async()=>{try{await navigator.clipboard.writeText(https);toast("Линкът е копиран ✔")}catch(e){prompt("Копирайте линка:",https)}};
+  m.q("#cfMine").onchange=e=>{m.close();openCalFeed(false,e.target.checked)}}
+$("#calFeed").onclick=()=>openCalFeed(false);
 // ново или редакция на събитие
 function openEvent(e,day){
   const ed=can("req","edit"),isNew=!e,users=(USERS||[]).filter(u=>u.active!==false);
@@ -2966,8 +3010,8 @@ function buildWsPrint(r){
 /* =====================================================================
    ОФЕРТА — ценово предложение по заявката (не е документ за плащане)
    ===================================================================== */
-function buildOfferPrint(r){
-  const c=calc(r),S=SETTINGS,rows=[];
+function offerRows(r){
+  const rows=[];
   const add=(name,desc,q,unit,price,amt)=>rows.push({name,desc,q,unit,price,amt});
   if(r.orgFee)add("Организация на "+(r.kind||"погребение / кремация"),"",1,"услуга",r.orgFee,r.orgFee);
   if(r.doctorOn&&r.doctorFee)add("Лекарско присъствие","",1,"услуга",r.doctorFee,r.doctorFee);
@@ -2977,6 +3021,9 @@ function buildOfferPrint(r){
     const plain=!(it.no===CATALOG.lamNo&&l.lam)&&!(it.no===CATALOG.trNo&&l.base);
     const q=qtyOf(l),u=it.unit==="ден"&&q!==1?"дни":it.unit||"бр."; // 1 ден, 2 дни
     add(it.name,ex,q,u,plain?l.price||0:null,lineAmount(l))});
+  return rows}
+function buildOfferPrint(r){
+  const c=calc(r),S=SETTINGS,rows=offerRows(r);
   const days=parseInt(S.offerDays,10)||7;
   return `<div class="sheet ofp">${headHTML()}
     <div class="inv-title">ОФЕРТА</div>
@@ -3002,6 +3049,42 @@ function buildOfferPrint(r){
     <div class="inv-foot"><span>Изготвил:<span class="sl"></span><small>${esc(r.representative||"")}</small></span><span>Запознат:<span class="sl"></span></span></div>
   </div>`;
 }
+/* ---------- линкове към клиента: оферта (потвърждава се от телефона) и молба за отзив ---------- */
+const LINK_PAGE=()=>location.origin+location.pathname.replace(/[^/]*$/,"")+"p.html";
+const linkUrl=t=>LINK_PAGE()+"?t="+encodeURIComponent(t);
+function offerSnapshot(r){const c=calc(r),S=SETTINGS;
+  return {title:"Оферта към заявка № "+r.number,number:r.number,date:todayISO(),appName:r.appName||"",decName:r.decName||"",kind:r.kind||"",when:r.ritDate?whenText(r):"",
+    rows:offerRows(r).map(x=>({name:x.name,desc:x.desc||"",q:x.q,unit:x.unit,price:x.price,amt:x.amt})),sub:c.sub,discount:c.discount,pct:c.pct,total:c.total,
+    days:parseInt(S.offerDays,10)||7,agency:{name:S.invName||S.agency||"",short:S.short||"",addr:S.addr||"",gsm:S.gsm||""}}}
+function reviewSnapshot(r){const S=SETTINGS;return {title:"Отзив за заявка № "+r.number,decName:r.decName||"",agency:{name:S.invName||S.agency||"",short:S.short||"",gsm:S.gsm||""}}}
+async function openLinks(){if(!CURRENT)return;if(DIRTY&&!(await saveCurrent()))return;const r=CURRENT;
+  let L=[];try{L=await rpc("my_public_links",{p_ref:r.id})}catch(e){toast(/Could not find the function|PGRST202/.test(e.message)?"Тази функция още не е включена в базата.":e.message,true);return}
+  const ed=can("req","edit"),st=l=>l.kind==="offer"?(l.response?(l.response.answer==="accept"?`<span class="acc-ok">✔ потвърдена${l.response.name?" от "+esc(l.response.name):""}</span>`:`<span class="acc-w">има въпрос${l.response.note?": "+esc(l.response.note):""}</span>`):l.opened_at?"отворена, без отговор":"още не е отворена")
+      :(l.response?`<span class="acc-ok">${"★".repeat(l.response.rating)}${"☆".repeat(5-l.response.rating)}</span>${l.response.note?" — "+esc(l.response.note):""}`:l.opened_at?"отворен, без оценка":"още не е отворен");
+  const dtt=v=>v?new Date(v).toLocaleString("bg-BG",{dateStyle:"short",timeStyle:"short"}):"";
+  const m=openModal({title:"Линк към клиента — заявка № "+r.number,wide:true,body:`
+    <p class="muted" style="margin:0 0 10px">Клиентът отваря линка на телефона си, без парола. Вижда само офертата (или формата за отзив) — не и останалите данни от заявката.</p>
+    ${ed?`<div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn primary" id="lkOffer" type="button">Нов линк с офертата</button><button class="btn" id="lkReview" type="button">Молба за отзив</button></div>`:""}
+    <div id="lkNew"></div>
+    <div class="pd-sec">Изпратени линкове</div>
+    <table class="list"><tbody>${L.map(l=>`<tr><td class="nw">${l.kind==="offer"?"Оферта":"Отзив"}<br><small class="muted">${dtt(l.created_at)}${l.created_by?" · "+esc(l.created_by):""}</small></td>
+      <td>${st(l)}${l.responded_at?`<br><small class="muted">${dtt(l.responded_at)}</small>`:""}</td>
+      <td style="text-align:right;white-space:nowrap"><button class="btn small" data-lc="${esc(l.token)}" type="button">Копирай линка</button>${ed&&!l.response&&new Date(l.expires_at)>new Date()?` <button class="btn small" data-lr="${esc(l.token)}" type="button">Спри</button>`:""}</td></tr>`).join("")||`<tr><td class="empty">Още няма изпратени линкове.</td></tr>`}</tbody></table>`,actions:[{label:"Затвори"}]});
+  const copy=async t=>{try{await navigator.clipboard.writeText(t);toast("Линкът е копиран ✔")}catch(e){prompt("Копирайте линка:",t)}};
+  const share=(kind,tok)=>{const u=linkUrl(tok),tel=telHref(r.appPhone),ag=SETTINGS.short?`агенция „${SETTINGS.short}“`:"погребалната агенция";
+    const txt=kind==="offer"?`Здравейте. Изпращаме Ви офертата на ${ag} за организацията: ${u}`:`Здравейте. Благодарим, че се обърнахте към ${ag}. Ще се радваме на кратка оценка: ${u}`;
+    m.q("#lkNew").innerHTML=`<div class="notice" style="margin:12px 0 0"><b>Линкът е готов.</b><br><code style="word-break:break-all">${esc(u)}</code>
+      <textarea class="ui-in" id="lkTxt" rows="3" style="width:100%;margin-top:8px">${esc(txt)}</textarea>
+      <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px">${tel?`<a class="btn small primary" id="lkSms">Изпрати SMS</a><a class="btn small" id="lkVb" href="viber://chat?number=${encodeURIComponent(tel)}">Отвори Viber</a>`:""}<button class="btn small" id="lkCp" type="button">Копирай текста</button></div></div>`;
+    const upd=()=>{const a=m.q("#lkSms");if(a)a.href=`sms:${tel}${IOS?"&":"?"}body=${encodeURIComponent(m.q("#lkTxt").value)}`};upd();m.q("#lkTxt").oninput=upd;
+    m.q("#lkCp").onclick=()=>copy(m.q("#lkTxt").value);const vb=m.q("#lkVb");if(vb)vb.addEventListener("click",()=>copy(m.q("#lkTxt").value))};
+  const make=async kind=>{try{const tok=await rpc("create_public_link",{p_kind:kind,p_ref:r.id,p_data:kind==="offer"?offerSnapshot(r):reviewSnapshot(r),p_days:kind==="offer"?Math.max(7,(parseInt(SETTINGS.offerDays,10)||7)):60});
+      audit(kind==="offer"?"Оферта по линк":"Молба за отзив","№ "+r.number,r.id);share(kind,tok)}catch(e){m.err(e.message)}};
+  if(m.q("#lkOffer"))m.q("#lkOffer").onclick=()=>make("offer");
+  if(m.q("#lkReview"))m.q("#lkReview").onclick=()=>make("review");
+  m.el.querySelectorAll("[data-lc]").forEach(b=>b.onclick=()=>copy(linkUrl(b.dataset.lc)));
+  m.el.querySelectorAll("[data-lr]").forEach(b=>b.onclick=async()=>{if(!confirm("Линкът ще спре да се отваря. Продължаване?"))return;try{await rpc("revoke_public_link",{p_token:b.dataset.lr});m.close();openLinks()}catch(e){m.err(e.message)}})}
+$("#btnLink").onclick=()=>{closeMenu();openLinks()};
 $("#btnOffer").onclick=async()=>{if(CURRENT)audit("Печат на оферта","№ "+CURRENT.number,CURRENT.id);
   closeMenu();if(DIRTY&&!(await saveCurrent()))return;
   $("#printArea").innerHTML=buildOfferPrint(CURRENT);
@@ -3997,7 +4080,60 @@ function migrateCatalog(c){
   c.version=7;return c;
 }
 function migrateNecro(n){n=n||{};if(!Array.isArray(n.orders))n.orders=[];if(!Array.isArray(n.expenses))n.expenses=[];return n}
-async function renderRetention(){const sel=$("#sRetain");if(!sel)return;const adm=ME&&ME.role==="admin";
+/* ---------- редактор на шаблона на заявката (само администратор) ---------- */
+const TE_W=[["","автоматична"],["w14","много тясна"],["w22","тясна"],["w30","малка"],["w38","средна"],["w50","половин ред"],["w60","широка"]];
+const TE_T=[["text","текст"],["date","дата"],["check","отметка"],["select","избор от списък"]];
+const TE_FIXED={sentence:"Изречение „… направи заявка за … на агенция …“",burial:"Организация на погребение / кремация (гробища, ритуал, гроб)",bottom:"Забележки и подпис на заявителя"};
+function openTplEditor(){if(!isAdmin())return;
+  let T=structuredClone(TEMPLATE);
+  const m=openModal({title:"Шаблон на заявката",wide:true,body:`<div class="te"><div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <label class="f">Заглавие<input class="ui-in" id="teTitle"></label><label class="f">Подзаглавие<input class="ui-in" id="teSub"></label>
+        <label class="f" style="grid-column:1/-1">Текст за плащането (стр. 2)<input class="ui-in" id="tePay"></label></div>
+      <div class="te-list" id="teList"></div>
+      <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn small" id="teAddSec" type="button">+ Раздел</button><button class="btn small" id="teAddRow" type="button">+ Ред с поле</button>
+        <span class="spacer"></span><button class="btn small" id="teReset" type="button">Върни първоначалния</button></div></div>
+      <div class="te-prev" id="tePrev"></div></div>`,
+    actions:[{label:"Отказ"},{label:"Запази шаблона",cls:"primary",act:async()=>{
+      for(const b of T.p1)if(b.t==="row")b.f=b.f.filter(f=>f.k||f.l);T.p1=T.p1.filter(b=>b.t!=="row"||b.f.length);
+      if(!(await getMeta("template_orig",null)))await setMeta("template_orig",TEMPLATE).catch(()=>{}); // копие на нашия шаблон — за „Върни“
+      T.version=(TEMPLATE.version||1)+1;await setMeta("template",T);TEMPLATE=migrateTemplate(T);applyTemplate();
+      audit("Променен шаблон на заявката",`${T.p1.filter(b=>b.t==="row").reduce((n,b)=>n+b.f.filter(f=>f.k).length,0)} полета`);toast("Шаблонът е запазен ✔");renderTplInfo()}}]});
+  const q=x=>m.q(x);
+  q("#teTitle").value=T.title||"";q("#teSub").value=T.sub||"";q("#tePay").value=T.payText||"";
+  q("#teTitle").oninput=e=>{T.title=e.target.value;prev()};q("#teSub").oninput=e=>{T.sub=e.target.value;prev()};q("#tePay").oninput=e=>{T.payText=e.target.value};
+  const sel=(opts,v)=>opts.map(([a,b])=>`<option value="${a}" ${String(v||"")===a?"selected":""}>${b}</option>`).join("");
+  let pt=0;const prev=()=>{clearTimeout(pt);pt=setTimeout(()=>{const keep=TEMPLATE;TEMPLATE=T;try{const r=newRequest();r.number="…";q("#tePrev").innerHTML=page1(r,"print")}catch(e){q("#tePrev").innerHTML=""}TEMPLATE=keep},120)};
+  const draw=()=>{q("#teList").innerHTML=T.p1.map((b,i)=>{
+      const mv=`<span class="spacer"></span><button type="button" data-up="${i}" title="Нагоре">↑</button><button type="button" data-dn="${i}" title="Надолу">↓</button>`;
+      if(b.t==="sec")return `<div class="te-b sec"><div class="te-h">Раздел ${mv}<button type="button" data-del="${i}" title="Махни раздела">✕</button></div><input data-sec="${i}" value="${esc(b.text||"")}"></div>`;
+      if(b.t==="row")return `<div class="te-b"><div class="te-h">Ред ${mv}<button type="button" data-addf="${i}">+ поле в реда</button><button type="button" data-del="${i}" title="Махни реда">✕</button></div>${
+        b.f.map((f,j)=>`<div class="te-f"><input data-fl="${i},${j}" value="${esc(f.l||"")}" placeholder="${f.k?"надпис":"само текст"}">
+          ${f.k?`<select data-fw="${i},${j}" title="Ширина">${sel(TE_W,f.w)}</select><select data-ft="${i},${j}" title="Вид">${sel(TE_T,f.type==="select"?"select":f.type||"text")}</select>`:`<span></span><span class="muted" style="font-size:12px">надпис</span>`}
+          <button type="button" data-delf="${i},${j}" title="Махни полето">✕</button>
+          ${f.type==="select"?`<input class="opts" data-fo="${i},${j}" value="${esc((Array.isArray(f.opts)?f.opts.map(x=>Array.isArray(x)?x[0]:x):[]).filter(Boolean).join("; "))}" placeholder="вариантите, разделени с „;“ (напр. да; не)">`:""}</div>`).join("")}</div>`;
+      return `<div class="te-b"><div class="te-h">${esc(TE_FIXED[b.t]||b.t)} ${mv}${b.t==="sentence"?`<button type="button" data-del="${i}" title="Махни">✕</button>`:""}</div></div>`}).join("");
+    const ij=v=>v.split(",").map(Number);
+    m.el.querySelectorAll("[data-up],[data-dn]").forEach(x=>x.onclick=()=>{const i=+(x.dataset.up??x.dataset.dn),k=x.dataset.up!=null?i-1:i+1;if(k<0||k>=T.p1.length)return;[T.p1[i],T.p1[k]]=[T.p1[k],T.p1[i]];draw()});
+    m.el.querySelectorAll("[data-del]").forEach(x=>x.onclick=()=>{T.p1.splice(+x.dataset.del,1);draw()});
+    m.el.querySelectorAll("[data-sec]").forEach(x=>x.oninput=()=>{T.p1[+x.dataset.sec].text=x.value;prev()});
+    m.el.querySelectorAll("[data-addf]").forEach(x=>x.onclick=()=>{T.p1[+x.dataset.addf].f.push({k:"c_"+uid().slice(0,8),l:"Ново поле"});draw()});
+    m.el.querySelectorAll("[data-delf]").forEach(x=>x.onclick=()=>{const [i,j]=ij(x.dataset.delf);T.p1[i].f.splice(j,1);draw()});
+    m.el.querySelectorAll("[data-fl]").forEach(x=>x.oninput=()=>{const [i,j]=ij(x.dataset.fl);T.p1[i].f[j].l=x.value;prev()});
+    m.el.querySelectorAll("[data-fw]").forEach(x=>x.onchange=()=>{const [i,j]=ij(x.dataset.fw),f=T.p1[i].f[j];if(x.value)f.w=x.value;else delete f.w;prev()});
+    m.el.querySelectorAll("[data-ft]").forEach(x=>x.onchange=()=>{const [i,j]=ij(x.dataset.ft),f=T.p1[i].f[j];delete f.list;delete f.opts;
+      if(x.value==="text")delete f.type;else f.type=x.value;if(x.value==="select")f.opts=[["","—"]];draw()});
+    m.el.querySelectorAll("[data-fo]").forEach(x=>x.oninput=()=>{const [i,j]=ij(x.dataset.fo);T.p1[i].f[j].opts=[["","—"],...x.value.split(";").map(v=>v.trim()).filter(Boolean).map(v=>[v,v])];prev()});
+    prev()};
+  q("#teAddSec").onclick=()=>{T.p1.splice(T.p1.findIndex(b=>b.t==="bottom")>=0?T.p1.findIndex(b=>b.t==="bottom"):T.p1.length,0,{t:"sec",text:"НОВ РАЗДЕЛ"});draw()};
+  q("#teAddRow").onclick=()=>{const at=T.p1.findIndex(b=>b.t==="bottom");T.p1.splice(at>=0?at:T.p1.length,0,{t:"row",f:[{k:"c_"+uid().slice(0,8),l:"Ново поле"}]});draw();const L=q("#teList");L.scrollTop=L.scrollHeight};
+  q("#teReset").onclick=async()=>{const o=await getMeta("template_orig",null);if(!confirm(o?"Да върна ли шаблона, както беше преди първата промяна? (Запазва се с „Запази шаблона“.)":"Да върна ли стандартния шаблон? (Запазва се с „Запази шаблона“.)"))return;
+    T=structuredClone(o?migrateTemplate(o):defaultTemplate());q("#teTitle").value=T.title||"";q("#teSub").value=T.sub||"";q("#tePay").value=T.payText||"";draw()};
+  draw()}
+function renderTplInfo(){const c=$("#tplCard");if(!c)return;c.classList.toggle("hidden",!isAdmin());
+  $("#tplInfo").textContent=`${TEMPLATE.p1.filter(b=>b.t==="sec").length} раздела · ${TEMPLATE.p1.filter(b=>b.t==="row").reduce((n,b)=>n+b.f.filter(f=>f.k).length,0)} полета`}
+$("#tplOpen").onclick=openTplEditor;
+async function renderRetention(){renderTplInfo();const sel=$("#sRetain");if(!sel)return;const adm=ME&&ME.role==="admin";
   sel.value=SETTINGS.retainYears?String(SETTINGS.retainYears):"";sel.disabled=!adm;
   const c=(await retCandidates()).length;$("#retInfo").textContent=SETTINGS.retainYears?(c?`${c} ${c===1?"заявка чака":"заявки чакат"} изтриване`:"няма стари заявки за изтриване"):"";
   $("#retRun").classList.toggle("hidden",!(adm&&c))}
@@ -4378,11 +4514,13 @@ function authShow(mode,opt={}){
       <div class="auth-err"></div><button class="btn primary" type="submit">Вход</button>
       ${CLOUD&&!adm?`<p class="auth-legal">С влизането приемате ${legalA("usloviya","Общите условия")} и ${legalA("poveritelnost","Политиката за поверителност")}.</p>`:""}
       <button type="button" class="auth-link" id="liRec">${adm?"Забравена парола":"Забравена парола на администратор"}</button>
+      ${CLOUD&&!opt.locked&&!adm?`<button type="button" class="auth-link" id="liSign">Нова агенция? Заявете достъп</button>`:""}
       ${CLOUD&&!opt.locked?`<button type="button" class="auth-link auth-small" id="liAdm">${adm?"← Вход за агенция":"Вход за администратор"}</button>`:""}</form>`;
     if(opt.msg)$("#fLogin .auth-err").textContent=opt.msg;
     setTimeout(()=>(opt.user?$("#liP"):CLOUD&&!adm&&!$("#liA").value?$("#liA"):$("#liU")).focus(),50);
     $("#liRec").onclick=()=>authShow("recover",{admin:adm});
     if($("#liAdm"))$("#liAdm").onclick=()=>authShow("login",{admin:!adm});
+    if($("#liSign"))$("#liSign").onclick=()=>authShow("signup");
     $("#fLogin").onsubmit=async e=>{e.preventDefault();const er=$("#fLogin .auth-err");er.textContent="";
       if(Date.now()<LOCK_UNTIL){er.textContent=`Твърде много грешни опити. Опитайте след ${Math.ceil((LOCK_UNTIL-Date.now())/1000)} сек.`;return}
       const u=normUser($("#liU").value),p=$("#liP").value;let x=null;
@@ -4396,6 +4534,28 @@ function authShow(mode,opt={}){
       if(opt.locked&&ME&&x.id!==ME.id){if(DIRTY&&!confirm("Има незапазени промени от "+ME.name+". Те ще се загубят. Продължаване?"))return;
         sessionStorage.setItem("uid",x.id);setDirty(false);audit("Смяна на потребител",ME.name+" → "+x.name);reloadKeep();return}
       await loginAs(x,"Вход")};
+  }
+  else if(mode==="signup"){$("#authSub").textContent="Заявка за достъп";$("#authTitle").textContent="Програма „Заявки“";
+    B.innerHTML=`<form class="auth-form" id="fSign" autocomplete="on">
+      <p class="auth-note">Попълнете данните и ще се свържем с вас, за да създадем достъпа на агенцията. Първите дни са безплатни.</p>
+      <label class="f">Име на агенцията<input class="ui-in" id="sgN" autocomplete="organization" required></label>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px"><label class="f">Град<input class="ui-in" id="sgC" autocomplete="address-level2"></label>
+        <label class="f">ЕИК (по желание)<input class="ui-in" id="sgE" inputmode="numeric"></label></div>
+      <label class="f">Лице за контакт<input class="ui-in" id="sgP" autocomplete="name"></label>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px"><label class="f">Телефон<input class="ui-in" id="sgT" type="tel" autocomplete="tel" required></label>
+        <label class="f">Имейл (по желание)<input class="ui-in" id="sgM" type="email" autocomplete="email"></label></div>
+      <label class="f">Желан код за вход (по желание)<input class="ui-in" id="sgK" autocapitalize="none" spellcheck="false" placeholder="напр. mir"></label>
+      <label class="f">Бележка (по желание)<textarea class="ui-in" id="sgO" rows="2"></textarea></label>
+      <input id="sgW" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;width:1px;height:1px" aria-hidden="true">
+      <p class="auth-legal">С изпращането приемате ${legalA("poveritelnost","Политиката за поверителност")}.</p>
+      <div class="auth-err"></div><button class="btn primary" type="submit">Изпрати заявката</button>
+      <button type="button" class="auth-link" id="sgBack">← Назад към входа</button></form>`;
+    $("#sgBack").onclick=()=>authShow("login");
+    $("#fSign").onsubmit=async e=>{e.preventDefault();const er=$("#fSign .auth-err");er.textContent="";const b=$("#fSign .btn.primary");b.disabled=true;
+      try{await rpc("signup_request",{p:{agency_name:$("#sgN").value,city:$("#sgC").value,eik:$("#sgE").value,contact_person:$("#sgP").value,phone:$("#sgT").value,email:$("#sgM").value,code_wanted:$("#sgK").value,note:$("#sgO").value,website:$("#sgW").value}});
+        B.innerHTML=`<div class="auth-form"><p style="font-size:15px;margin:0"><b>Благодарим! Заявката е изпратена.</b></p><p class="auth-note">Ще се свържем с вас на посочения телефон, обикновено до един работен ден.</p>
+          <button type="button" class="auth-link" id="sgDone">← Към входа</button></div>`;$("#sgDone").onclick=()=>authShow("login")}
+      catch(x){er.textContent=/Could not find the function|PGRST202/.test(x.message)?"В момента заявките не се приемат онлайн. Обадете се на тел. +359 893 008 182.":x.message;b.disabled=false}};
   }
   else if(mode==="recover"){$("#authSub").textContent="Възстановяване на достъпа";
     B.innerHTML=`<form class="auth-form" id="fRec" autocomplete="off">
@@ -4432,7 +4592,7 @@ function platformShow(P){
   $("#authBody").innerHTML=`<div class="auth-form">
     <div class="plat-bar"><button class="btn primary" id="plNew" type="button">+ Нова агенция</button><span class="spacer"></span>
       <button class="btn" id="plPw" type="button">Моята парола</button><button class="btn" id="plRec" type="button">Код за възстановяване</button><button class="btn" id="plOut" type="button">Изход</button></div>
-    <div class="plat-tabs" id="plTabs"><button data-t="ag" class="on">Агенции</button><button data-t="acc">История на достъпа</button><button data-t="log">Входове</button><button data-t="msg">Съобщения</button><button data-t="con">Съгласия</button><button data-t="set">Настройки</button></div>
+    <div class="plat-tabs" id="plTabs"><button data-t="dash">Табло</button><button data-t="ag" class="on">Агенции</button><button data-t="inv">Фактури</button><button data-t="sign">Регистрации<span class="pl-badge hidden" id="plSignN"></span></button><button data-t="acc">История на достъпа</button><button data-t="log">Входове</button><button data-t="msg">Съобщения</button><button data-t="con">Съгласия</button><button data-t="set">Настройки</button></div>
     <div class="plat-scroll" id="plView"></div>
     <div class="auth-err" id="plErr"></div></div>`;
   const dt=s=>s?new Date(s).toLocaleString("bg-BG",{dateStyle:"short",timeStyle:"short"}):"—";
@@ -4462,7 +4622,7 @@ function platformShow(P){
     $$("#plView [data-det]").forEach(b=>b.onclick=()=>details(LIST[+b.dataset.det]));
   }
   async function details(a){
-    let D;try{D=await rpc("platform_agency_detail",{p_agency:a.id})}catch(e){alert(e.message);return}
+    let D,INVS=[];try{D=await rpc("platform_agency_detail",{p_agency:a.id});INVS=await rpc("platform_invoices_list",{p_agency:a.id}).catch(()=>[])}catch(e){alert(e.message);return}
     const ext=(m,d,l)=>`<button class="btn small" data-ext="${m},${d}">${l}</button>`;
     const m=openModal({title:a.name+" ("+a.code+")",wide:true,body:`
       <div class="pd-sec">Срок на достъпа</div>
@@ -4486,8 +4646,9 @@ function platformShow(P){
         <input class="ui-in" id="pyAmt" inputmode="decimal" placeholder="сума €" style="width:110px" value="${a.monthly_fee??""}">
         <input class="ui-in" id="pyNote" placeholder="бележка (напр. ноември)" style="width:200px">
         <label class="ck"><input type="checkbox" id="pyExt" checked> и удължи с</label><input class="ui-in" id="pyMonths" inputmode="numeric" value="1" style="width:50px"> мес.
+        <label class="ck"><input type="checkbox" id="pyInv" checked> и издай фактура</label>
         <button class="btn small primary" id="pyAdd">Добави плащане</button></div>
-      <table class="list" style="margin-top:6px"><tbody>${D.payments.map(p=>`<tr><td>${dd(p.paid_on)}</td><td class="money">${money(p.amount)}</td><td class="muted">${esc(p.note)}</td><td style="text-align:right"><button class="btn small" data-pdel="${p.id}">Изтрий</button></td></tr>`).join("")||`<tr><td class="empty">Няма плащания.</td></tr>`}</tbody></table>
+      <table class="list" style="margin-top:6px"><tbody>${D.payments.map(p=>{const iv=INVS.find(i=>i.payment_id===p.id&&!i.cancelled);return `<tr><td>${dd(p.paid_on)}</td><td class="money">${money(p.amount)}</td><td class="muted">${esc(p.note)}</td><td style="text-align:right;white-space:nowrap">${iv?`<button class="btn small" data-pinv="${iv.id}">Фактура № ${invNo(iv.number)}</button>`:`<button class="btn small" data-pmk="${p.id}">Издай фактура</button>`} <button class="btn small" data-pdel="${p.id}">Изтрий</button></td></tr>`}).join("")||`<tr><td class="empty">Няма плащания.</td></tr>`}</tbody></table>
       <div class="pd-sec">Потребители</div>
       <table class="list"><tbody>${D.users.map(u=>`<tr><td><b>${esc(u.name)}</b> <span class="muted">${esc(u.username)}</span></td><td>${u.role==="admin"?"администратор":"служител"}${u.active?"":" · <span style='color:var(--err)'>спрян</span>"}</td><td class="muted">последен вход ${dt(u.last_login)}</td><td style="text-align:right"><button class="btn small" data-upw="${esc(u.username)}">Нова парола</button></td></tr>`).join("")}</tbody></table>
       <div class="pd-sec">Входове (последни 100)</div>
@@ -4504,7 +4665,13 @@ function platformShow(P){
     m.q("#pdSave").onclick=()=>run(()=>rpc("platform_update_agency",{p_agency:a.id,p:{name:m.q("#pdName").value,monthly_fee:m.q("#pdFee").value.replace(",",".").trim(),
       contact_person:m.q("#pdPerson").value,contact_phone:m.q("#pdPhone").value,contact_email:m.q("#pdEmail").value,eik:m.q("#pdEik").value,address:m.q("#pdAddr").value,notes:m.q("#pdNotes").value}}));
     m.q("#pyAdd").onclick=()=>{const amt=Number(m.q("#pyAmt").value.replace(",","."));if(!(amt>0)){m.err("Въведете сума.");return}
-      run(()=>rpc("platform_add_payment",{p_agency:a.id,p_paid_on:m.q("#pyDate").value||null,p_amount:amt,p_note:m.q("#pyNote").value.trim(),p_extend_months:m.q("#pyExt").checked?(parseInt(m.q("#pyMonths").value)||0):0}))};
+      const mkInv=m.q("#pyInv").checked,note=m.q("#pyNote").value.trim(),day=m.q("#pyDate").value||null;
+      run(async()=>{await rpc("platform_add_payment",{p_agency:a.id,p_paid_on:day,p_amount:amt,p_note:note,p_extend_months:m.q("#pyExt").checked?(parseInt(m.q("#pyMonths").value)||0):0});
+        if(mkInv){const d2=await rpc("platform_agency_detail",{p_agency:a.id}),pay=d2.payments.reduce((x,y)=>!x||y.id>x.id?y:x,null);
+          if(pay){const iv=await rpc("platform_issue_invoice",{p_agency:a.id,p_payment:pay.id,p_amount:null,p_description:invDesc(note),p_issued_on:day});printPlatInv(iv,a)}}})};
+    m.el.querySelectorAll("[data-pmk]").forEach(b=>b.onclick=async()=>{const pay=D.payments.find(x=>x.id===+b.dataset.pmk);if(!pay)return;
+      try{const iv=await rpc("platform_issue_invoice",{p_agency:a.id,p_payment:pay.id,p_amount:null,p_description:invDesc(pay.note),p_issued_on:pay.paid_on});m.close();printPlatInv(iv,a);again()}catch(e){m.err(e.message)}});
+    m.el.querySelectorAll("[data-pinv]").forEach(b=>b.onclick=()=>{const iv=INVS.find(x=>x.id===+b.dataset.pinv);if(iv)printPlatInv(iv,a)});
     m.el.querySelectorAll("[data-pdel]").forEach(b=>b.onclick=()=>{if(confirm("Да изтрия ли това плащане?"))run(()=>rpc("platform_delete_payment",{p_id:+b.dataset.pdel}))});
     m.el.querySelectorAll("[data-upw]").forEach(b=>b.onclick=()=>{const pw=prompt("Нова парола за "+b.dataset.upw+" (поне 6 знака):");if(pw)run(()=>rpc("platform_reset_password",{p_agency:a.id,p_username:b.dataset.upw,p_password:pw}))});
   }
@@ -4530,32 +4697,106 @@ function platformShow(P){
         LIST.map(a=>{const d=dpaOf(a);return `<tr><td><b>${esc(a.name)}</b> <code>${esc(a.code)}</code></td><td>${d?`${d.version===DPA_VERSION?`<span class="acc-ok">приет</span>`:`<span class="acc-w">стара версия ${esc(d.version)}</span>`} <span class="muted">· ${esc(d.name)} · ${dt(d.at)}</span>`:`<span class="acc-x">не е приет</span>`}</td></tr>`}).join("")}</tbody></table>
       <table class="list"><thead><tr><th>Кога</th><th>Агенция</th><th>Потребител</th><th>Документ</th><th>Версия</th></tr></thead><tbody>${
         C.map(c=>`<tr><td class="muted nw">${dt(c.at)}</td><td>${esc(c.agency||"")}</td><td>${esc(c.name)} <span class="muted">${esc(c.username)}</span></td><td>${kindName[c.kind]||esc(c.kind)}</td><td>${esc(c.version)}</td></tr>`).join("")||`<tr><td colspan="5" class="empty">Още никой не е приел.</td></tr>`}</tbody></table>`}
+  const invNo=n=>String(n).padStart(10,"0");
+  const invDesc=note=>"Абонамент за система „Заявки“"+(note?" — "+note:"");
+  function printPlatInv(iv,a){const D=iv.data||{},S=D.seller||{},B=D.buyer||{},total=Number(iv.amount),rate=Number(iv.vat_rate)||0,base=Math.round(total/(1+rate/100)*100)/100,vat=Math.round((total-base)*100)/100;
+    const row=(k,v)=>v?`<div><span class="k">${k}:</span> ${esc(v)}</div>`:"";
+    $("#printArea").innerHTML=`<div class="sheet invp" style="padding-top:18mm">
+      <div class="inv-title">ФАКТУРА${iv.cancelled?" — АНУЛИРАНА":""}</div><div class="inv-sub">№ <b>${invNo(iv.number)}</b></div><div class="inv-orig">ОРИГИНАЛ</div>
+      <table class="inv-meta"><tr><td>Дата на издаване:</td><td><b>${bgDate(iv.issued_on)}</b></td></tr><tr><td>Дата на данъчното събитие:</td><td>${bgDate(iv.issued_on)}</td></tr></table>
+      <div class="inv-parties">
+        <div class="inv-party"><h4>ПОЛУЧАТЕЛ</h4><div class="nm">${esc(B.name||(a&&a.name)||"")}</div>${row("Адрес",B.address)}${row("ЕИК",B.eik)}${row("МОЛ",B.mol)}</div>
+        <div class="inv-party"><h4>ДОСТАВЧИК</h4><div class="nm">${esc(S.name||"")}</div>${row("Адрес",S.address)}${row("ЕИК",S.eik)}${row("ДДС №",S.vat)}${row("МОЛ",S.mol)}${row("Банка",S.bank)}${row("IBAN",S.iban)}</div></div>
+      <table class="inv-t"><thead><tr><th style="width:8mm">№</th><th>Наименование на услугата</th><th style="width:16mm">Мярка</th><th class="m" style="width:14mm">К-во</th><th class="m" style="width:28mm">Ед. цена</th><th class="m" style="width:28mm">Стойност</th></tr></thead>
+        <tbody><tr><td>1</td><td>${esc(iv.description)}</td><td>услуга</td><td class="m">1</td><td class="m">${fmt(base)} €</td><td class="m">${fmt(base)} €</td></tr></tbody></table>
+      <table class="inv-sum"><tr><td>Данъчна основа:</td><td class="m">${fmt(base)} €</td></tr><tr><td>ДДС ${rate?numIn(rate)+" %":"0 %"}:</td><td class="m">${fmt(vat)} €</td></tr><tr class="tot"><td>СУМА ЗА ПЛАЩАНЕ:</td><td class="m">${fmt(total)} €</td></tr></table>
+      <div class="inv-words"><b>Словом:</b> ${amountWords(total)}</div>
+      ${rate?"":`<div class="inv-note">Основание за неначисляване на ДДС: чл. 113, ал. 9 от ЗДДС — доставчикът не е регистриран по ЗДДС.</div>`}
+      <div class="inv-note"><b>Начин на плащане:</b> ${S.iban?"по банков път · IBAN "+esc(S.iban)+(S.bank?" · "+esc(S.bank):""):"в брой"}</div>
+      <div class="inv-foot"><span>Получател:<span class="sl"></span></span><span>Съставил:<span class="sl"></span><small>${esc(S.mol||"")}</small></span></div></div>`;
+    const old=document.title;document.title="Фактура_"+invNo(iv.number);printNow(()=>{document.title=old})}
+  async function loadDash(){err();let Dd;try{Dd=await rpc("platform_dashboard");LIST=await rpc("platform_agencies")}catch(e){err(/Could not find the function|PGRST202/.test(e.message)?"Липсва миграция 8 в базата.":e.message);return}
+    if(TAB!=="dash")return;const now=Date.now(),day=864e5;
+    const act=LIST.filter(a=>a.active&&!a.expired),soon=act.filter(a=>a.access_until&&new Date(a.access_until)-now<8*day).sort((x,y)=>new Date(x.access_until)-new Date(y.access_until));
+    const idle=act.filter(a=>!a.last_login||now-new Date(a.last_login)>14*day),exp=LIST.filter(a=>a.expired||!a.active);
+    const ms=Dd.months||[],mx=Math.max(1,...ms.map(x=>Number(x.sum))),thisM=ms.length?Number(ms[ms.length-1].sum):0,yr=ms.reduce((s,x)=>s+Number(x.sum),0);
+    const fee=act.reduce((s,a)=>s+(Number(a.monthly_fee)||0),0);
+    const sms=a=>{const t=`Здравейте! Достъпът на ${a.name} до програмата „Заявки“ изтича на ${dd(a.access_until)}. За подновяване: тел. ${$("#plPhoneHint")?.value||"+359 893 008 182"}. Благодарим!`,ph=telHref(a.contact_phone);
+      return ph?`<a class="btn small" href="sms:${ph}${IOS?"&":"?"}body=${encodeURIComponent(t)}">SMS напомняне</a> <a class="btn small" href="tel:${ph}">Обади се</a>`:`<span class="muted">няма телефон</span>`};
+    $("#plView").innerHTML=`<div class="pl-kpis">
+        <div class="pl-kpi"><b>${act.length}</b><small>активни агенции</small></div>
+        <div class="pl-kpi"><b>${money(thisM)}</b><small>приход този месец</small></div>
+        <div class="pl-kpi"><b>${money(yr)}</b><small>приход за 12 месеца</small></div>
+        <div class="pl-kpi"><b>${money(fee)}</b><small>месечни такси (очаквано)</small></div>
+        <div class="pl-kpi"><b>${Dd.requests_30d}</b><small>нови заявки за 30 дни (всички агенции)</small></div>
+        <div class="pl-kpi"><b>${Dd.signups_pending}</b><small>чакащи регистрации</small></div></div>
+      <div class="pd-sec" style="margin-top:0">Приходи по месеци</div>
+      <div class="pl-bars">${ms.map(x=>`<div title="${x.m}: ${money(x.sum)}"><em>${Number(x.sum)?Math.round(x.sum):""}</em><i style="height:${Math.round(Number(x.sum)/mx*100)}%"></i>${MON[+x.m.slice(5)-1]}</div>`).join("")}</div>
+      <div class="pd-sec">Изтичат до 7 дни</div>
+      <table class="list"><tbody>${soon.map(a=>`<tr><td><b>${esc(a.name)}</b><br><small class="muted">${esc(a.contact_person||"")} ${esc(a.contact_phone||"")}</small></td><td class="nw">${accCell(a)}</td><td style="text-align:right">${sms(a)}</td></tr>`).join("")||`<tr><td class="empty">Няма агенции с изтичащ срок.</td></tr>`}</tbody></table>
+      <div class="pd-sec">Не са влизали повече от 14 дни</div>
+      <table class="list"><tbody>${idle.map(a=>`<tr><td><b>${esc(a.name)}</b></td><td class="muted">последен вход ${dt(a.last_login)}</td><td class="muted">${esc(a.contact_phone||"")}</td></tr>`).join("")||`<tr><td class="empty">Всички активни агенции влизат редовно.</td></tr>`}</tbody></table>
+      ${exp.length?`<div class="pd-sec">Спрени или с изтекъл достъп</div><table class="list"><tbody>${exp.map(a=>`<tr><td><b>${esc(a.name)}</b></td><td>${accCell(a)}</td></tr>`).join("")}</tbody></table>`:""}`}
+  async function loadInvoices(){err();let L;try{L=await rpc("platform_invoices_list",{p_agency:null})}catch(e){err(/Could not find the function|PGRST202/.test(e.message)?"Липсва миграция 8 в базата.":e.message);return}
+    if(TAB!=="inv")return;
+    $("#plView").innerHTML=`<p class="auth-note">Фактурите се издават от плащането на агенцията (Агенции → Детайли → „Добави плащане“ с отметка „и издай фактура“). Данните на фирмата — в „Настройки“.</p>
+      <table class="list" style="margin-top:8px"><thead><tr><th>№</th><th>Дата</th><th>Агенция</th><th>Описание</th><th class="money">Сума</th><th></th></tr></thead><tbody>${
+      L.map(i=>`<tr${i.cancelled?' style="opacity:.55"':""}><td class="nw"><b>${invNo(i.number)}</b>${i.cancelled?"<br><small>анулирана</small>":""}</td><td class="nw">${dd(i.issued_on)}</td><td>${esc(i.agency)}</td><td class="muted">${esc(i.description)}</td><td class="money">${money(i.amount)}</td>
+        <td style="text-align:right;white-space:nowrap"><button class="btn small" data-ip="${i.id}">Печат</button>${i.cancelled?"":` <button class="btn small" data-ic="${i.id}">Анулирай</button>`}</td></tr>`).join("")||`<tr><td colspan="6" class="empty">Още няма издадени фактури.</td></tr>`}</tbody></table>`;
+    $$("#plView [data-ip]").forEach(b=>b.onclick=()=>printPlatInv(L.find(x=>x.id===+b.dataset.ip)));
+    $$("#plView [data-ic]").forEach(b=>b.onclick=async()=>{const i=L.find(x=>x.id===+b.dataset.ic);if(!confirm(`Да анулирам ли фактура № ${invNo(i.number)}? Номерът не се използва повторно.`))return;
+      try{await rpc("platform_cancel_invoice",{p_id:i.id});toast("Фактурата е анулирана");loadInvoices()}catch(e){err(e.message)}})}
+  async function loadSignups(){err();let L;try{L=await rpc("platform_signups")}catch(e){err(/Could not find the function|PGRST202/.test(e.message)?"Липсва миграция 8 в базата.":e.message);return}
+    if(TAB!=="sign")return;const st={pending:"чака",approved:"одобрена",rejected:"отказана"};
+    $("#plView").innerHTML=`<p class="auth-note">Агенции, които са попълнили „Заявете достъп“ на страницата за вход. „Създай агенцията“ отваря обичайния прозорец с попълнени данни.</p>
+      <table class="list" style="margin-top:8px"><tbody>${L.map(x=>`<tr><td class="nw muted">${dt(x.created_at)}</td>
+        <td><b>${esc(x.agency_name)}</b>${x.city?` · ${esc(x.city)}`:""}${x.eik?`<br><small class="muted">ЕИК ${esc(x.eik)}</small>`:""}${x.note?`<br><small>${esc(x.note)}</small>`:""}</td>
+        <td>${esc(x.contact_person||"")}<br><a href="tel:${telHref(x.phone)}">${esc(x.phone)}</a>${x.email?`<br><small class="muted">${esc(x.email)}</small>`:""}</td>
+        <td>${x.status==="pending"?`<span class="tag">чака</span>`:`<span class="muted">${st[x.status]}</span>`}</td>
+        <td style="text-align:right;white-space:nowrap">${x.status==="pending"?`<button class="btn small primary" data-sa="${x.id}">Създай агенцията</button> <button class="btn small" data-sr="${x.id}">Откажи</button>`:""}</td></tr>`).join("")||`<tr><td class="empty">Още няма заявки за регистрация.</td></tr>`}</tbody></table>`;
+    $$("#plView [data-sr]").forEach(b=>b.onclick=async()=>{if(!confirm("Да откажа ли тази заявка?"))return;try{await rpc("platform_signup_set",{p_id:+b.dataset.sr,p_status:"rejected",p_agency:null});loadSignups();signBadge()}catch(e){err(e.message)}});
+    $$("#plView [data-sa]").forEach(b=>b.onclick=()=>{const x=L.find(y=>y.id===+b.dataset.sa);newAgency(x)})}
+  async function signBadge(){try{const d=await rpc("platform_dashboard");const n=+d.signups_pending||0;$("#plSignN").textContent=n;$("#plSignN").classList.toggle("hidden",!n)}catch(e){}}
   async function loadSettings(){err();let S;try{S=await rpc("platform_settings_get")}catch(e){err(e.message);return}
     $("#plView").innerHTML=`<div class="grid" style="grid-template-columns:1fr 1fr 1fr;gap:12px;max-width:760px">
       <label class="f">Телефон за връзка (в съобщението „нямате достъп“)<input class="ui-in" id="psPhone" value="${esc(S.support_phone)}"></label>
       <label class="f">Пробен период за нова агенция (дни, 0 = без срок)<input class="ui-in" id="psTrial" inputmode="numeric" value="${S.trial_days}"></label>
       <label class="f">Предупреждение преди края (дни)<input class="ui-in" id="psWarn" inputmode="numeric" value="${S.warn_days}"></label></div>
-      <div class="pd-btns" style="margin-top:10px"><button class="btn small primary" id="psSave">Запази</button></div>`;
+      <div class="pd-btns" style="margin-top:10px"><button class="btn small primary" id="psSave">Запази</button></div>
+      ${S.seller_name!==undefined?`<div class="pd-sec">Фирма за фактурите към агенциите</div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px;max-width:760px">
+        <label class="f">Фирма<input class="ui-in" id="slName" value="${esc(S.seller_name)}"></label><label class="f">ЕИК<input class="ui-in" id="slEik" value="${esc(S.seller_eik)}"></label>
+        <label class="f" style="grid-column:1/-1">Адрес<input class="ui-in" id="slAddr" value="${esc(S.seller_address)}"></label>
+        <label class="f">МОЛ<input class="ui-in" id="slMol" value="${esc(S.seller_mol)}"></label><label class="f">ДДС № (празно, ако не сте регистрирани по ДДС)<input class="ui-in" id="slVat" value="${esc(S.seller_vat)}"></label>
+        <label class="f">Банка<input class="ui-in" id="slBank" value="${esc(S.seller_bank)}"></label><label class="f">IBAN<input class="ui-in" id="slIban" value="${esc(S.seller_iban)}"></label>
+        <label class="f">Следващ номер на фактура<input class="ui-in" id="slNext" inputmode="numeric" value="${S.invoice_next}"></label></div>
+      <div class="pd-btns" style="margin-top:10px"><button class="btn small primary" id="slSave">Запази данните на фирмата</button></div>`:""}`;
+    if($("#slSave"))$("#slSave").onclick=async()=>{try{await rpc("platform_seller_set",{p:{seller_name:$("#slName").value,seller_eik:$("#slEik").value,seller_address:$("#slAddr").value,seller_mol:$("#slMol").value,
+      seller_vat:$("#slVat").value,seller_bank:$("#slBank").value,seller_iban:$("#slIban").value,invoice_next:$("#slNext").value.trim()}});toast("Данните на фирмата са запазени ✔")}catch(e){err(e.message)}};
     $("#psSave").onclick=async()=>{try{await rpc("platform_settings_set",{p_phone:$("#psPhone").value,p_trial_days:parseInt($("#psTrial").value)||0,p_warn_days:parseInt($("#psWarn").value)||0});toast("Настройките са запазени ✔")}catch(e){err(e.message)}}}
   const show=t=>{TAB=t;$$("#plTabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));$("#plView").innerHTML=`<p class="auth-note">Зареждане…</p>`;
-    ({ag:loadAgencies,acc:loadAccess,log:loadLogins,msg:loadMsgs,con:loadConsents,set:loadSettings})[t]()};
+    ({dash:loadDash,ag:loadAgencies,inv:loadInvoices,sign:loadSignups,acc:loadAccess,log:loadLogins,msg:loadMsgs,con:loadConsents,set:loadSettings})[t]()};
+  signBadge();
   $$("#plTabs button").forEach(b=>b.onclick=()=>show(b.dataset.t));
-  $("#plNew").onclick=()=>openModal({title:"Нова агенция",wide:true,body:`<div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
-      <label class="f" style="grid-column:1/-1">Име на агенцията<input class="ui-in" id="naN" placeholder="напр. Погребална агенция Мир"></label>
-      <label class="f" style="grid-column:1/-1">Код за вход<input class="ui-in" id="naC" autocapitalize="none" spellcheck="false" placeholder="напр. mir — малки латински букви, цифри, тире"></label>
+  const newAgency=SU=>openModal({title:SU?"Нова агенция — от заявка за регистрация":"Нова агенция",wide:true,body:`<div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
+      <label class="f" style="grid-column:1/-1">Име на агенцията<input class="ui-in" id="naN" placeholder="напр. Погребална агенция Мир" value="${esc(SU?SU.agency_name:"")}"></label>
+      <label class="f" style="grid-column:1/-1">Код за вход<input class="ui-in" id="naC" autocapitalize="none" spellcheck="false" placeholder="напр. mir — малки латински букви, цифри, тире" value="${esc(SU?SU.code_wanted:"")}"></label>
       <p class="auth-note" style="grid-column:1/-1">Служителите на агенцията пишат този код при вход. По-късно не може да се смени. Агенцията получава пробния период от „Настройки“.</p>
-      <label class="f">Администратор — име и фамилия<input class="ui-in" id="naAN"></label>
+      <label class="f">Администратор — име и фамилия<input class="ui-in" id="naAN" value="${esc(SU?SU.contact_person:"")}"></label>
       <label class="f">Потребителско име<input class="ui-in" id="naAU" autocapitalize="none"></label>
       <label class="f">Парола (поне 6 знака)<input class="ui-in" type="password" id="naAP" autocomplete="new-password"></label>
       <label class="f">Код за възстановяване (по желание, 8+)<input class="ui-in" type="password" id="naR" autocomplete="off"></label></div>`,
     actions:[{label:"Отказ"},{label:"Създай агенцията",cls:"primary",act:async m=>{
       const code=normUser(m.q("#naC").value),un=normUser(m.q("#naAU").value),rc=m.q("#naR").value.trim();
       if(rc&&rc.length<8)throw new Error("Кодът за възстановяване трябва да е поне 8 знака (или го оставете празен).");
-      await rpc("platform_create_agency",{p_code:code,p_name:m.q("#naN").value.trim(),p_admin_username:un,p_admin_name:m.q("#naAN").value.trim(),p_admin_password:m.q("#naAP").value,p_recovery:rc});
+      const agId=await rpc("platform_create_agency",{p_code:code,p_name:m.q("#naN").value.trim(),p_admin_username:un,p_admin_name:m.q("#naAN").value.trim(),p_admin_password:m.q("#naAP").value,p_recovery:rc});
+      if(SU){try{await rpc("platform_update_agency",{p_agency:agId,p:{name:m.q("#naN").value.trim(),contact_person:SU.contact_person||"",contact_phone:SU.phone||"",contact_email:SU.email||"",eik:SU.eik||"",address:SU.city||"",notes:SU.note||"",monthly_fee:""}});
+        await rpc("platform_signup_set",{p_id:SU.id,p_status:"approved",p_agency:agId})}catch(e){}signBadge()}
       show("ag");
       setTimeout(()=>openModal({title:"Агенцията е създадена ✔",body:`<p class="auth-note">Изпратете на администратора на агенцията данните за вход:</p>
         <p style="font-size:15px;line-height:1.9">Линк: <b>${esc(location.origin+location.pathname+"?a="+code)}</b><br>Код на агенцията: <b>${esc(code)}</b><br>Потребител: <b>${esc(un)}</b><br>Парола: тази, която въведохте</p>
         <p class="auth-note">След като влезе, той попълва адреса, телефоните и логото в „Настройки“ и добавя служителите си.</p>`,actions:[{label:"Готово",cls:"primary"}]}),50)}}]});
+  $("#plNew").onclick=()=>newAgency(null);
   $("#plPw").onclick=()=>openModal({title:"Смяна на паролата",body:`<div class="grid" style="grid-template-columns:1fr">
       <label class="f">Сегашна парола<input class="ui-in" type="password" id="ppO" autocomplete="current-password"></label>
       <label class="f">Нова парола<input class="ui-in" type="password" id="ppN" autocomplete="new-password"></label>
@@ -4573,7 +4814,21 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="2026-11-12.4"; // сменя се при всяко публикуване
+const APP_VERSION="2026-11-12.5"; // сменя се при всяко публикуване
+/* ---------- инсталиране като приложение (иконка на телефона / компютъра) ---------- */
+let PWA_EV=null;
+const PWA_STANDALONE=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();PWA_EV=e;$("#pwaBtn").classList.remove("hidden")});
+window.addEventListener("appinstalled",()=>{PWA_EV=null;$("#pwaBtn").classList.add("hidden");toast("Програмата е инсталирана ✔")});
+if(IOS&&!PWA_STANDALONE)$("#pwaBtn").classList.remove("hidden");
+$("#pwaBtn").onclick=async()=>{
+  if(PWA_EV){PWA_EV.prompt();try{await PWA_EV.userChoice}catch(e){}PWA_EV=null;$("#pwaBtn").classList.add("hidden");return}
+  openModal({title:"Инсталиране на iPhone / iPad",body:`<ol style="margin:0;padding-left:20px;line-height:1.8">
+      <li>Отворете програмата в <b>Safari</b>.</li><li>Натиснете бутона <b>„Сподели“</b> (квадрат със стрелка нагоре).</li>
+      <li>Изберете <b>„Добави към началния екран“</b> и после <b>„Добави“</b>.</li></ol>
+      <p class="muted" style="margin:12px 0 0">Иконката „Заявки“ се появява на телефона и програмата се отваря на цял екран. Входът и данните са същите.</p>`,actions:[{label:"Разбрах"}]})};
 function showVersion(){const v=$("#appVer");if(v)v.textContent="Версия "+APP_VERSION;
   const a=$("#auth .auth-box");if(a&&!a.querySelector(".appver")){const e=document.createElement("div");e.className="appver auth-ver";e.textContent="Версия "+APP_VERSION;a.appendChild(e)}}
 let NEWER=null;
