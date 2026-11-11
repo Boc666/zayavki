@@ -2173,7 +2173,22 @@ async function printReady(){
   void $("#printArea").offsetHeight;                  // принудително подреждане
   await new Promise(r=>setTimeout(r,250));
 }
-function printNow(after){
+/* Печат: полетата на бланката са с фиксиран размер и дълъг текст (забележки, имена) се отрязва безшумно.
+   Преди печат: където текстът не се събира — шрифтът се смалява (до 60 %); ако пак не стига — връщаме кои полета остават отрязани. */
+function fitPrintText(root){
+  const clipped=e=>{const cs=getComputedStyle(e);return /hidden|clip/.test(cs.overflow+cs.overflowX+cs.overflowY)&&(e.scrollHeight>e.clientHeight+1||e.scrollWidth>e.clientWidth+1)};
+  const left=[];
+  root.querySelectorAll(".sheet *").forEach(e=>{if(!e.firstChild||!clipped(e))return;
+    const base=parseFloat(getComputedStyle(e).fontSize);let f=base;
+    while(clipped(e)&&f>base*0.6){f-=0.5;e.style.fontSize=f+"px";e.style.lineHeight="1.15"}
+    if(clipped(e)&&getComputedStyle(e).textOverflow!=="ellipsis")left.push(e)}); // „…“ е умишлено (напр. името в изречението — пълното е в полето над него)
+  return left}
+function fitPrintArea(){const pa=$("#printArea"),old=pa.style.cssText;
+  pa.style.cssText="display:block;position:absolute;left:-10000px;top:0;width:auto";let left=[];
+  try{left=fitPrintText(pa)}finally{pa.style.cssText=old}
+  if(left.length)toast(`Внимание: ${left.length===1?"едно поле не се събира":left.length+" полета не се събират"} изцяло на листа (напр. забележките) — съкратете текста, иначе краят няма да се отпечата.`,true);
+  return left}
+function printNow(after){fitPrintArea();
   const go=()=>{let done=false;const fin=()=>{if(done)return;done=true;window.removeEventListener("afterprint",fin);after&&after()};
     window.addEventListener("afterprint",fin);window.print();if(!IOS)fin();else setTimeout(fin,120e3)};
   if(!IOS){printReady().then(go);return}
@@ -2512,7 +2527,10 @@ KEYPATH.clients="id";
 let CLIENTS=[];
 const normPhone=s=>{let d=String(s||"").replace(/\D/g,"");if(!d)return"";if(d.startsWith("00"))d=d.slice(2);
   if(d.startsWith("0"))d="359"+d.slice(1);else if(d.length===9&&/^[89]/.test(d))d="359"+d;return d};
-const phoneKeys=s=>[...new Set(String(s||"").split(/[,;\/]|\s{2,}|\sили\s/).map(x=>normPhone(x.trim())).filter(x=>x.length>=6))];
+// няколко номера в едно поле: „0888 123 456, 02/987 65 43“. Наклонената черта разделя номера само ако от двете ѝ страни
+// има цели номера (0888 111 222 / 0899 333 444); иначе е код на град („02/987 65 43“) и остава един номер.
+const splitSlash=x=>{const p=x.split("/");return p.length>1&&p.every(y=>y.replace(/\D/g,"").length>=8)?p:[x]};
+const phoneKeys=s=>[...new Set(String(s||"").split(/[,;]|\s{2,}|\sили\s/).flatMap(splitSlash).map(x=>normPhone(x.trim())).filter(x=>x.length>=6))];
 const normName=s=>String(s||"").toLowerCase().replace(/[^a-zа-яё0-9\s-]/gi," ").replace(/\s+/g," ").trim();
 async function loadClients(){try{CLIENTS=await DB.all("clients")}catch(e){CLIENTS=CLIENTS||[]}return CLIENTS}
 const clientById=id=>CLIENTS.find(c=>c.id===id);
@@ -4939,7 +4957,7 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="2026-11-12.8"; // сменя се при всяко публикуване
+const APP_VERSION="2026-11-12.9"; // сменя се при всяко публикуване
 /* ---------- инсталиране като приложение (иконка на телефона / компютъра) ---------- */
 let PWA_EV=null;
 const PWA_STANDALONE=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;

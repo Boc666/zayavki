@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Тестове — Заявки</title>
+<style>
+/* Проста страница с резултати: зелено мина, червено не мина. */
+:root{--bg:#f6f5f2;--ink:#1f1d1a;--muted:#6b665e;--ok:#2f6b2a;--ok-bg:#e7f1e3;--bad:#9a2f1c;--bad-bg:#fbe9e4;--line:#e2ded6}
+@media (prefers-color-scheme:dark){:root{--bg:#161513;--ink:#ece8e1;--muted:#a59e93;--ok:#a6d995;--ok-bg:#1e2c1b;--bad:#f2a68e;--bad-bg:#3a1f17;--line:#36322c}}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,sans-serif;padding:20px 16px 40px}
+h1{font-size:20px;margin:0 0 4px}.muted{color:var(--muted)}
+#sum{margin:12px 0;padding:10px 14px;border-radius:10px;font-weight:600}
+#sum.ok{background:var(--ok-bg);color:var(--ok)}#sum.bad{background:var(--bad-bg);color:var(--bad)}
+.g{margin:16px 0 6px;font-weight:600}
+.t{display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--line)}.t b{width:18px;flex:none}
+.t.ok b{color:var(--ok)}.t.bad b{color:var(--bad)}.t small{color:var(--muted);display:block}
+iframe{position:absolute;left:-10000px;top:0;width:1200px;height:900px;border:0}
+</style>
+</head>
+<body>
+<h1>Автоматични тестове</h1>
+<p class="muted">Зарежда програмата (../index.html) в скрита рамка и проверява сметките, датите, сливането на настройки, търсенето и дали печатните листове се събират на A4. Не пише нищо в базата.</p>
+<div id="sum">Зареждане…</div>
+<div id="out"></div>
+<iframe id="app"></iframe>
+<script>
+const out=document.getElementById("out"),results=[];let group="";
+const show=()=>{const bad=results.filter(r=>!r.ok).length,s=document.getElementById("sum");
+  s.className=bad?"bad":"ok";s.textContent=bad?`Не минаха ${bad} от ${results.length} теста`:`Всички ${results.length} теста минаха ✔`;
+  document.title=(bad?"✗ ":"✔ ")+"Тестове — Заявки";window.TEST_RESULT={total:results.length,failed:bad,fails:results.filter(r=>!r.ok)}};
+function G(name){group=name;out.insertAdjacentHTML("beforeend",`<div class="g">${name}</div>`)}
+function T(name,fn){let ok=false,info="";try{const r=fn();ok=r===true||(r&&r.ok===true);if(!ok)info=r&&r.info!==undefined?r.info:JSON.stringify(r)}catch(e){info="грешка: "+e.message}
+  results.push({group,name,ok,info});
+  out.insertAdjacentHTML("beforeend",`<div class="t ${ok?"ok":"bad"}"><b>${ok?"✔":"✗"}</b><div>${name.replace(/</g,"&lt;")}${ok?"":`<small>${String(info).replace(/</g,"&lt;")}</small>`}</div></div>`)}
+const eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b)?true:{info:`очаквано ${JSON.stringify(b)}, получено ${JSON.stringify(a)}`};
+const near=(a,b,d=0.005)=>Math.abs(a-b)<=d?true:{info:`очаквано ${b}, получено ${a}`};
+
+document.getElementById("app").onload=()=>setTimeout(run,600);
+document.getElementById("app").src="../index.html?unittest="+Date.now(); // винаги най-новата версия (без кеш)
+function run(){
+  const W=document.getElementById("app").contentWindow,E=c=>W.eval(c);
+  // чисто начало: настройки и каталог по подразбиране (без база)
+  E(`SETTINGS=migrateSettings(null);CATALOG=migrateCatalog(null);TEMPLATE=defaultTemplate();SETTINGS.digits=3;SETTINGS.invVatRate=20;`);
+
+  G("Сметки по заявката");
+  T("услуги + организация + лекар − отстъпка − плащания (със сторно)",()=>{const c=E(`(()=>{const r=newRequest();r.orgFee=200;r.doctorOn=true;r.doctorFee=50;
+      const l=r.lines.find(x=>x.no===1);Object.assign(l,{used:true,qty:2,price:100.10});r.discountPct=10;
+      r.payments=[{type:"payment",amount:100},{type:"refund",amount:20}];return calc(r)})()`);
+    return [near(c.services,200.2),near(c.fees,250),near(c.sub,450.2),near(c.discount,45.02),near(c.total,405.18),near(c.advance,80),near(c.rest,325.18)].find(x=>x!==true)||true});
+  T("лекар без отметка не се брои",()=>near(E(`(()=>{const r=newRequest();r.orgFee=100;r.doctorOn=false;r.doctorFee=50;return calc(r).total})()`),100));
+  T("стар запис: аванс без история",()=>near(E(`(()=>{const r=newRequest();r.orgFee=300;r.advance=120;return calc(r).rest})()`),180));
+  T("стар запис: „платена изцяло“ → остатък 0",()=>near(E(`(()=>{const r=newRequest();r.orgFee=300;r.paid=true;return calc(r).rest})()`),0));
+  T("отстъпка над 100 % се ограничава до 100",()=>near(E(`(()=>{const r=newRequest();r.orgFee=300;r.discountPct=150;return calc(r).total})()`),0));
+  T("закръгляне на стотинки (0,1 + 0,2)",()=>near(E(`(()=>{const r=newRequest();const l=r.lines.find(x=>x.no===1);Object.assign(l,{used:true,qty:1,price:0.1});
+      const l2=r.lines.find(x=>x.no===2);Object.assign(l2,{used:true,qty:1,price:0.2});return calc(r).total})()`),0.3,0));
+  T("редовете на офертата дават сумата преди отстъпка",()=>{const v=E(`(()=>{const r=sampleRequests()[0];return {rows:offerRows(r).reduce((s,x)=>s+x.amt,0),sub:calc(r).sub}})()`);return near(v.rows,v.sub,0.011)});
+
+  G("Фактура");
+  T("ДДС 20 % се отделя от крайната сума",()=>{const c=E(`(()=>{const r=newRequest();r.inv=Object.assign(emptyInv(),{amount:1200,vat:true});return invCalc(r)})()`);return [near(c.base,1000),near(c.vat,200),near(c.total,1200)].find(x=>x!==true)||true});
+  T("без ДДС: основата е цялата сума",()=>{const c=E(`(()=>{const r=newRequest();r.inv=Object.assign(emptyInv(),{amount:999.99,vat:false});return invCalc(r)})()`);return [near(c.base,999.99),near(c.vat,0)].find(x=>x!==true)||true});
+  T("сума с думи",()=>{const w=E(`amountWords(1250.5)`);return /хиляда двеста и петдесет/.test(w)&&/50 цента/.test(w)?true:{info:w}});
+
+  G("Дати, ЕГН, номера");
+  T("ЕГН → дата на раждане (1942)",()=>eq(E(`egnBirth("4203124519")`),"1942-03-12"));
+  T("ЕГН → дата на раждане (след 2000)",()=>eq(E(`egnBirth("0552151232")`),"2005-12-15"));
+  T("невалидно ЕГН → нищо",()=>eq(E(`egnBirth("4203124518")`),null));
+  T("40 дни: денят на смъртта е първи (08.10 → 16.11)",()=>eq(E(`isoOf(d40add(new Date(2026,9,8),39))`),"2026-11-16"));
+  T("6 месеца от 31 август → 28 февруари",()=>eq(E(`isoOf(d40add(new Date(2026,7,31),0,6))`),"2027-02-28"));
+  T("номер с водещи нули",()=>eq(E(`padNo(7)`),"007"));
+
+  G("Телефони и търсене");
+  T("няколко телефона в едно поле",()=>eq(E(`phoneKeys("0888 123 456, 02/987 65 43")`),["359888123456","35929876543"]));
+  T("два мобилни номера с наклонена черта",()=>eq(E(`phoneKeys("0888 111 222 / 0899 333 444")`),["359888111222","359899333444"]));
+  T("търсене по телефон в различен запис",()=>eq(E(`gsMatch("0888 123",["+359 888 123 456"])`),true));
+  T("търсене по части от име (без значение от регистъра)",()=>eq(E(`gsMatch("мими петр",["Мария „Мими“ Петрова"])`),true));
+  T("търсене: несъвпадение",()=>eq(E(`gsMatch("иван",["Петър Петров"])`),false));
+
+  G("Сливане на настройки (двама записват едновременно)");
+  T("моята промяна + тяхната промяна — и двете остават",()=>eq(E(`(()=>{const base={a:1,items:[{p:1,n:"x"},{p:2,n:"y"}]};
+      const mine=structuredClone(base);mine.items[1].n="z";const theirs=structuredClone(base);theirs.items[0].p=9;theirs.a=5;
+      return applyPaths(structuredClone(theirs),diffPaths(base,mine))})()`),{a:5,items:[{p:9,n:"x"},{p:2,n:"z"}]}));
+  T("изтрито поле се изтрива и при тях",()=>eq(E(`(()=>{const base={a:1,b:2};const mine={a:1};const theirs={a:3,b:2,c:4};return applyPaths(structuredClone(theirs),diffPaths(base,mine))})()`),{a:3,c:4}));
+  T("без промени → нищо за прилагане",()=>eq(E(`diffPaths({a:[1,2],b:{c:1}},{a:[1,2],b:{c:1}}).length`),0));
+
+  G("Срок за пазене на лични данни");
+  T("стара заявка с ЕГН → за изтриване",()=>eq(E(`retDue(Object.assign(newRequest(),{ritDate:"2018-01-10",decEgn:"4203124519"}),5)`),true));
+  T("нова заявка → не",()=>eq(E(`retDue(Object.assign(newRequest(),{ritDate:new Date().toISOString().slice(0,10),decEgn:"4203124519"}),5)`),false));
+  T("примерна заявка → никога",()=>eq(E(`retDue(Object.assign(newRequest(),{sample:true,ritDate:"2010-01-01",decEgn:"4203124519"}),5)`),false));
+  T("вече изчистена → не",()=>eq(E(`retDue(Object.assign(newRequest(),{ritDate:"2010-01-01"}),5)`),false));
+
+  G("Печат: всеки лист се събира на една страница A4");
+  // мери като при печат: смалява дългите текстове (както печатът) и проверява, че нищо не е отрязано и листът е A4
+  const measure=code=>E(`(()=>{const box=document.createElement("div");box.style.cssText="position:absolute;left:-5000px;top:0";
+      box.innerHTML=${code};document.body.appendChild(box);const mm=96/25.4;const left=fitPrintText(box);
+      const r={sheets:[...box.querySelectorAll(".sheet")].map(s=>{const sb=s.getBoundingClientRect();let maxB=0;s.querySelectorAll("*").forEach(e=>{const q=e.getBoundingClientRect();if(q.height)maxB=Math.max(maxB,q.bottom)});
+        return {h:Math.round(s.offsetHeight/mm),w:Math.round(s.offsetWidth/mm),over:Math.round((maxB-sb.bottom)/mm)}}),
+        clipped:left.map(e=>(e.className||e.tagName)+": "+e.textContent.trim().slice(0,30))};box.remove();return r})()`);
+  const fit=(label,code)=>T(label,()=>{const v=measure(code);if(!v.sheets.length)return {info:"няма лист"};
+    const bad=v.sheets.find(s=>s.h>298||s.w>211||s.over>0);if(bad)return {info:"лист "+JSON.stringify(bad)+" (макс. 210×297 мм, съдържанието да не излиза)"};
+    return v.clipped.length?{info:"отрязан текст: "+v.clipped.join(" | ")}:true});
+  fit("заявка — страница 1 (примерна заявка)",`page1(sampleRequests()[0],"print")`);
+  fit("заявка — страница 2 (примерна заявка)",`page2(sampleRequests()[0],"print")`);
+  fit("работен лист",`buildWsPrint((()=>{const r=sampleRequests()[0];ensureWs(r);return r})())`);
+  fit("фактура",`buildInvPrint((()=>{const r=sampleRequests()[0];r.inv=Object.assign(emptyInv(),r.inv||{},{number:"0000000001",date:"2026-10-22",buyerName:"Тестов Примеров Измислев",desc:"Организация на погребение"});return r})())`);
+  fit("оферта",`buildOfferPrint(sampleRequests()[0])`);
+  fit("заявка с много дълги имена и бележка от няколко реда",`page1(Object.assign(sampleRequests()[0],{appName:"Генерал-лейтенант о.з. Христо Тодоров Христов-Бояджиев-Николаев-Стоянов",decName:"Анастасия Христова Тодорова-Бояджиева-Лазарова-Попова",notes:"Близките молят за кратка панихида в 11 ч. и венец от семейството. ".repeat(3)}),"print")`);
+  T("прекалено дълга бележка: печатът предупреждава (не отрязва безшумно)",()=>{const v=measure(`page1(Object.assign(sampleRequests()[0],{notes:"Много дълга бележка. ".repeat(60)}),"print")`);return v.clipped.length>0?true:{info:"не е отчетено отрязване"}});
+
+  show();
+}
+</script>
+</body>
+</html>
