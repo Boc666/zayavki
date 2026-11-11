@@ -180,6 +180,8 @@ body.plat-mode #modalWrap{z-index:170}body.plat-mode #toast{z-index:180;left:50%
 .auth-link{align-self:center;background:none;border:0;color:var(--text2);font:12.5px var(--ui);cursor:pointer;text-decoration:underline;text-underline-offset:3px}@media(hover:hover) and (pointer:fine){.auth-link:hover{color:var(--text)}}
 .auth-link.auth-small{font-size:11.5px;color:var(--text3);margin-top:6px;text-decoration:none;border-top:1px solid var(--border-soft);padding-top:12px;align-self:stretch}
 .auth-note{font-size:12.5px;color:var(--text2);line-height:1.55;margin:0}
+.auth-legal{font-size:11.5px;color:var(--text3);line-height:1.5;margin:-2px 0 0;text-align:center}.auth-legal a,.auth-chk a{color:var(--text2);text-underline-offset:3px}
+.auth-chk{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5;color:var(--text);cursor:pointer}.auth-chk input{margin-top:3px;flex:none;width:16px;height:16px;accent-color:var(--accent,currentColor)}
 .auth-pin{font:600 28px/1 var(--mono,ui-monospace,monospace);letter-spacing:.35em;text-align:center}
 #srvBar{position:fixed;left:0;right:0;top:0;z-index:300;background:var(--err);color:#fff;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));font-size:13.5px;text-align:center}
 .pair-code{font:600 34px/1.1 ui-monospace,Consolas,monospace;letter-spacing:.2em;color:var(--text);margin:6px 0 2px}
@@ -1526,6 +1528,32 @@ const toUser=p=>({id:p.id,username:p.username,name:p.name,role:p.role==="admin"?
 const sbProfiles=async()=>(await sb("/rest/v1/profiles?select=*&order=created_at")).map(toUser);
 // след вход: собственик → {platform:true}; собственик, отворил агенция → администратор с owner:true; служител → профилът му (и AG = агенцията му)
 const noAccessMsg=ph=>"Вече нямате достъп до системата — свържете се с администратор: тел. "+(ph||"+359 893 008 182");
+/* ---------- Общи условия / поверителност / договор за обработване: приемане при първи вход и при нова версия ---------- */
+const LEGAL_URL="pravila.html",TERMS_VERSION="1.0",DPA_VERSION="1.0";
+const legalA=(h,t)=>`<a href="${LEGAL_URL}#${h}" target="_blank" rel="noopener">${t}</a>`;
+async function consentGate(x){
+  if(!CLOUD||!x||x.owner||x.platform)return;
+  let c;try{c=await rpc("my_consents")}catch(e){return} // базата още няма миграция 6 — не питаме
+  const needT=(c&&c.terms)!==TERMS_VERSION,needD=x.role==="admin"&&(c&&c.dpa)!==DPA_VERSION;
+  if(!needT&&!needD)return;
+  const upd=(needT&&c&&c.terms)||(!needT&&needD&&c&&c.dpa);
+  return new Promise((ok,fail)=>{
+    const box=$("#auth .auth-box");box.classList.remove("wide");$("#auth").classList.remove("hidden");
+    $("#authSub").textContent=upd?"Условията са обновени":"Преди да започнете";
+    $("#authBody").innerHTML=`<form class="auth-form" id="fTerms">
+      <p class="auth-note">${upd?"Има нова версия на документите по-долу. Прочетете ги и ги приемете, за да продължите.":needT?"Здравейте, "+esc(x.name)+". Преди първото влизане прочетете и приемете:":"Като администратор на агенцията трябва да приемете и договора за обработване на личните данни на клиентите:"}</p>
+      ${needT?`<label class="auth-chk"><input type="checkbox" id="tmT"><span>Запознат/а съм с ${legalA("usloviya","Общите условия")} и ${legalA("poveritelnost","Политиката за поверителност")} и ги приемам.</span></label>`:""}
+      ${needD?`<label class="auth-chk"><input type="checkbox" id="tmD"><span>Като администратор приемам ${legalA("dogovor","Договора за обработване на лични данни")} от името на „${esc(AG&&AG.name||"агенцията")}“.</span></label>`:""}
+      <div class="auth-err"></div><button class="btn primary" type="submit">Приемам и продължавам</button>
+      <button type="button" class="auth-link" id="tmNo">Отказ и изход</button></form>`;
+    $("#tmNo").onclick=async()=>{await sbLogout().catch(()=>{});DB.db=null;AG=null;const m="Без приемане на условията не може да се влезе в програмата.";authShow("login",{msg:m});fail(new Error(m))};
+    $("#fTerms").onsubmit=async e=>{e.preventDefault();const er=$("#fTerms .auth-err");er.textContent="";
+      if(needT&&!$("#tmT").checked){er.textContent="Отбележете, че приемате Общите условия и Политиката за поверителност.";return}
+      if(needD&&!$("#tmD").checked){er.textContent="Отбележете, че приемате Договора за обработване на лични данни.";return}
+      const b=e.submitter||$("#fTerms .btn.primary");b.disabled=true;
+      try{await rpc("accept_terms",{p_terms:needT?TERMS_VERSION:null,p_dpa:needD?DPA_VERSION:null,p_ua:navigator.userAgent.slice(0,300)})}
+      catch(err){er.textContent=err.message;b.disabled=false;return}
+      $("#auth").classList.add("hidden");ok()}})}
 async function cloudContext(){
   const c=await rpc("my_context");
   if(c&&c.kind==="platform"){
@@ -1538,6 +1566,7 @@ async function cloudContext(){
   AG={id:c.agency_id,code:c.code,name:c.agency_name,until:c.access_until,warn:c.warn_days,phone:c.support_phone};
   DB.db=true;USERS=await sbProfiles();const x=USERS.find(z=>z.id===SBS.uid);
   if(!x||!x.active){await sbLogout();DB.db=null;throw new Error("Този потребител е спрян. Обърнете се към администратора.")}
+  await consentGate(x);
   return x}
 // вход в облака: връща потребителя, null при грешна парола; грешка, ако е спрян / няма връзка
 async function cloudLogin(code,u,p){
@@ -4123,6 +4152,7 @@ function authShow(mode,opt={}){
       <label class="f">Потребителско име<input class="ui-in" id="liU" autocomplete="username" value="${esc(opt.user||"")}"></label>
       <label class="f">Парола<input class="ui-in" type="password" id="liP" autocomplete="current-password"></label>
       <div class="auth-err"></div><button class="btn primary" type="submit">Вход</button>
+      ${CLOUD&&!adm?`<p class="auth-legal">С влизането приемате ${legalA("usloviya","Общите условия")} и ${legalA("poveritelnost","Политиката за поверителност")}.</p>`:""}
       <button type="button" class="auth-link" id="liRec">${adm?"Забравена парола":"Забравена парола на администратор"}</button>
       ${CLOUD&&!opt.locked?`<button type="button" class="auth-link auth-small" id="liAdm">${adm?"← Вход за агенция":"Вход за администратор"}</button>`:""}</form>`;
     if(opt.msg)$("#fLogin .auth-err").textContent=opt.msg;
@@ -4178,7 +4208,7 @@ function platformShow(P){
   $("#authBody").innerHTML=`<div class="auth-form">
     <div class="plat-bar"><button class="btn primary" id="plNew" type="button">+ Нова агенция</button><span class="spacer"></span>
       <button class="btn" id="plPw" type="button">Моята парола</button><button class="btn" id="plRec" type="button">Код за възстановяване</button><button class="btn" id="plOut" type="button">Изход</button></div>
-    <div class="plat-tabs" id="plTabs"><button data-t="ag" class="on">Агенции</button><button data-t="acc">История на достъпа</button><button data-t="log">Входове</button><button data-t="msg">Съобщения</button><button data-t="set">Настройки</button></div>
+    <div class="plat-tabs" id="plTabs"><button data-t="ag" class="on">Агенции</button><button data-t="acc">История на достъпа</button><button data-t="log">Входове</button><button data-t="msg">Съобщения</button><button data-t="con">Съгласия</button><button data-t="set">Настройки</button></div>
     <div class="plat-scroll" id="plView"></div>
     <div class="auth-err" id="plErr"></div></div>`;
   const dt=s=>s?new Date(s).toLocaleString("bg-BG",{dateStyle:"short",timeStyle:"short"}):"—";
@@ -4268,6 +4298,14 @@ function platformShow(P){
       <table class="list"><tbody>${L.map(n=>`<tr><td class="muted" style="white-space:nowrap">${dt(n.at)}</td><td>${esc(n.agency)}</td><td>${esc(n.text)}</td><td>${n.active?`<span class="tag">видимо</span>`:`<span class="muted">скрито</span>`}</td><td style="text-align:right"><button class="btn small" data-an="${n.id}" data-on="${n.active?0:1}">${n.active?"Скрий":"Покажи"}</button></td></tr>`).join("")||`<tr><td class="empty">Няма съобщения.</td></tr>`}</tbody></table>`;
     $("#anAdd").onclick=async()=>{try{await rpc("platform_add_announcement",{p_agency:$("#anAg").value||null,p_text:$("#anText").value});toast("Публикувано ✔");loadMsgs()}catch(e){err(e.message)}};
     $$("#plView [data-an]").forEach(b=>b.onclick=async()=>{try{await rpc("platform_set_announcement",{p_id:+b.dataset.an,p_active:b.dataset.on==="1"});loadMsgs()}catch(e){err(e.message)}})}
+  async function loadConsents(){err();let C;try{C=await rpc("platform_consents");if(!LIST.length)LIST=await rpc("platform_agencies")}catch(e){err(/Could not find the function|PGRST202/.test(e.message)?"Липсва миграция 6 (съгласия) в базата.":e.message);return}
+    const kindName={terms:"Общи условия и поверителност",dpa:"Договор за обработване"};
+    const dpaOf=a=>C.find(c=>c.kind==="dpa"&&c.agency_id===a.id);
+    $("#plView").innerHTML=`<p class="auth-note">Текущи версии: условия <b>${TERMS_VERSION}</b>, договор <b>${DPA_VERSION}</b>. Документите: <a href="${LEGAL_URL}" target="_blank" rel="noopener">${LEGAL_URL}</a></p>
+      <table class="list" style="margin:8px 0 18px"><thead><tr><th>Агенция</th><th>Договор за обработване</th></tr></thead><tbody>${
+        LIST.map(a=>{const d=dpaOf(a);return `<tr><td><b>${esc(a.name)}</b> <code>${esc(a.code)}</code></td><td>${d?`${d.version===DPA_VERSION?`<span class="acc-ok">приет</span>`:`<span class="acc-w">стара версия ${esc(d.version)}</span>`} <span class="muted">· ${esc(d.name)} · ${dt(d.at)}</span>`:`<span class="acc-x">не е приет</span>`}</td></tr>`}).join("")}</tbody></table>
+      <table class="list"><thead><tr><th>Кога</th><th>Агенция</th><th>Потребител</th><th>Документ</th><th>Версия</th></tr></thead><tbody>${
+        C.map(c=>`<tr><td class="muted nw">${dt(c.at)}</td><td>${esc(c.agency||"")}</td><td>${esc(c.name)} <span class="muted">${esc(c.username)}</span></td><td>${kindName[c.kind]||esc(c.kind)}</td><td>${esc(c.version)}</td></tr>`).join("")||`<tr><td colspan="5" class="empty">Още никой не е приел.</td></tr>`}</tbody></table>`}
   async function loadSettings(){err();let S;try{S=await rpc("platform_settings_get")}catch(e){err(e.message);return}
     $("#plView").innerHTML=`<div class="grid" style="grid-template-columns:1fr 1fr 1fr;gap:12px;max-width:760px">
       <label class="f">Телефон за връзка (в съобщението „нямате достъп“)<input class="ui-in" id="psPhone" value="${esc(S.support_phone)}"></label>
@@ -4276,7 +4314,7 @@ function platformShow(P){
       <div class="pd-btns" style="margin-top:10px"><button class="btn small primary" id="psSave">Запази</button></div>`;
     $("#psSave").onclick=async()=>{try{await rpc("platform_settings_set",{p_phone:$("#psPhone").value,p_trial_days:parseInt($("#psTrial").value)||0,p_warn_days:parseInt($("#psWarn").value)||0});toast("Настройките са запазени ✔")}catch(e){err(e.message)}}}
   const show=t=>{TAB=t;$$("#plTabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));$("#plView").innerHTML=`<p class="auth-note">Зареждане…</p>`;
-    ({ag:loadAgencies,acc:loadAccess,log:loadLogins,msg:loadMsgs,set:loadSettings})[t]()};
+    ({ag:loadAgencies,acc:loadAccess,log:loadLogins,msg:loadMsgs,con:loadConsents,set:loadSettings})[t]()};
   $$("#plTabs button").forEach(b=>b.onclick=()=>show(b.dataset.t));
   $("#plNew").onclick=()=>openModal({title:"Нова агенция",wide:true,body:`<div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
       <label class="f" style="grid-column:1/-1">Име на агенцията<input class="ui-in" id="naN" placeholder="напр. Погребална агенция Мир"></label>
@@ -4311,7 +4349,7 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="2026-11-12.2"; // сменя се при всяко публикуване
+const APP_VERSION="2026-11-12.3"; // сменя се при всяко публикуване
 function showVersion(){const v=$("#appVer");if(v)v.textContent="Версия "+APP_VERSION;
   const a=$("#auth .auth-box");if(a&&!a.querySelector(".appver")){const e=document.createElement("div");e.className="appver auth-ver";e.textContent="Версия "+APP_VERSION;a.appendChild(e)}}
 let NEWER=null;
