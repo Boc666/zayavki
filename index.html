@@ -854,6 +854,14 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
   #listBody tr{padding:14px 2px}
 }
 
+/* ---------- печат: винаги бял фон и стандартен ред — тъмният дизайн не стига до хартията ---------- */
+@media print{
+  html,body{background:#fff!important;color:#000}
+  body{line-height:1.45;letter-spacing:normal}
+  /* Safari не спазва @page{margin:0} и добавя свои полета (и колонтитули) — тогава листът A4
+     се смалява, за да се побере на една страница, вместо да се разлее на две */
+  html.safari-print .sheet{zoom:.87;margin:0 auto}
+}
 /* ---------- намалено движение: по-малко и по-меко, не нула ---------- */
 @media(prefers-reduced-motion:reduce){
   main>section:not(.hidden),body.intro #tab-dash .kpis,body.intro #tab-dash .card{animation:none!important}
@@ -1980,6 +1988,8 @@ function openMenu(anchor,{title,items,current,onPick,custom,clear}){
    натискане; след запис през интернет това „натискане“ е изтекло и нищо не става — затова там
    показваме бутон „Печатай“ и печатът тръгва от неговото натискане. */
 const IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+// Safari при печат не спазва @page{margin:0} — вижте html.safari-print в стиловете за печат
+if(/^((?!chrome|chromium|crios|edg|fxios|firefox|android).)*safari/i.test(navigator.userAgent))document.documentElement.classList.add("safari-print");
 function printNow(after){
   const go=()=>{let done=false;const fin=()=>{if(done)return;done=true;window.removeEventListener("afterprint",fin);after&&after()};
     window.addEventListener("afterprint",fin);window.print();if(!IOS)fin();else setTimeout(fin,120e3)};
