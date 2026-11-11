@@ -1570,7 +1570,10 @@ async function sb(path,{method="GET",body,headers={},raw}={}){
   let r;try{r=await fetch(SB.url+path,{method,headers:h,body,cache:"no-store"})}catch(e){throw netErr()}
   if(!SRV_UP){SRV_UP=true;$("#srvBar").classList.add("hidden")}
   if(r.status===401&&t){sbSave(null);if(ME)authShow("login",{locked:true,user:ME.username});throw new Error("Сесията изтече — влезте отново.")}
-  if(!r.ok){const j=await r.json().catch(()=>null);throw new Error((j&&(j.message||j.msg||j.error))||("Грешка от сървъра ("+r.status+")"))}
+  if(!r.ok){const j=await r.json().catch(()=>null);let m=(j&&(j.message||j.msg||j.error))||("Грешка от сървъра ("+r.status+")");
+    if(/records_request_number_uq/.test(m))m="Този номер на заявка вече е зает от друга заявка. Сменете номера и запазете пак.";
+    else if(/records_invoice_number_uq/.test(m))m="Този номер на фактура вече е издаден. Изтрийте номера (ще се даде следващият свободен) или въведете друг.";
+    throw new Error(m)}
   if(raw)return r;const tx=await r.text();return tx?JSON.parse(tx):null}
 const rpc=(fn,args={})=>sb("/rest/v1/rpc/"+fn,{method:"POST",body:args});
 const enc_=encodeURIComponent,DOC_BLOBS=new WeakSet(); // Word файлове, които вече са в хранилището
@@ -1663,21 +1666,23 @@ async function srvRefresh(force){if(!(SRV||CLOUD)||!DB.db||!ME)return;
   if(SRV_P)return SRV_P;if(!force&&Date.now()-SRV_LAST<30e3)return;
   SRV_P=(async()=>{try{
     // всичко наведнъж (успоредно), а не едно след друго
-    const [c,metaRows,us]=await Promise.all([
+    const [c,metaRows,nums,us]=await Promise.all([
       CLOUD&&AG&&!AG.owner?rpc("my_context"):null, // срокът може да изтече, докато програмата е отворена
-      CLOUD?sb("/rest/v1/records?select=key,value&store=eq.meta&key=in.(settings,catalog,template,necro,inventory)"):null,
+      CLOUD?sb("/rest/v1/records?select=key,value,version&store=eq.meta&key=in.(settings,catalog,template,necro,inventory)"):null,
+      CLOUD&&HAS_NUMS!==false?rpc("peek_numbers").catch(e=>{if(/peek_numbers|PGRST202/.test(e.message))HAS_NUMS=false;return null}):null,
       CLOUD?sbProfiles():getMeta("users",[])]);
     if(c&&c.kind==="agency"&&(c.expired||!c.agency_active||!c.active)){sbSave(null);DB.db=null;ME=null;authShow("login",{msg:c.active?noAccessMsg(c.support_phone):"Този потребител е спрян. Обърнете се към администратора."});return}
-    const M={};if(metaRows)for(const r of metaRows)M[r.key]=r.value?r.value.value:undefined;
+    const M={};if(metaRows)for(const r of metaRows){M[r.key]=r.value?r.value.value:undefined;metaSeen(r.key,r.version,M[r.key])}
     const gm=async k=>CLOUD?(M[k]??null):getMeta(k,null);
     SETTINGS=migrateSettings(await gm("settings"));CATALOG=migrateCatalog(await gm("catalog"));TEMPLATE=migrateTemplate(await gm("template"));applyTemplate();
     NECRO=migrateNecro(await gm("necro"));if(!INV_BUSY)INVD=migrateInvd(await gm("inventory"));
     if(us&&us.length){USERS=us;if(ME){const m=us.find(x=>x.id===ME.id);if(m&&m.active)ME=m}}
+    if(nums){HAS_NUMS=true;SETTINGS.nextNo=nums.request;SETTINGS.invNext=nums.invoice}
     SRV_LAST=Date.now()}catch(e){}finally{SRV_P=null}})();
   return SRV_P}
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){srvRefresh(true);if(DB.memRefresh&&ME)DB.memRefresh()}});
 const getMeta=async(k,d)=>{const r=await DB.get("meta",k);return r?r.value:d};
-const setMeta=(k,v)=>DB.put("meta",{key:k,value:v});
+const setMeta=(k,v)=>CLOUD&&HAS_SAVE_RPC!==false&&HAS_VER!==false?setMetaV(k,v).catch(e=>{if(/save_record|PGRST202|schema cache/i.test(e.message)){HAS_SAVE_RPC=false;return DB.put("meta",{key:k,value:v})}throw e}):DB.put("meta",{key:k,value:v});
 
 /* =====================================================================
    ПОМОЩНИ ФУНКЦИИ
@@ -1713,8 +1718,9 @@ function egnBirth(e){ // ЕГН -> дата на раждане (само ако
 let SETTINGS,CATALOG,CURRENT=null,DIRTY=false;
 const padNo=n=>String(n).padStart(SETTINGS.digits||1,"0");
 const emptyLine=no=>({no,used:false,note:"",qty:null,price:null});
-function newRequest(){
-  return {id:uid(),created:new Date().toISOString(),updated:null,sample:false,
+const PROV_NO=new Map(); // id на нова заявка → предварителният номер (истинският се взима от базата при първия запис)
+function newRequest(){const id=uid();PROV_NO.set(id,padNo(SETTINGS.nextNo));
+  return {id,created:new Date().toISOString(),updated:null,sample:false,
     number:padNo(SETTINGS.nextNo),reqDate:todayISO(),reqCity:SETTINGS.city,representative:SETTINGS.rep,
     appName:"",appRelation:"",appCity:SETTINGS.city,appStreet:"",appNo:"",appPhone:"",
     decName:"",decBirth:"",decAge:"",decEgn:"",decCitizen:"България",decMarital:"",decEdu:"",decProf:"",decWork:"",decSoc:"",
@@ -2726,9 +2732,41 @@ function openOnboarding(step=0){
 
 /* версия на реда (миграция 3): DB.get за заявки взима и version; putChecked пише през save_record.
    Без миграцията — стария запис (приложението само разпознава липсата). */
+// Настройки, каталог, некролози, склад (store „meta“): помним версията и как изглеждаха при четене (MBASE).
+// При запис пращаме очакваната версия; ако някой друг е записал междувременно — сливаме: върху тяхната версия
+// прилагаме само полетата, които ние сме променили спрямо прочетеното (до ниво поле, вкл. по редове в списъци).
+const MVER={},MBASE={};let HAS_NUMS=null,HAS_PUTV=null;
+function metaSeen(k,ver,val){MVER[k]=ver;MBASE[k]=val===undefined?undefined:structuredClone(val)}
+const jeq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+const isObj=x=>x&&typeof x==="object"&&!Array.isArray(x);
+function diffPaths(a,b,path=[],out=[]){
+  if(jeq(a,b))return out;
+  if(isObj(a)&&isObj(b)){for(const k of new Set([...Object.keys(a),...Object.keys(b)])){
+      if(!(k in b))out.push({p:[...path,k],del:true});else diffPaths(a[k],b[k],[...path,k],out)}return out}
+  if(Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every(isObj)&&b.every(isObj)){a.forEach((x,i)=>diffPaths(x,b[i],[...path,i],out));return out}
+  out.push({p:path,v:b});return out}
+function applyPaths(t,ops){for(const o of ops){if(!o.p.length){t=structuredClone(o.v);continue}
+    let c=t;for(let i=0;i<o.p.length-1;i++){const k=o.p[i];if(c[k]==null||typeof c[k]!=="object")c[k]=typeof o.p[i+1]==="number"?[]:{};c=c[k]}
+    const last=o.p[o.p.length-1];if(o.del)delete c[last];else c[last]=structuredClone(o.v)}return t}
+async function setMetaV(k,v){
+  const mine=structuredClone(v),changes=MBASE[k]!==undefined?diffPaths(MBASE[k],mine):null;
+  let send=mine,exp=MVER[k]??null;
+  for(let i=0;i<4;i++){
+    const r=await rpc("save_record",{p_store:"meta",p_key:k,p_value:{key:k,value:send},p_expected:exp});
+    if(r&&r.ok){metaSeen(k,r.version,send);if(isObj(v)&&send!==mine){for(const x of Object.keys(v))if(!(x in send))delete v[x];Object.assign(v,structuredClone(send))}return}
+    if(!r||!r.conflict)throw new Error("Записът не мина.");
+    if(r.deleted){exp=null;continue}
+    const theirs=r.value?r.value.value:undefined;exp=r.version;
+    // никога не сме чели — нямаме с какво да сравним: нашата версия остава (както досега)
+    send=changes?applyPaths(structuredClone(theirs??{}),changes):mine;
+    if(k==="inventory")console.warn("склад: слят запис")}
+  throw new Error("Настройките се променят едновременно от друг потребител. Опитайте пак.")}
 if(CLOUD){
   const baseGet=DB.get;
-  DB.get=async(s,k)=>{if(s!=="requests")return baseGet(s,k);
+  DB.get=async(s,k)=>{
+    if(s==="meta"&&HAS_VER!==false){try{const p=await sb(`/rest/v1/records?select=value,version&store=eq.meta&key=eq.${enc_(k)}`);HAS_VER=true;
+        if(p[0]){metaSeen(k,p[0].version,p[0].value?p[0].value.value:undefined);return p[0].value}metaSeen(k,null,undefined);return undefined}catch(e){if(e.net)throw e}}
+    if(s!=="requests")return baseGet(s,k);
     if(HAS_VER!==false){try{const p=await sb(`/rest/v1/records?select=value,version&store=eq.requests&key=eq.${enc_(k)}`);HAS_VER=true;
         if(p[0]){DBVER[k]=p[0].version;return p[0].value}return undefined}catch(e){if(e.net)throw e;HAS_VER=false}}
     return baseGet(s,k)};
@@ -2761,6 +2799,7 @@ if(CLOUD){
   DB.del=async(s,k)=>{await base.del(s,k);if(STORES.has(s))touch(s,null,k)};
   DB.putAtomic=async ops=>{await base.atomic(ops);for(const o of ops)if(STORES.has(o.store))touch(o.store,o.value)};
   DB.putChecked=async(s,o,exp)=>{const r=await base.checked(s,o,exp);if(r&&r.ok&&STORES.has(s))touch(s,o);return r};
+  DB.memTouch=(s,v)=>{if(STORES.has(s))touch(s,v)};
   DB.memRefresh=s=>{for(const k of s?[s]:Object.keys(MEM))if(MEM[k]&&MEM[k].data)load(k).catch(()=>{})};
   DB.memClear=()=>{for(const k in MEM)delete MEM[k]};
 }
@@ -2772,7 +2811,9 @@ function memChanged(s){clearTimeout(MEM_T);MEM_T=setTimeout(()=>{if(!ME||$("#mod
   const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)&&a.closest("#tab-"+vis)&&a.type!=="search"&&a.id!=="search")return; // не пречим, докато се пише
   ({list:renderList,cal:renderCal,dash:renderDash,fin:renderFin,wsl:renderWsl,clients:renderClients,days40:renderPomeni,stats:renderStats,partners:renderPartners,files:renderDocs})[vis]?.()},250)}
 // служителите увеличават само номерацията — четем свежите настройки и сменяме само нея
-async function bumpCounter(k,val){try{const st=await getMeta("settings",null);if(!st){SETTINGS[k]=val;return}
+async function bumpCounter(k,val){
+  if(HAS_NUMS){try{await rpc("bump_number",{p_name:k==="nextNo"?"request":"invoice",p_value:val-1});if((SETTINGS[k]||0)<val)SETTINGS[k]=val}catch(e){console.warn("номерация:",e.message)}return}
+  try{const st=await getMeta("settings",null);if(!st){SETTINGS[k]=val;return}
   if((st[k]||0)>=val){SETTINGS[k]=st[k];return}st[k]=val;await setMeta("settings",st);SETTINGS[k]=val}catch(e){console.warn("номерация:",e.message)}}
 
 /* ---------------- запис ---------------- */
@@ -2786,7 +2827,12 @@ async function saveCurrent(opts={}){
   const dup=opts.quiet?null:(await DB.all("requests")).find(r=>r.id!==CURRENT.id&&String(r.number).trim()===String(CURRENT.number).trim());
   if(dup&&!confirm(`Вече има заявка с № ${CURRENT.number}. Да запазя ли въпреки това?`))return false;
   const isNew=!BASE[CURRENT.id]&&!(await DB.get("requests",CURRENT.id));
+  let gotNo=null;
+  if(isNew&&HAS_NUMS&&PROV_NO.get(CURRENT.id)===String(CURRENT.number).trim()){ // номерът не е пипан → взимаме истинския свободен от базата
+    try{const no=padNo(await takeNumber("request"));if(no!==CURRENT.number){gotNo=no;CURRENT.number=no;const f=$('#sheets [data-k="number"]');if(f)f.value=no}}
+    catch(e){alert("Заявката НЕ е запазена: "+e.message);return false}}
   let res;try{res=await guardedSave(CURRENT.id,"core",structuredClone(CURRENT))}catch(e){alert("Заявката НЕ е запазена: "+e.message);return false}
+  PROV_NO.delete(CURRENT.id);
   if(!res)return false;
   if(res.reload){openRequest(structuredClone(res.reload));toast("Заредена е тяхната версия. Вашият вариант е запазен на този компютър — „Възстанови го“ над бланката.",true);return false}
   CURRENT.updated=res.rec.updated;CURRENT.updatedBy=res.rec.updatedBy;CURRENT.ws=structuredClone(res.rec.ws);CURRENT.inv=Object.assign(emptyInv(),structuredClone(res.rec.inv||{}));ensureWs(CURRENT);
@@ -2800,7 +2846,7 @@ async function saveCurrent(opts={}){
   if(isNew&&isFinite(n)&&n>=SETTINGS.nextNo)await bumpCounter("nextNo",n+1);
   if(!opts.quiet)audit(isNew?"Нова заявка":"Запазена заявка","№ "+CURRENT.number+(CURRENT.decName?" — "+CURRENT.decName:"")+" · общо "+eur(calc(CURRENT).total),CURRENT.id);
   setDirty(false);renderCaseBar();
-  if(!opts.quiet){toast("Заявката е запазена ✔");if(!CURRENT.clientId)suggestClient(CURRENT).catch(e=>console.warn(e))}
+  if(!opts.quiet){toast(gotNo?`Заявката е запазена с № ${gotNo} ✔ (предишният номер беше зает)`:"Заявката е запазена ✔");if(!CURRENT.clientId)suggestClient(CURRENT).catch(e=>console.warn(e))}
   return true;
 }
 $("#btnSave").onclick=async()=>{if(await saveCurrent()&&stockPlan(CURRENT).length)setTimeout(()=>toast("Заявката е запазена. Складът още НЕ е обновен — натиснете „Изпиши от склада“.",true),900)};
@@ -3191,8 +3237,9 @@ $("#invOpenReq").onclick=async()=>{await invFlush();
 const invNextNo=()=>String(SETTINGS.invNext||1).padStart(10,"0");
 async function invAssignNo(){
   const I=INV.inv;I.number=I.number.trim();
-  if(SRV||CLOUD){const s=await getMeta("settings",null);if(s&&(s.invNext||1)>(SETTINGS.invNext||1))SETTINGS.invNext=s.invNext}
-  if(!I.number){I.number=invNextNo();await bumpCounter("invNext",(SETTINGS.invNext||1)+1);return true}
+  if(HAS_NUMS){if(!I.number){I.number=String(await takeNumber("invoice")).padStart(10,"0");SETTINGS.invNext=parseInt(I.number,10)+1;return true}}
+  else{if(SRV||CLOUD){const s=await getMeta("settings",null);if(s&&(s.invNext||1)>(SETTINGS.invNext||1))SETTINGS.invNext=s.invNext}
+    if(!I.number){I.number=invNextNo();await bumpCounter("invNext",(SETTINGS.invNext||1)+1);return true}}
   const dup=(await DB.all("requests")).find(x=>x.id!==INV.id&&x.inv&&String(x.inv.number).trim()===I.number);
   if(dup&&!confirm(`Фактура № ${I.number} вече е издадена по заявка № ${dup.number}. Да продължа ли?`))return false;
   const n=parseInt(I.number,10);if(isFinite(n)&&n>=(SETTINGS.invNext||1)){await bumpCounter("invNext",n+1)}
@@ -3509,10 +3556,22 @@ function migrateInvd(d){d=d||{};if(!Array.isArray(d.items))d.items=[];if(!Array.
 async function invCommit(mut,req){
   if(INV_BUSY)throw new Error("Друга складова операция още се записва. Изчакайте секунда.");
   INV_BUSY=true;
-  try{if(SRV||CLOUD)INVD=migrateInvd(await getMeta("inventory",null)); // друго устройство може да е изписало междувременно
+  try{for(let attempt=0;;attempt++){
+    if(SRV||CLOUD)INVD=migrateInvd(await getMeta("inventory",null)); // друго устройство може да е изписало междувременно
     const d=structuredClone(INVD),rq=req?structuredClone(req):null;const out=mut(d,rq);
     const ops=[{store:"meta",value:{key:"inventory",value:d}}];if(rq){rq.updated=new Date().toISOString();ops.push({store:"requests",value:rq})}
-    await DB.putAtomic(ops);INVD=d;if(rq)rememberBase(rq);return{out,req:rq}}
+    if(CLOUD&&HAS_PUTV!==false){
+      // проверка на версиите: складът и заявката не са пипани от друг, откакто ги прочетохме
+      const vops=[{store:"meta",key:"inventory",value:{key:"inventory",value:d},expected:MVER.inventory??null}];
+      if(rq)vops.push({store:"requests",key:rq.id,value:rq,expected:DBVER[rq.id]??null});
+      try{const vers=await rpc("put_atomic_v",{ops:vops});HAS_PUTV=true;
+        if(vers["meta:inventory"]!=null)metaSeen("inventory",vers["meta:inventory"],d);if(rq&&vers["requests:"+rq.id]!=null)DBVER[rq.id]=vers["requests:"+rq.id];
+        if(DB.memTouch&&rq)DB.memTouch("requests",rq);INVD=d;if(rq)rememberBase(rq);return{out,req:rq}}
+      catch(e){
+        if(/CONFLICT:meta:inventory/.test(e.message)&&attempt<3)continue; // друг е изписал в същия момент — четем наново и повтаряме
+        if(/CONFLICT:requests/.test(e.message))throw new Error("Заявката е променена от друг служител междувременно. Отворете я наново и опитайте пак — складът НЕ е променен.");
+        if(/put_atomic_v|PGRST202|schema cache/i.test(e.message))HAS_PUTV=false;else throw e}}
+    await DB.putAtomic(ops);INVD=d;if(rq)rememberBase(rq);return{out,req:rq}}}
   finally{INV_BUSY=false}
 }
 const addMove=(d,m)=>{m.id=uid();m.ts=new Date().toISOString();d.moves.push(m);return m};
@@ -4032,12 +4091,16 @@ async function pairPhone(){
 /* полета за фактури: [id на полето, ключ в SETTINGS] */
 const INV_SET=[["sInvName","invName"],["sInvAddr","invAddr"],["sInvEik","invEik"],["sInvMol","invMol"],["sInvBank","invBank"],["sInvIban","invIban"],["sInvBic","invBic"],["sInvNext","invNext"],["sInvVatNo","invVatNo"],["sInvVatRate","invVatRate"]];
 $("#btnSaveSet").onclick=$("#btnSaveInvSet").onclick=async()=>{
+  const oldNo={nextNo:SETTINGS.nextNo,invNext:SETTINGS.invNext};
   INV_SET.forEach(([id,k])=>SETTINGS[k]=$("#"+id).value.trim());
   SETTINGS.invNext=parseInt(SETTINGS.invNext,10)||1;SETTINGS.invVatRate=num(SETTINGS.invVatRate)??20;SETTINGS.invVatOn=$("#sInvVatOn").checked;
   Object.assign(SETTINGS,{agency:$("#sAgency").value,addr:$("#sAddr").value,gsm:$("#sGsm").value,short:$("#sShort").value,city:$("#sCity").value,rep:$("#sRep").value,staff:$("#sStaff").value.split("\n").map(x=>x.trim()).filter(Boolean),
     nextNo:parseInt($("#sNext").value,10)||1,offerDays:parseInt($("#sOfferDays").value,10)||7,stockPin:$("#sStockPin").value.trim(),lockMin:Math.max(0,parseInt($("#sLockMin").value,10)||0),digits:Math.min(6,Math.max(1,parseInt($("#sDigits").value,10)||1)),
     showLily:$("#sLily").checked,tagline:$("#sTag").value,logoMode:($$("input[name=logoMode]").find(x=>x.checked)||{}).value||"default"});
-  await setMeta("settings",SETTINGS);audit("Запазени настройки");applyTitle();renderSettings();toast("Настройките са запазени ✔")};
+  if(HAS_NUMS)try{for(const[k,name]of[["nextNo","request"],["invNext","invoice"]])if(+SETTINGS[k]!==+oldNo[k])await rpc("set_number",{p_name:name,p_value:+SETTINGS[k]})}
+    catch(e){alert("Номерацията не е сменена: "+e.message);SETTINGS.nextNo=oldNo.nextNo;SETTINGS.invNext=oldNo.invNext}
+  try{await setMeta("settings",SETTINGS)}catch(e){alert("Настройките НЕ са запазени: "+e.message);return}
+  await loadNums();audit("Запазени настройки");applyTitle();renderSettings();toast("Настройките са запазени ✔")};
 $$("input[name=logoMode]").forEach(x=>x.onchange=async()=>{SETTINGS.logoMode=x.value;if(x.value==="custom"&&!SETTINGS.logo){$("#logoFile").click()}await setMeta("settings",SETTINGS);renderSettings()});
 $("#logoFile").onchange=e=>{const f=e.target.files[0];if(!f)return;if(f.size>3e6){alert("Файлът е над 3 MB. Изберете по-малко изображение.");return}
   const rd=new FileReader();rd.onload=async()=>{SETTINGS.logo=rd.result;SETTINGS.logoMode="custom";await setMeta("settings",SETTINGS);renderSettings();toast("Логото е запазено ✔")};rd.readAsDataURL(f)};
@@ -4616,7 +4679,8 @@ function authShow(mode,opt={}){
       try{if(Date.now()<LOCK_UNTIL)throw new Error("Твърде много грешни опити. Изчакайте малко.");
         if(CLOUD){if($("#rcP").value!==$("#rcP2").value)throw new Error("Паролите не съвпадат.");
           const un=normUser($("#rcU").value),ac=$("#rcA")?normUser($("#rcA").value):"";
-          await rpc("recover_admin",{p_agency:ac,p_username:un,p_code:$("#rcC").value.trim(),p_password:$("#rcP").value});
+          const rr=await rpc("recover_admin",{p_agency:ac,p_username:un,p_code:$("#rcC").value.trim(),p_password:$("#rcP").value});
+          if(rr&&rr.ok===false)throw new Error(rr.msg||"Грешни данни или код.");
           const a=await cloudLogin(ac,un,$("#rcP").value);if(!a)throw new Error("Паролата е сменена. Влезте с новата парола.");
           if(a.platform){platformShow(a);return}
           await loginAs(a,"Вход");audit("Паролата е сменена с код за възстановяване",a.name);return}
@@ -4858,7 +4922,7 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="2026-11-12.6"; // сменя се при всяко публикуване
+const APP_VERSION="2026-11-12.7"; // сменя се при всяко публикуване
 /* ---------- инсталиране като приложение (иконка на телефона / компютъра) ---------- */
 let PWA_EV=null;
 const PWA_STANDALONE=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
@@ -5045,15 +5109,21 @@ $("#lgUser").onchange=$("#lgFrom").onchange=$("#lgTo").onchange=renderLog;$("#lg
 
 /* ---------------- старт ---------------- */
 let SHARED=false;
+// следващите номера от базата (миграция 9); без нея — постарому от настройките
+async function loadNums(){if(!CLOUD||HAS_NUMS===false)return;
+  try{const n=await rpc("peek_numbers");HAS_NUMS=true;SETTINGS.nextNo=n.request;SETTINGS.invNext=n.invoice}
+  catch(e){if(e.net)return;if(/peek_numbers|PGRST202|schema cache/i.test(e.message))HAS_NUMS=false}}
+async function takeNumber(name){const n=await rpc("take_number",{p_name:name});return Number(n)}
 async function loadShared(){ // настройки, каталог, некролози, склад (+ примерни заявки при първо пускане)
   // в облака — всички настройки наведнъж (една заявка вместо десет); партньорите и клиентите — успоредно
   const M={};let bulk=false;
-  if(CLOUD)try{for(const r of await sb("/rest/v1/records?select=key,value&store=eq.meta&key=neq.auth"))M[r.key]=r.value?r.value.value:undefined;bulk=true}catch(e){if(e.net)throw e}
+  if(CLOUD)try{for(const r of await sb("/rest/v1/records?select=key,value,version&store=eq.meta&key=neq.auth")){M[r.key]=r.value?r.value.value:undefined;metaSeen(r.key,r.version,M[r.key])}bulk=true}catch(e){if(e.net)throw e}
   const gm=async(k,d)=>bulk?(M[k]===undefined?d:M[k]):getMeta(k,d);
   const side=Promise.all([loadPartners(),loadClients(),CLOUD?DB.all("requests").catch(()=>{}):null,CLOUD?DB.all("events").catch(()=>{}):null]); // заявките — предварително, за първия раздел
   const raw={settings:await gm("settings",null),catalog:await gm("catalog",null)};
   SETTINGS=migrateSettings(raw.settings);
   CATALOG=migrateCatalog(raw.catalog);
+  await loadNums();
   TEMPLATE=migrateTemplate(await gm("template",null));applyTemplate();
   NECRO=migrateNecro(await gm("necro",null));
   INVD=migrateInvd(await gm("inventory",null));
