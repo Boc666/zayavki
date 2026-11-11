@@ -282,7 +282,6 @@ table.list td.money,table.list td.num{white-space:nowrap}
 .seg button{background:transparent;border:0;color:var(--text2);font:500 12.5px var(--ui);padding:6px 12px;border-radius:3px;cursor:pointer;transition:background .15s,color .15s}@media(hover:hover) and (pointer:fine){.seg button:hover{color:var(--text)}}
 .seg button.on{background:var(--panel2);color:var(--bronze-hi);box-shadow:inset 0 0 0 1px var(--border)}
 
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 @media(max-width:900px){body{grid-template-columns:1fr}aside.side{position:static;height:auto}nav.tabs{flex-direction:row;flex-wrap:wrap}nav.tabs .nsec{display:none}main{padding:18px}.toolbar{margin:-18px -18px 14px;padding:12px 18px}}
 /* ---- телефон: менюто става горна лента с бутон ☰; бланките A4 се местят настрани с пръст ---- */
 .side-burger{display:none}
@@ -601,7 +600,8 @@ table.list td.money,table.list td.num,.kpi b,.chip b{font-variant-numeric:tabula
 #toast{bottom:calc(26px + env(safe-area-inset-bottom,0px))}
 .side{height:100vh;height:100dvh}
 /* на всеки сензорен екран (и телефон хоризонтално, и таблет) — 16px в полетата, иначе iPhone увеличава */
-@media(pointer:coarse){.ui-in,#auth input,.modal input,.modal select,.modal textarea{font-size:16px!important}}
+@media(pointer:coarse){.ui-in,#auth input,.modal input,.modal select,.modal textarea{font-size:16px!important}
+  input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{font-size:max(16px,1em)!important}}
 
 /* ---------- break-ui: дълги имена, големи суми, телефон ---------- */
 /* името на агенцията горе — най-много 2 реда (цялото е в подсказката) */
@@ -631,6 +631,236 @@ table.list td.money,table.list td.num,.kpi b,.chip b{font-variant-numeric:tabula
   #listBody tr td.acts{grid-column:1/-1;grid-row:5;display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:6px;margin-top:6px;white-space:nowrap;width:auto!important}
   #listBody tr td.acts>*{flex:none;margin:0}
   #listBody tr td[colspan]{grid-column:1/-1}
+}
+
+/* =====================================================================
+   ДИЗАЙН „ТИХА ВЕЧЕРНА СВЕТЛИНА“ — единна система за целия интерфейс
+   Топъл въглен + слонова кост + бронзът на Тангра. Сериф за заглавията
+   (връзка с бланката), системен шрифт за всичко функционално.
+   Бланката A4 (.sheet) има свои цветове и не се влияе от тези токени.
+   ===================================================================== */
+:root{
+  /* повърхности — топъл въглен, всяко ниво малко по-светло */
+  --bg:#121110; --side:#161412; --panel:#1C1A17; --panel2:#24211D; --panel3:#2B2722; --field:#141210;
+  /* текст — слонова кост, не бяло */
+  --text:#EDE7DD; --text2:#A69E92; --text3:#7B746A;
+  /* бронз на Тангра */
+  --bronze:#BC955C; --bronze-hi:#D2B07A; --bronze-soft:rgba(188,149,92,.13); --bronze-line:rgba(188,149,92,.42);
+  /* тънки линии — полупрозрачна слонова кост вместо сиви плътни */
+  --border:rgba(237,231,221,.12); --border-soft:rgba(237,231,221,.07); --border-strong:rgba(237,231,221,.2);
+  /* статуси — приглушени */
+  --ok:#86B394; --ok-soft:rgba(134,179,148,.12);
+  --caution:#D4B068; --caution-soft:rgba(212,176,104,.11);
+  --err:#D7776A; --err-soft:rgba(215,119,106,.12);
+  /* форма и сенки */
+  --r:10px; --r-sm:8px; --r-xs:6px;
+  --hl:inset 0 1px 0 rgba(255,255,255,.035);                 /* светлина по горния ръб */
+  --sh-pop:0 1px 0 rgba(255,255,255,.04) inset,0 18px 48px rgba(0,0,0,.5),0 2px 8px rgba(0,0,0,.3);
+  --ring:0 0 0 3px rgba(188,149,92,.22);
+  /* типография */
+  --display:"PT Serif","Iowan Old Style","Palatino Linotype",Georgia,Cambria,serif;
+  /* движение */
+  --ease-out:cubic-bezier(.23,1,.32,1); --ease-in-out:cubic-bezier(.77,0,.175,1); --ease-drawer:cubic-bezier(.32,.72,0,1); --ease:var(--ease-out);
+  --d-press:120ms; --d-fast:160ms; --d-pop:200ms; --d-modal:240ms;
+  /* стари имена */
+  --ink:var(--text); --muted:var(--text2); --line:var(--border); --box:var(--field); --beige:var(--panel3); --beige2:var(--panel2); --accent:var(--bronze);
+}
+body{background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;letter-spacing:.005em;font-feature-settings:"kern"}
+::selection{background:rgba(188,149,92,.32);color:var(--text)}
+*:focus-visible{outline:2px solid var(--bronze);outline-offset:2px}
+
+/* ---------- навигация (лява колона) ---------- */
+aside.side{background:var(--side);border-right:1px solid var(--border-soft)}
+.brand{padding:22px 18px 20px;gap:12px;border-bottom:1px solid var(--border-soft)}
+.brand .plate{width:44px;height:44px;border-radius:12px;background:#EFE9DF;box-shadow:0 0 0 1px rgba(0,0,0,.2),0 6px 16px rgba(0,0,0,.35)}
+.brand .plate.empty{background:var(--panel2);box-shadow:none;border:1px dashed var(--border-strong)}
+.brand h1,#appTitle{font:600 15px/1.25 var(--display);letter-spacing:.005em;color:var(--text)}
+.brand small{font-size:11px;letter-spacing:.06em;color:var(--text3);margin-top:3px}
+nav.tabs{padding:12px 10px;gap:2px}
+nav.tabs .nsec{font-size:10px;letter-spacing:.14em;color:var(--text3);padding:16px 12px 6px;font-weight:600}
+nav.tabs button{padding:8px 12px;border-radius:var(--r-sm);font-size:13.5px;color:var(--text2);gap:12px}
+nav.tabs button svg{opacity:.75;stroke-width:1.55}
+@media(hover:hover) and (pointer:fine){nav.tabs button:hover{background:rgba(237,231,221,.04);color:var(--text)}}
+nav.tabs button.on{background:var(--panel2);color:var(--text);box-shadow:var(--hl)}
+nav.tabs button.on svg{color:var(--bronze-hi);opacity:1}
+nav.tabs button.on::before{left:-10px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--bronze)}
+.side-user{padding:14px 14px 14px 18px;border-top:1px solid var(--border-soft)}
+.side-user .av{width:32px;height:32px;background:var(--bronze-soft);border:1px solid var(--bronze-line);color:var(--bronze-hi);font:600 12px var(--ui);letter-spacing:.04em}
+.side-user .who b{font-size:13px}
+.side-foot{font-size:11px;line-height:1.55}
+
+/* ---------- заглавия на екраните ---------- */
+main{padding:32px 40px 56px}
+.ph{margin:0 0 24px;gap:16px;align-items:flex-end}
+.ph h2{font:600 26px/1.15 var(--display);letter-spacing:-.012em;color:var(--text)}
+.ph p{color:var(--text2);font-size:13.5px;margin-top:6px}
+.toolbar{background:rgba(18,17,16,.86);-webkit-backdrop-filter:saturate(140%) blur(10px);backdrop-filter:saturate(140%) blur(10px);border-bottom:1px solid var(--border-soft);margin:-32px -40px 22px;padding:14px 40px;gap:10px}
+.tb-title{font:600 18px/1.2 var(--display);letter-spacing:-.005em}
+
+/* ---------- карти и плочки ---------- */
+.card{background:var(--panel);border:1px solid var(--border-soft);border-radius:var(--r);padding:20px 22px;box-shadow:var(--hl);margin-bottom:18px}
+.card h2{font:600 16px/1.3 var(--display);letter-spacing:0;margin:0 0 16px;color:var(--text)}
+.card h3{font:600 10.5px var(--ui);letter-spacing:.13em;color:var(--text3);border-bottom-color:var(--border-soft);padding-bottom:8px;margin:26px 0 12px}
+.card h2.wsh{border-bottom-color:var(--border-soft)}
+.kpis{border-radius:var(--r);overflow:hidden}
+.kpi{padding:20px 24px;border-right-color:var(--border-soft)}
+.kpi .k,.tile .k{font-size:10.5px;letter-spacing:.12em;color:var(--text3);font-weight:600}
+.kpi .v{font:600 27px/1.1 var(--ui);letter-spacing:-.02em;margin-top:10px}
+.kpi.lead .v{font-family:var(--display);font-size:31px;letter-spacing:-.015em;color:var(--bronze-hi)}
+.kpi .s{color:var(--text2);margin-top:6px}
+.tile{background:var(--panel2);border-radius:var(--r-sm)}
+.tile .v{font-size:20px;letter-spacing:-.015em}
+.muted{color:var(--text2)}
+
+/* ---------- таблици ---------- */
+table.list th,table.list td{padding:12px 12px;border-bottom:1px solid var(--border-soft)}
+table.list th{font-size:10.5px;letter-spacing:.12em;color:var(--text3);font-weight:600;padding-top:4px;padding-bottom:10px;border-bottom-color:var(--border)}
+table.list tbody tr:last-child td{border-bottom:0}
+/* широка таблица се превърта в своята карта, не мести страницата */
+.card:has(>table.list),.card:has(>div>table.list){overflow-x:auto;overscroll-behavior-x:contain}
+#tab-list table.list th,#tab-list table.list td{padding-left:10px;padding-right:10px}
+#tab-list table.list td.acts{white-space:nowrap;width:1%}
+table.list td.money{font-variant-numeric:tabular-nums}
+@media(hover:hover) and (pointer:fine){table.list tbody tr:hover td{background:rgba(237,231,221,.025)}}
+table.list tr.click{cursor:pointer}
+.empty{color:var(--text3);font-size:13.5px;padding:28px 8px;text-align:center}
+td.empty,tr .empty{text-align:center}
+.empty::before{content:"";display:block;width:28px;height:1px;margin:0 auto 12px;background:var(--bronze-line)}
+
+/* ---------- бутони ---------- */
+.btn{border-radius:var(--r-sm);padding:8px 14px;font:500 13px/1.2 var(--ui);letter-spacing:.005em;background:var(--panel2);border:1px solid var(--border);color:var(--text);box-shadow:var(--hl);gap:8px}
+@media(hover:hover) and (pointer:fine){
+  .btn:hover{background:var(--panel3);border-color:var(--border-strong)}
+  .btn.primary:hover{background:var(--bronze-hi);border-color:var(--bronze-hi)}
+  .btn.dark:hover{background:var(--bronze-soft)}
+  .btn.danger:hover{background:var(--err-soft);border-color:var(--err)}
+  .btn.ghost:hover{background:rgba(237,231,221,.05);color:var(--text)}
+}
+.btn.primary{background:var(--bronze);border-color:var(--bronze);color:#1A140B;font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 1px 2px rgba(0,0,0,.3)}
+.btn.dark{background:transparent;border-color:var(--bronze-line);color:var(--bronze-hi);box-shadow:none}
+.btn.danger{background:transparent;border-color:rgba(215,119,106,.35);color:var(--err);box-shadow:none}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--text2);box-shadow:none}
+.btn.on{background:var(--bronze-soft);border-color:var(--bronze-line);color:var(--bronze-hi)}
+.btn.small{padding:5px 10px;font-size:12px;border-radius:var(--r-xs)}
+.btn.ico{padding:6px 7px}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.4}
+
+/* ---------- полета и форми ---------- */
+.f{gap:6px}
+.f>span:first-child,label.f{font-size:12px;color:var(--text2);letter-spacing:.01em}
+.ui-in{background:var(--field);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 11px;color:var(--text);box-shadow:inset 0 1px 2px rgba(0,0,0,.25);transition-property:border-color,box-shadow,background;transition-duration:var(--d-fast);transition-timing-function:ease}
+.ui-in::placeholder{color:var(--text3)}
+@media(hover:hover) and (pointer:fine){.ui-in:hover{border-color:var(--border-strong)}}
+.ui-in:focus{outline:none;border-color:var(--bronze);box-shadow:inset 0 1px 2px rgba(0,0,0,.25),var(--ring)}
+.ui-in:disabled,.ui-in[readonly]{opacity:.65}
+
+/* ---------- сегменти, етикети, чипове, известия ---------- */
+.seg{background:var(--field);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px;gap:2px}
+.seg button{border-radius:6px;padding:6px 12px;color:var(--text2)}
+.seg button.on{background:var(--panel3);color:var(--text);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 2px rgba(0,0,0,.35)}
+.tag{border-radius:var(--r-xs);padding:2px 8px;font-size:11.5px;background:var(--panel2);border-color:var(--border-soft)}
+.pill{border-radius:var(--r-xs);letter-spacing:.1em}
+.chip{background:var(--panel);border:1px solid var(--border-soft);border-radius:999px;padding:5px 12px;box-shadow:var(--hl)}
+.status{border-radius:999px;padding:3px 10px;transition-property:background,color;transition-duration:var(--d-pop)}
+.notice{background:var(--caution-soft);border:1px solid rgba(212,176,104,.28);border-left:3px solid var(--caution);border-radius:var(--r-sm);padding:12px 16px}
+.nbar{border-radius:var(--r);box-shadow:var(--hl)}
+
+/* ---------- модали ---------- */
+#modalWrap{background:rgba(10,9,8,.62);animation:scrimIn var(--d-pop) ease}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:var(--sh-pop);animation:modalIn var(--d-modal) var(--ease-out)}
+.modal header{padding:18px 22px;border-bottom:1px solid var(--border-soft)}
+.modal header h3{font:600 17px/1.25 var(--display);letter-spacing:-.005em}
+.modal .mb{padding:20px 22px}
+.modal footer{background:var(--side);border-top:1px solid var(--border-soft);padding:14px 22px;border-radius:0 0 14px 14px}
+@keyframes scrimIn{from{opacity:0}}
+@keyframes modalIn{from{opacity:0;transform:translateY(8px) scale(.97)}}
+/* изход: по-бърз и по-кратък от входа */
+#modalWrapOut{position:fixed;inset:0;z-index:89;background:rgba(10,9,8,.62);display:flex;align-items:flex-start;justify-content:center;padding:7vh 20px 20px;pointer-events:none;animation:scrimOut 150ms ease forwards}
+#modalWrapOut .modal{animation:modalOut 150ms var(--ease-out) forwards}
+@keyframes scrimOut{to{opacity:0}}
+@keyframes modalOut{to{opacity:0;transform:translateY(4px) scale(.985)}}
+body.plat-mode #modalWrapOut{z-index:169}
+
+/* ---------- падащо меню ---------- */
+#menu{background:var(--panel2);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-pop);padding:6px}
+#menu .mi{border-radius:6px;padding:8px 10px}
+#menu .mi.sel{background:var(--panel3)}
+@media(hover:hover) and (pointer:fine){#menu .mi:hover{background:var(--panel3)}}
+
+/* ---------- известие (toast): влиза отдолу и излиза натам ---------- */
+#toast{background:var(--panel3);color:var(--text);border:1px solid var(--border);border-left:3px solid var(--ok);border-radius:var(--r);box-shadow:var(--sh-pop);padding:12px 18px;transform:translate(-50%,16px) scale(.98);transition-property:opacity,transform;transition-duration:180ms;transition-timing-function:var(--ease-out)}
+#toast.show{transform:translate(-50%,0) scale(1);transition-duration:260ms}
+
+/* ---------- вход, собственик, зареждане ---------- */
+#auth{background:var(--bg)}
+.auth-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:var(--sh-pop);padding:34px 32px 26px}
+.auth-brand{border-bottom-color:var(--border-soft)}
+.auth-brand h1{font:600 18px/1.25 var(--display);letter-spacing:-.005em}
+.auth-brand .plate{border-radius:12px;background:#EFE9DF}
+.auth-link.auth-small{border-top-color:var(--border-soft)}
+.plat-tabs{border-bottom-color:var(--border-soft)}
+.plat-tabs button.on{border-bottom-color:var(--bronze)}
+#boot{background:var(--bg)}
+
+/* ---------- калкулатор 40 дни ---------- */
+.d40-big{background:var(--bronze-soft);border:1px solid var(--bronze-line);border-radius:var(--r)}
+.d40-big b{font-family:var(--display);font-size:22px;letter-spacing:-.01em}
+
+/* ---------- движение ---------- */
+/* смяна на раздел: десетки пъти на ден — само едва забележимо проявяване, без движение */
+main>section:not(.hidden){animation:secIn 140ms ease-out}
+@keyframes secIn{from{opacity:.55}}
+/* първото табло след вход — веднъж на сесия; плочките и картите идват като една вълна (нееднакви стъпки) */
+body.intro #tab-dash .kpis{animation:riseIn 300ms var(--ease-out) both}
+body.intro #tab-dash .card{animation:riseIn 300ms var(--ease-out) both}
+body.intro #tab-dash .card:nth-of-type(1){animation-delay:50ms}
+body.intro #tab-dash .card:nth-of-type(2){animation-delay:85ms}
+body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
+@keyframes riseIn{from{opacity:0;transform:translateY(6px)}}
+/* току-що записана заявка в списъка — кратко бронзово просветване (показва коя е променена) */
+#listBody tr[data-flash] td{animation:rowFlash 1400ms ease-out}
+@keyframes rowFlash{0%,25%{background:var(--bronze-soft)}100%{background:transparent}}
+/* статусът „Запазено“ — меко потвърждение */
+
+/* ---------- телефон ---------- */
+@media(max-width:900px){
+  main{padding:20px}
+  .toolbar{margin:-20px -20px 16px;padding:12px 20px}
+}
+@media(max-width:760px){
+  main{padding:14px 14px calc(32px + env(safe-area-inset-bottom))}
+  .toolbar{margin:-14px -14px 14px;padding:10px 14px}
+  .ph h2{font-size:23px}
+  .ph .spacer{display:none}
+  .ph>.ui-in,.ph>input{flex:1 1 100%;width:100%}
+  .card{padding:16px;border-radius:12px}
+  .kpi{padding:16px 18px}
+  .kpi .v{font-size:min(26px,5.2vw)}
+  .kpi.lead .v{font-size:min(28px,5.6vw)}
+  /* предстоящи ритуали: гробищата под името, не в трета колона */
+  #dashRit table.list,#dashRit table.list tbody{display:block;overflow:visible}
+  #dashRit table.list tr{display:grid;grid-template-columns:96px minmax(0,1fr);column-gap:12px;padding:12px 0;border-bottom:1px solid var(--border-soft)}
+  #dashRit table.list tr:last-child{border-bottom:0}
+  #dashRit table.list td{display:block;border:0;padding:0;width:auto!important;white-space:normal}
+  #dashRit table.list td:nth-child(1){grid-row:1/3}
+  #dashRit table.list td:nth-child(3){grid-column:2;font-size:12.5px;margin-top:2px}
+  .brand .plate{width:36px;height:36px;border-radius:10px}
+  .brand h1,#appTitle{font-size:14px}
+  .btn{min-height:40px;padding:8px 14px}
+  .btn.small{min-height:34px}
+  .modal{border-radius:14px}
+  .auth-box{padding:26px 22px 20px;border-radius:14px}
+  #listBody tr{padding:14px 2px}
+}
+
+/* ---------- намалено движение: по-малко и по-меко, не нула ---------- */
+@media(prefers-reduced-motion:reduce){
+  main>section:not(.hidden),body.intro #tab-dash .kpis,body.intro #tab-dash .card{animation:none!important}
+  .modal,#modalWrapOut .modal,#menu{animation-name:fadeOnly!important}
+  #toast,#toast.show{transform:translate(-50%,0)!important}
+  .btn:active,nav.tabs button:active,.seg button:active,#menu .mi:active{transform:none!important}
+  @keyframes fadeOnly{from{opacity:0}}
 }
 </style>
 </head>
@@ -1826,9 +2056,10 @@ async function renderList(){
   if(q)all=all.filter(r=>[r.number,r.appName,r.decName,r.appPhone,r.cemetery].join(" ").toLowerCase().includes(q));
   const tb=$("#listBody");tb.innerHTML="";$("#listEmpty").classList.toggle("hidden",all.length>0);
   for(const raw of all){const r=normalizeRequest(structuredClone(raw)),c=calc(r),tr=document.createElement("tr");
+    if(r.id===JUST_SAVED){tr.dataset.flash="1";JUST_SAVED=null}
     tr.innerHTML=`<td><b>${esc(r.number)}</b>${r.sample?'<span class="pill">ПРИМЕР</span>':""}</td><td>${bgDate(r.reqDate)}</td>
       <td>${esc(r.appName)}</td><td>${esc(r.decName)}</td><td>${esc(r.kind)}</td><td class="money">${eur(c.total)}</td>
-      <td class="money${r.paid?" paidcell":""}" style="color:${c.rest>0?"var(--caution)":"var(--ok)"}">${r.paid?"✔ Платена":eur(c.rest)}</td>
+      <td class="money${r.paid||c.rest<0?" paidcell":""}" style="color:${c.rest>0?"var(--caution)":"var(--ok)"}">${r.paid?"✔ Платена":c.rest<0?"надплатено "+eur(-c.rest):eur(c.rest)}</td>
       ${(()=>{const w=wsCalc(r);return w.has?`<td class="money listProfit ${w.profit<0?"neg":"pos"}" title="Приход ${eur(w.income)} − разходи ${eur(w.expenses)}">${eur(w.profit)}</td>`
         :`<td class="money muted" title="Няма попълнен работен лист">—</td>`})()}
       <td class="acts"><button class="btn small" data-a="open">Отвори</button>
@@ -1860,6 +2091,7 @@ $("#btnNew").onclick=()=>{openRequest(newRequest(),true);showTab("edit")};
 $$("[data-new]").forEach(b=>b.onclick=()=>$("#btnNew").click());
 
 /* ---------------- запис ---------------- */
+let JUST_SAVED=null; // id на току-що записана заявка — просветва в списъка
 async function saveCurrent(){
   if(!CURRENT)return false;
   if(!can("req","edit")){toast("Нямате права да променяте заявки.",true);return false}
@@ -1870,7 +2102,7 @@ async function saveCurrent(){
   if(dup&&!confirm(`Вече има заявка с № ${CURRENT.number}. Да запазя ли въпреки това?`))return false;
   const isNew=!(await DB.get("requests",CURRENT.id));
   CURRENT.updated=new Date().toISOString();
-  await DB.put("requests",structuredClone(CURRENT));
+  await DB.put("requests",structuredClone(CURRENT));JUST_SAVED=CURRENT.id;
   // запомняне на нови бележки в каталога (за падащото меню)
   let learned=false;
   CURRENT.lines.forEach((l,i)=>{const it=CATALOG.items[i],v=(l.note||"").trim();
@@ -2626,7 +2858,9 @@ function openModal({title,body,wide,actions}){
   const f=w.querySelector("input:not([type=checkbox]):not([type=hidden]),select,textarea");if(f)setTimeout(()=>f.focus(),30);
   return m;
 }
-function closeModal(){const w=$("#modalWrap");if(w)w.remove()}
+function closeModal(){const w=$("#modalWrap");if(!w)return;
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches){w.remove();return}
+  $$("#modalWrapOut").forEach(x=>x.remove());w.id="modalWrapOut";setTimeout(()=>w.remove(),160)}
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("#modalWrap"))closeModal()});
 const posNum=(v,label,allowZero)=>{const n=num(v);if(n==null||!isFinite(n)||n<0||(!allowZero&&n===0))throw new Error(`Невалидна стойност за „${label}“.`);return n};
 
@@ -3504,7 +3738,7 @@ function platformShow(P){
         <td class="nw">${a.monthly_fee!=null?money(a.monthly_fee)+" / мес.":"—"}<br><small class="muted">платено ${money(a.paid_total)}${a.last_payment?" · посл. "+dd(a.last_payment):""}</small></td>
         <td class="money">${a.users}</td><td class="money">${a.requests}</td><td class="muted nw">${dt(a.last_login)}</td>
         <td>${a.active?`<span class="tag">активна</span>`:`<span class="tag" style="color:var(--err)">спряна</span>`}</td>
-        <td style="white-space:nowrap"><button class="btn small primary" data-open="${i}" title="Влизате в агенцията като администратор">Отвори</button> <button class="btn small" data-det="${i}">Детайли</button> <button class="btn small" data-act="${i}">${a.active?"Спри":"Пусни"}</button></td></tr>`).join("")
+        <td style="white-space:nowrap"><button class="btn small dark" data-open="${i}" title="Влизате в агенцията като администратор">Отвори</button> <button class="btn small" data-det="${i}">Детайли</button> <button class="btn small" data-act="${i}">${a.active?"Спри":"Пусни"}</button></td></tr>`).join("")
       ||`<tr><td colspan="8" class="empty">Още няма агенции. Натиснете „+ Нова агенция“.</td></tr>`}</tbody></table>`;
     $$("#plView [data-act]").forEach(b=>b.onclick=async()=>{const a=LIST[+b.dataset.act];
       if(a.active&&!confirm(`Да спра ли достъпа на „${a.name}“?\n\nНикой от агенцията няма да може да влезе, докато не я пуснете отново. Данните остават.`))return;
@@ -3630,12 +3864,13 @@ async function agencyBars(){
   const bb=$("#nbBack");if(bb)bb.onclick=async()=>{try{await rpc("platform_leave_agency")}catch(e){}reloadKeep(location.pathname)};
   $$("#noteBars [data-nx]").forEach(b=>b.onclick=()=>{try{const s=JSON.parse(sessionStorage.getItem("zayavki-seen")||"[]");s.push(+b.dataset.nx);sessionStorage.setItem("zayavki-seen",JSON.stringify(s))}catch(e){}b.closest(".nbar").style.display="none"});
 }
+const playIntro=()=>{document.body.classList.add("intro");setTimeout(()=>document.body.classList.remove("intro"),900)};
 async function loginAs(u,why){
   ME=u;u.lastLogin=new Date().toISOString();sessionStorage.setItem("uid",u.id);
   if(CLOUD){rpc("touch_login").catch(()=>{});if(!SHARED)await loadShared()}else await saveUsers();
   if(why==="Вход")audit("Вход");
   $("#auth").classList.add("hidden");lastAct=Date.now();
-  applyUser();showTab(firstTab());agencyBars();
+  playIntro();applyUser();showTab(firstTab());agencyBars();
 }
 function applyUser(){
   $("#sideUser").classList.remove("hidden");$("#suName").textContent=ME.name;$("#suRole").textContent=isAdmin()?"Администратор":"Служител";
