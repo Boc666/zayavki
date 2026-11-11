@@ -287,6 +287,17 @@ table.list td.money,table.list td.num{white-space:nowrap}
 @media(max-width:900px){body{grid-template-columns:1fr}aside.side{position:static;height:auto}nav.tabs{flex-direction:row;flex-wrap:wrap}nav.tabs .nsec{display:none}main{padding:18px}.toolbar{margin:-18px -18px 14px;padding:12px 18px}}
 /* ---- телефон: менюто става горна лента с бутон ☰; бланките A4 се местят настрани с пръст ---- */
 .side-burger{display:none}
+.gs-btn{display:flex;align-items:center;gap:9px;margin:10px 10px 0;padding:8px 10px;border:1px solid var(--border-soft);border-radius:var(--r-sm);background:transparent;color:var(--text2);font:13px var(--ui);cursor:pointer;text-align:left}
+.gs-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;flex:none}.gs-btn span{flex:1}
+.gs-btn kbd{font:11px var(--ui);color:var(--text3);border:1px solid var(--border-soft);border-radius:5px;padding:1px 5px}
+@media(hover:hover) and (pointer:fine){.gs-btn:hover{color:var(--text);border-color:var(--border)}}
+@media(max-width:900px){.gs-btn kbd{display:none}}
+.gs-res{margin-top:12px;max-height:min(60vh,520px);overflow-y:auto}
+.gs-grp{font:600 11px var(--ui);letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin:12px 0 4px}
+.gs-it{display:block;width:100%;text-align:left;background:none;border:0;border-radius:var(--r-sm);padding:8px 10px;color:var(--text);font:14px var(--ui);cursor:pointer}
+.gs-it small{display:block;color:var(--text2);font-size:12px;margin-top:1px}
+.gs-it.on,.gs-it:focus-visible{background:var(--panel2);outline:none}
+@media(hover:hover) and (pointer:fine){.gs-it:hover{background:var(--panel2)}}
 @media(max-width:760px){
   body{min-height:100dvh;-webkit-text-size-adjust:100%}
   aside.side{position:sticky;top:0;z-index:60;height:auto;max-height:100dvh;border-right:0;border-bottom:1px solid var(--border-soft);padding-top:env(safe-area-inset-top)}
@@ -938,6 +949,7 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
     <div><h1 id="appTitle">Погребална агенция</h1><small>Заявки и ритуали</small></div>
     <button class="side-burger" id="sideBurger" type="button" aria-label="Меню" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   </div>
+  <button class="gs-btn" id="gsBtn" type="button"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><span>Търсене</span><kbd id="gsKbd">Ctrl K</kbd></button>
   <nav class="tabs">
     <div class="nsec">Работа</div>
     <button data-tab="dash"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Начално табло</button>
@@ -946,8 +958,9 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
     <button data-tab="wsl"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="1"/><path d="M9 4V3h6v1M9 10.5l1.5 1.5L14 8.5M9 16.5h6"/></svg>Работни листове</button>
     <div class="nsec">Клиенти и помени</div>
     <button data-tab="clients"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.6.9 2.7 2.7 3 5.2"/></svg>Клиенти</button>
+    <button data-tab="partners"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="15" height="18" rx="1.5"/><path d="M19 7h1.5M19 12h1.5M19 17h1.5"/><circle cx="11.5" cy="10" r="2.6"/><path d="M7.5 17c.5-2.2 2-3.4 4-3.4s3.5 1.2 4 3.4"/></svg>Партньори</button>
     <button data-tab="necro"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>Некролози</button>
-    <button data-tab="days40"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="1.5"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8.5 15h2M13.5 15h2M8.5 18h2"/></svg>Помени (40 дни)</button>
+    <button data-tab="days40"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="1.5"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8.5 15h2M13.5 15h2M8.5 18h2"/></svg>Помени</button>
     <div class="nsec">Документи и склад</div>
     <button data-tab="files"><svg viewBox="0 0 24 24"><path d="M3 6.5a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>Документи</button>
     <button data-tab="stock"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg>Инвентар</button>
@@ -1031,6 +1044,14 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
 
 <!-- ================= ДОКУМЕНТИ ================= -->
 <section id="tab-days40" class="hidden">
+  <div class="ph"><div><h2>Помени</h2><p>Предстоящи помени по заявките и калкулатор</p></div></div>
+  <div class="card" id="pmCard">
+    <div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px"><h2 style="margin:0">Предстоящи помени</h2><span class="spacer"></span>
+      <div class="seg" id="pmSeg"><button data-d="7">7 дни</button><button data-d="14">14 дни</button><button data-d="30">30 дни</button></div>
+      <label class="muted" style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="pmDone"> покажи и свързаните</label></div>
+    <div id="pmList"></div>
+    <p class="muted" id="pmNote" style="margin:10px 0 0;font-size:12.5px"></p>
+  </div>
   <div class="toolbar"><b class="tb-title">Калкулатор за помени</b></div>
   <div class="card d40">
     <div class="d40-in"><label class="f">Дата на смъртта<input type="date" id="d40Date" class="ui-in"></label>
@@ -1106,6 +1127,12 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
 </section>
 
 <!-- ================= КЛИЕНТИ ================= -->
+<section id="tab-partners" class="hidden">
+  <div class="ph"><div><h2>Партньори</h2><p>Телефони на гробищни паркове, храмове, доставчици и други — на едно място</p></div><span class="spacer"></span>
+    <div class="filters"><input id="ptSearch" class="ui-in" placeholder="Търсене…" style="width:200px"><select id="ptCat" class="ui-in" style="width:auto"></select>
+      <button class="btn primary" id="ptAdd" type="button">+ Партньор</button></div></div>
+  <div class="card" id="ptList"></div>
+</section>
 <section id="tab-clients" class="hidden">
   <div class="ph"><div><h2>Клиенти</h2><p>Клиентски профили с история на заявките. Телефоните се сравняват, за да се открият възможни дубликати — нищо не се слива автоматично.</p></div><span class="spacer"></span>
     <input id="clSearch" class="ui-in" placeholder="Търсене по име или телефон…" style="width:260px"></div>
@@ -1126,6 +1153,9 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
   <div class="kpis" id="finKpis"></div>
   <div class="card"><div class="row" style="margin-bottom:6px"><h2 style="margin:0">Неплатени суми</h2><span class="spacer"></span><span class="muted">всички заявки с остатък, независимо от периода</span></div><div id="finUnpaid"></div></div>
   <div class="card"><h2>Заявки за периода</h2><div id="finList"></div></div>
+  <div class="card"><h2>Справка за счетоводителя</h2>
+    <p class="muted" style="margin:0 0 10px">За избрания горе период. Фактурите са по дата на издаване, плащанията — по дата на плащане. Файлът се отваря с Excel.</p>
+    <div class="row"><button class="btn" id="finCsvInv" type="button">Фактури (Excel)</button><button class="btn" id="finCsvPay" type="button">Плащания (Excel)</button><span class="muted" id="finCsvNote"></span></div></div>
 </section>
 
 <!-- ================= РЕДАКЦИЯ ================= -->
@@ -1342,6 +1372,12 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
   <div class="card" id="phonesCard">
     <h2>📱 Телефони</h2>
     <div id="phonesBody"></div>
+  </div>
+  <div class="card" id="retCard">
+    <h2>Пазене на лични данни</h2>
+    <p class="muted" style="margin:0 0 10px">След избрания срок от датата на ритуала в заявката се изтриват <b>ЕГН-тата</b> (на починалия и родителите), <b>телефонът и адресите</b>. Имената, услугите, сумите и фактурите остават — фактурите се пазят 10 години по Закона за счетоводството.</p>
+    <div class="row"><label class="f" style="max-width:260px">Изтривай след<select class="ui-in" id="sRetain"><option value="">не изтривай автоматично</option><option value="3">3 години</option><option value="5">5 години</option><option value="10">10 години</option></select></label>
+      <span class="spacer"></span><span class="muted" id="retInfo"></span><button class="btn hidden" id="retRun" type="button">Изтрий сега</button></div>
   </div>
   <div class="card">
     <h2>Архив (резервно копие)</h2>
@@ -1794,10 +1830,10 @@ function p1Block(r,mode,b,n){
     <span class="lb">направи заявка за <span data-mirror="kindText">${esc(r.kind||"погребение/кремация")}</span> на погребална агенция „${esc(SETTINGS.short)}“,</span></div>`;
   if(b.t==="burial")return cremation?`
   <div class="r"><span class="lb">Да заяви</span>${P("kind",{type:"select",opts:O.kind,w:"w34"})}<span class="lb pad">Ритуал</span>${P("ritual",{type:"select",opts:O.ritual,w:"w34"})}</div>
-  <div class="r"><span class="lb">Място на ритуала</span>${P("ritualPlace")}<span style="margin-left:3mm"></span>${ck(r,mode,"atHome","в дома")}</div>`
+  <div class="r"><span class="lb">Място на ритуала</span>${P("ritualPlace",LISTS.ritualPlace&&LISTS.ritualPlace.length?{list:"ritualPlace"}:{})}<span style="margin-left:3mm"></span>${ck(r,mode,"atHome","в дома")}</div>`
   :`
   <div class="r"><span class="lb">Да заяви</span>${P("kind",{type:"select",opts:O.kind,w:"w34"})}<span class="lb pad">Ритуал</span>${P("ritual",{type:"select",opts:O.ritual,w:"w34"})}<span class="lb pad">Гроб</span>${P("grave",{type:"select",opts:O.grave,w:"w22"})}</div>
-  <div class="r"><span class="lb">Гробища</span>${P("cemetery")}<span class="lb pad">Парцел</span>${P("cemParcel",{w:"w14"})}<span class="lb pad">Ред</span>${P("cemRow",{w:"w14"})}<span class="lb pad">Гроб №</span>${P("cemGrave",{w:"w14"})}</div>
+  <div class="r"><span class="lb">Гробища</span>${P("cemetery",LISTS.cemetery&&LISTS.cemetery.length?{list:"cemetery"}:{})}<span class="lb pad">Парцел</span>${P("cemParcel",{w:"w14"})}<span class="lb pad">Ред</span>${P("cemRow",{w:"w14"})}<span class="lb pad">Гроб №</span>${P("cemGrave",{w:"w14"})}</div>
   ${mode==="print"
      ?(dbl?`<div class="r"><span class="lb">Двоен гроб — копае се:</span><span class="in w50"><b>${esc(r.digSide?r.digSide+" страна":"")}</b></span></div>`:"")
      :`<div class="r">${ck(r,mode,"doubleGrave","Двоен гроб")}${dbl?`<span class="lb pad">копае се</span>${P("digSide",{type:"select",opts:O.digSide,w:"w44"})}`:`<span class="lb pad" style="color:#9a9288;font-style:italic">отметнете, ако гробът е двоен</span>`}</div>`}`;
@@ -2123,6 +2159,100 @@ function renderDays40(){
     <table class="d40-tbl"><tbody>${rows.map(([l,x])=>`<tr><td>${l}</td><td>${l==="40 дни"?"<b>":""}${d40fmt(x)}${l==="40 дни"?"</b>":""}</td></tr>`).join("")}</tbody></table>`;
 }
 $("#d40Date").oninput=$("#d40Date").onchange=renderDays40;
+/* ---------- партньори (store „partners“): само администраторът добавя и променя ---------- */
+KEYPATH.partners="id";
+const PT_CATS=[["cemetery","Гробищен парк"],["church","Храм / свещеник"],["hall","Ритуална зала"],["morgue","Болница / морга"],["office","Община / ЕСГРАОН"],
+  ["supplier","Доставчик (ковчези, венци…)"],["flowers","Цветя"],["catering","Кетъринг / помен"],["music","Музика"],["stone","Каменоделец"],["transport","Транспорт"],["other","Друго"]];
+const ptCat=v=>(PT_CATS.find(x=>x[0]===v)||PT_CATS[PT_CATS.length-1])[1];
+let PARTNERS=[];
+async function loadPartners(){try{PARTNERS=await DB.all("partners")}catch(e){PARTNERS=[]}
+  const names=cs=>[...new Set(PARTNERS.filter(x=>cs.includes(x.cat)).map(x=>x.name).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"bg"));
+  LISTS.cemetery=names(["cemetery"]);LISTS.ritualPlace=names(["church","hall"])}
+function ptPhones(p){return String(p||"").split(/[,;]|\sили\s/).map(x=>x.trim()).filter(Boolean)}
+async function renderPartners(){
+  await loadPartners();const adm=isAdmin();$("#ptAdd").classList.toggle("hidden",!adm);
+  const sel=$("#ptCat"),cv=sel.value;sel.innerHTML=`<option value="">Всички категории</option>`+PT_CATS.map(([v,l])=>`<option value="${v}">${l}</option>`).join("");sel.value=cv;
+  const q=$("#ptSearch").value,list=PARTNERS.filter(x=>(!sel.value||x.cat===sel.value)&&(!q.trim()||gsMatch(q,[x.name,x.person,x.phone,x.addr,x.note,ptCat(x.cat)])))
+    .sort((a,b)=>PT_CATS.findIndex(c=>c[0]===a.cat)-PT_CATS.findIndex(c=>c[0]===b.cat)||a.name.localeCompare(b.name,"bg"));
+  if(!PARTNERS.length){$("#ptList").innerHTML=`<div class="empty">Още няма партньори.${adm?" Натиснете „+ Партньор“, за да добавите първия — гробищен парк, храм, доставчик…":" Администраторът може да ги добави."}</div>`;return}
+  let last="";
+  $("#ptList").innerHTML=list.length?`<table class="list"><tbody>${list.map(x=>{const h=x.cat!==last?`<tr><td colspan="4" class="gs-grp" style="padding-top:14px">${ptCat(x.cat)}</td></tr>`:"";last=x.cat;
+      return h+`<tr><td><b>${esc(x.name)}</b>${x.person?`<br><small class="muted">${esc(x.person)}</small>`:""}</td>
+        <td class="nw">${ptPhones(x.phone).map(t=>`<a href="tel:${telHref(t)}">${esc(t)}</a>`).join("<br>")||`<span class="muted">—</span>`}</td>
+        <td class="muted">${esc(x.addr||"")}${x.note?`<br><small>${esc(x.note)}</small>`:""}</td>
+        <td style="text-align:right">${adm?`<button class="btn small" data-pt="${esc(x.id)}" type="button">Промени</button>`:""}</td></tr>`}).join("")}</tbody></table>`
+    :`<div class="empty">Нищо не е намерено.</div>`;
+  $$("#ptList [data-pt]").forEach(b=>b.onclick=()=>openPartner(PARTNERS.find(x=>x.id===b.dataset.pt)))}
+function openPartner(x){if(!isAdmin())return;const isNew=!x;x=x?structuredClone(x):{id:uid(),name:"",cat:$("#ptCat").value||"cemetery",person:"",phone:"",addr:"",note:""};
+  openModal({title:isNew?"Нов партньор":"Партньор",body:`<div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
+      <label class="f" style="grid-column:1/-1">Име<input class="ui-in" id="ptN" value="${esc(x.name)}" placeholder="напр. Гробищен парк „Бакърена фабрика“"></label>
+      <label class="f">Категория<select class="ui-in" id="ptC">${PT_CATS.map(([v,l])=>`<option value="${v}" ${x.cat===v?"selected":""}>${l}</option>`).join("")}</select></label>
+      <label class="f">Лице за контакт<input class="ui-in" id="ptP" value="${esc(x.person||"")}" placeholder="напр. отец Иван"></label>
+      <label class="f" style="grid-column:1/-1">Телефони<input class="ui-in" id="ptT" value="${esc(x.phone||"")}" placeholder="няколко — разделени със запетая" inputmode="tel"></label>
+      <label class="f" style="grid-column:1/-1">Адрес<input class="ui-in" id="ptA" value="${esc(x.addr||"")}"></label>
+      <label class="f" style="grid-column:1/-1">Бележка<textarea class="ui-in" id="ptO" rows="2" placeholder="напр. работно време, цени, особености">${esc(x.note||"")}</textarea></label></div>
+      <p class="muted" style="margin:10px 0 0;font-size:12.5px">Гробищните паркове, храмовете и залите излизат като избор в заявката (полета „Гробища“ и „Място на ритуала“).</p>`,
+    actions:[{label:"Отказ"},
+      ...(isNew?[]:[{label:"Изтрий",cls:"danger",act:async()=>{if(!confirm(`Да изтрия ли „${x.name}“ от партньорите?`))return false;
+        await DB.del("partners",x.id);audit("Изтрит партньор",x.name);toast("Изтрито");renderPartners()}}]),
+      {label:isNew?"Добави":"Запази",cls:"primary",act:async m=>{const n=m.q("#ptN").value.trim();if(!n)throw new Error("Напишете име.");
+        Object.assign(x,{name:n,cat:m.q("#ptC").value,person:m.q("#ptP").value.trim(),phone:m.q("#ptT").value.trim(),addr:m.q("#ptA").value.trim(),note:m.q("#ptO").value.trim(),
+          updated:new Date().toISOString(),updatedBy:ME?ME.name:""});if(isNew)x.created=x.updated;
+        await DB.put("partners",x);audit(isNew?"Нов партньор":"Променен партньор",n+" · "+ptCat(x.cat));toast(isNew?"Партньорът е добавен ✔":"Запазено ✔");renderPartners()}}]})}
+$("#ptAdd").onclick=()=>openPartner(null);
+$("#ptSearch").oninput=$("#ptCat").onchange=renderPartners;
+/* ---------- предстоящи помени: 9 дни, 40 дни, 6 месеца, 1 година от датата на смъртта ---------- */
+// датата на смъртта = „Съобщение за смърт → от дата“ (в заявката няма отделно поле)
+const PM_KINDS=[["9","9 дни",d=>d40add(d,8)],["40","40 дни",d=>d40add(d,39)],["6m","6 месеца",d=>d40add(d,0,6)],["1y","1 година",d=>d40add(d,0,0,1)]];
+let PMD=14;
+const isoOf=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const pmId=(r,k)=>"pm-"+r.id+"-"+k;
+const telHref=p=>{const n=phoneKeys(p)[0]||"";return n?"+"+n:""}; // при няколко номера — първият
+function pmText(x){const S=SETTINGS,ag=S.short?`агенция „${S.short}“`:(S.agency||"погребалната агенция");
+  return `Здравейте. На ${d40fmt(x.date)} се навършват ${x.label} от смъртта на ${x.r.decName||"Вашия близък"}. Ако желаете, ${ag} може да помогне с организацията на помена — панихида, некролози, жито и др.${S.gsm?" Тел.: "+S.gsm:""}`}
+async function renderPomeni(){
+  const box=$("#pmCard");if(!box)return;const ok=can("req");box.classList.toggle("hidden",!ok);if(!ok)return;
+  $$("#pmSeg button").forEach(b=>b.classList.toggle("on",+b.dataset.d===PMD));
+  const today=new Date();today.setHours(0,0,0,0);const end=d40add(today,PMD);
+  const reqs=(await allReqs()).filter(r=>!r.sample),evs=await loadEvents(),evBy=Object.fromEntries(evs.map(e=>[e.id,e]));
+  const out=[];let noDate=0;
+  for(const r of reqs){if(!r.noticeDate){if(r.ritDate&&r.ritDate>=isoOf(d40add(today,-370)))noDate++;continue}
+    const [y,m,d]=r.noticeDate.split("-").map(Number),dd=new Date(y,m-1,d);if(isNaN(dd))continue;
+    for(const [k,label,f] of PM_KINDS){const at=f(dd);if(at<today||at>end)continue;const ev=evBy[pmId(r,k)];
+      if(ev&&ev.contacted&&!$("#pmDone").checked)continue;out.push({r,k,label,date:at,ev})}}
+  out.sort((a,b)=>a.date-b.date);
+  const ed=can("req","edit");
+  $("#pmList").innerHTML=out.length?`<table class="list"><thead><tr><th>Дата</th><th>Помен</th><th>Починал</th><th>Заявител</th><th></th></tr></thead><tbody>${out.map((x,i)=>{
+      const tel=telHref(x.r.appPhone),days=Math.round((x.date-today)/864e5);
+      return `<tr><td class="nw"><b>${d40fmt(x.date)}</b><br><small class="muted">${days===0?"днес":days===1?"утре":"след "+days+" дни"}</small></td><td><span class="tag">${x.label}</span></td>
+        <td>${esc(x.r.decName||"—")}<br><small class="muted">заявка № ${esc(x.r.number)}</small></td>
+        <td>${esc(x.r.appName||"—")}<br><small class="muted">${esc(x.r.appPhone||"няма телефон")}</small></td>
+        <td class="acts" style="text-align:right;white-space:nowrap">${x.ev&&x.ev.contacted?`<span class="acc-ok" title="${esc((x.ev.contactedBy||"")+" · "+new Date(x.ev.contacted).toLocaleString("bg-BG",{dateStyle:"short",timeStyle:"short"}))}">✔ свързахме се</span> `:""}
+          ${tel?`<a class="btn small" href="tel:${tel}">Обади се</a> <button class="btn small" data-pmmsg="${i}" type="button">Съобщение</button>`:""}
+          ${ed&&!(x.ev&&x.ev.contacted)?` <button class="btn small" data-pmok="${i}" type="button">Свързахме се</button>`:""}</td></tr>`}).join("")}</tbody></table>`
+    :`<div class="empty">Няма помени в следващите ${PMD} дни.</div>`;
+  $("#pmNote").textContent=(noDate?`${noDate} ${noDate===1?"заявка от последната година няма":"заявки от последната година нямат"} попълнена дата в „Съобщение за смърт“ — за тях помените не се изчисляват. `:"")+"„Свързахме се“ записва помена и в календара.";
+  $$("#pmList [data-pmmsg]").forEach(b=>b.onclick=()=>pmMessage(out[+b.dataset.pmmsg]));
+  $$("#pmList [data-pmok]").forEach(b=>b.onclick=()=>pmContacted(out[+b.dataset.pmok]));
+}
+function pmMessage(x){const tel=telHref(x.r.appPhone);
+  const m=openModal({title:"Съобщение до "+(x.r.appName||"близките"),body:`<p class="muted" style="margin:0 0 8px">${esc(x.r.appPhone||"")} · ${x.label} на ${d40fmt(x.date)}. Можете да промените текста.</p>
+    <textarea class="ui-in" id="pmTxt" rows="6" style="width:100%">${esc(pmText(x))}</textarea>
+    <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:8px"><a class="btn primary" id="pmSms">Изпрати SMS</a><a class="btn" id="pmViber">Отвори Viber</a><button class="btn" id="pmCopy" type="button">Копирай текста</button></div>
+    <p class="muted" style="margin:10px 0 0;font-size:12.5px">SMS и Viber се отварят на телефона (или компютъра) с вашия номер — програмата не изпраща нищо сама. Във Viber поставете текста с „Постави“.</p>`,actions:[{label:"Затвори"}]});
+  const upd=()=>{const t=m.q("#pmTxt").value;m.q("#pmSms").href=`sms:${tel}${IOS?"&":"?"}body=${encodeURIComponent(t)}`;m.q("#pmViber").href=`viber://chat?number=${encodeURIComponent(tel)}`};upd();
+  m.q("#pmTxt").oninput=upd;
+  const copy=async()=>{try{await navigator.clipboard.writeText(m.q("#pmTxt").value);toast("Текстът е копиран ✔")}catch(e){m.q("#pmTxt").select();document.execCommand("copy")}};
+  m.q("#pmCopy").onclick=copy;m.q("#pmViber").addEventListener("click",copy)}
+async function pmContacted(x){if(!needEdit("req","отбелязване на помен"))return;
+  const id=pmId(x.r,x.k),old=(await loadEvents()).find(e=>e.id===id),now=new Date().toISOString();
+  const e=Object.assign(old||{id,type:"ritual",time:"",place:"",owner:x.r.owner||"",ownerName:x.r.ownerName||"",created:now,by:ME?ME.name:""},
+    {title:`Помен ${x.label} — ${x.r.decName||"№ "+x.r.number}`,date:isoOf(x.date),note:`Заявка № ${x.r.number} · ${x.r.appName||""} ${x.r.appPhone||""}`.trim(),
+     pomen:x.k,reqId:x.r.id,contacted:now,contactedBy:ME?ME.name:"",updated:now,updatedBy:ME?ME.name:""});
+  try{await DB.put("events",e)}catch(err){toast(err.message,true);return}
+  audit("Свързахме се за помен",`${x.label} · ${x.r.decName||""} · заявка № ${x.r.number}`,x.r.id);toast("Отбелязано и добавено в календара ✔");renderPomeni()}
+$$("#pmSeg button").forEach(b=>b.onclick=()=>{PMD=+b.dataset.d;renderPomeni()});
+$("#pmDone").onchange=renderPomeni;
 $("#d40Today").onclick=()=>{$("#d40Date").value="";renderDays40()};
 function showTab(name){
   closeMenu();$("aside.side").classList.remove("open");
@@ -2133,8 +2263,8 @@ function showTab(name){
   $$("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===(navOf[name]||name)));
   if(name!=="ws")wsFlush();if(name!=="inv")invFlush();
   closeModal();
-  ["dash","list","wsl","clients","fin","edit","catalog","stock","stats","settings","ws","inv","necro","users","files","days40","cal"].forEach(t=>$("#tab-"+t).classList.toggle("hidden",t!==name));
-  if(name==="files")renderDocs();if(name==="days40")renderDays40();if(name==="cal")renderCal();
+  ["dash","list","wsl","clients","partners","fin","edit","catalog","stock","stats","settings","ws","inv","necro","users","files","days40","cal"].forEach(t=>$("#tab-"+t).classList.toggle("hidden",t!==name));
+  if(name==="files")renderDocs();if(name==="days40"){renderDays40();renderPomeni()}if(name==="cal")renderCal();if(name==="partners")renderPartners();
   if(name==="stock")renderStock();if(name==="users")renderUsers();
   if(name==="stats")renderStats();if(name==="necro")renderNecro();
   if(name==="dash")renderDash();if(name==="wsl")renderWsl();if(name==="clients")renderClients();if(name==="fin")renderFin();
@@ -2255,7 +2385,12 @@ function shortVal(v){if(v==null||v==="")return"—";if(typeof v==="boolean")retu
 function diffRows(a,b){const ks=[...new Set([...Object.keys(a||{}),...Object.keys(b||{})])];
   return ks.filter(k=>!same(a&&a[k],b&&b[k])).map(k=>({k,l:fieldLabel(k),theirs:shortVal(a&&a[k]),mine:shortVal(b&&b[k])}))
     .filter(r=>r.theirs!==r.mine||(r.theirs!=="—"&&r.theirs!=="(променено)")||r.k==="lines"||r.k==="payments")}
-const DRAFT_KEY=id=>"zayavki-draft-"+id;
+const DRAFT_KEY=id=>"zayavki-draft-"+id,DRAFT_TTL=24*36e5;
+// черновите може да съдържат ЕГН и телефони — изтриват се при изход и сами след 24 часа (общ компютър)
+function purgeDrafts(all){try{for(const k of Object.keys(localStorage))if(k.startsWith("zayavki-draft-")){
+  let old=true;try{old=Date.now()-new Date(JSON.parse(localStorage.getItem(k)).at)>DRAFT_TTL}catch(e){}
+  if(all||old)localStorage.removeItem(k)}}catch(e){}}
+purgeDrafts(false);
 function conflictDialog({id,part,mine,fresh,base,deleted}){
   return new Promise(res=>{
     const who=fresh?(fresh.updatedBy||"друг служител"):"",when=fresh&&fresh.updated?new Date(fresh.updated).toLocaleString("bg-BG",{dateStyle:"short",timeStyle:"short"}):"";
@@ -2277,7 +2412,7 @@ function conflictDialog({id,part,mine,fresh,base,deleted}){
     const iv=setInterval(()=>{if(done||!document.body.contains(m.el)||m.el.id!=="modalWrap"){clearInterval(iv);fin("cancel")}},300); // затворен с Esc = отказ
   })}
 // чернова от конфликт — показва се в заявката с „Възстанови“ / „Изтрий“
-function draftOf(id){try{const d=JSON.parse(localStorage.getItem(DRAFT_KEY(id))||"null");return d&&d.part==="core"?d:null}catch(e){return null}}
+function draftOf(id){try{const d=JSON.parse(localStorage.getItem(DRAFT_KEY(id))||"null");return d&&d.part==="core"&&Date.now()-new Date(d.at)<=DRAFT_TTL?d:null}catch(e){return null}}
 
 /* =====================================================================
    ПЛАЩАНИЯ — история от отделни плащания и сторно/връщания
@@ -3492,6 +3627,54 @@ function historyModal(id){const it=itemById(id);
    ===================================================================== */
 const allReqs=async()=>(await DB.all("requests")).map(x=>normalizeRequest(structuredClone(x)));
 const reqDay=r=>r.reqDate||(r.created||"").slice(0,10);
+/* ---------- общо търсене: заявки, клиенти, събития, документи (⌘K / Ctrl+K) ---------- */
+const gsNorm=v=>String(v??"").toLowerCase().replace(/ё/g,"е");
+const gsDigits=v=>String(v??"").replace(/\D/g,"");
+function gsMatch(q,fields){const t=gsNorm(q).trim();if(!t)return false;const words=t.split(/\s+/),d=gsDigits(t),hay=gsNorm(fields.join(" "));
+  if(d.length>=4&&d.length===t.replace(/[\s+\-().\/]/g,"").length){const hd=fields.map(gsDigits).join(" ");return hd.includes(d)||hd.includes(d.replace(/^359/,"0"))||hd.includes(d.replace(/^0/,"359"))}
+  return words.every(w=>hay.includes(w))}
+async function openSearch(){
+  if(!ME)return;
+  const m=openModal({title:"Търсене",wide:true,body:`<input class="ui-in" id="gsQ" placeholder="Име, телефон, ЕГН, номер на заявка или фактура…" autocomplete="off" spellcheck="false" style="width:100%">
+    <div class="gs-res" id="gsRes"><p class="muted">Пишете поне 2 знака. Търси в заявките, клиентите, календара и документите.</p></div>`,actions:[]});
+  m.q("footer").classList.add("hidden");
+  const [reqs,cls,evs,docs]=await Promise.all([can("req")?allReqs():[],can("clients")?DB.all("clients").catch(()=>[]):[],can("req")?loadEvents():[],can("files")?DB.all("docs").catch(()=>[]):[]]);
+  let items=[],sel=0;
+  const draw=()=>{const q=m.q("#gsQ").value;if(gsNorm(q).trim().length<2){m.q("#gsRes").innerHTML=`<p class="muted">Пишете поне 2 знака. Търси в заявките, клиентите, календара и документите.</p>`;items=[];return}
+    const R=reqs.filter(r=>gsMatch(q,[r.number,r.decName,r.appName,r.appPhone,r.decEgn,r.cemetery,r.ritualPlace,r.inv&&r.inv.number,r.inv&&r.inv.buyerName,r.inv&&r.inv.buyerId]))
+      .sort((a,b)=>(b.ritDate||reqDay(b)).localeCompare(a.ritDate||reqDay(a))).slice(0,12).map(r=>({k:"Заявки",t:`№ ${r.number} · ${r.decName||r.appName||"без име"}`,s:[r.appName&&r.decName?"заявител "+r.appName:"",r.appPhone,r.ritDate?"ритуал "+bgDate(r.ritDate):"",r.inv&&r.inv.number?"фактура "+r.inv.number:""].filter(Boolean).join(" · "),go:async()=>{const raw=await DB.get("requests",r.id);if(raw){openRequest(structuredClone(raw));showTab("edit")}}}));
+    const C=cls.filter(c=>gsMatch(q,[c.name,c.phone,...(c.phones||[]),c.notes])).slice(0,8).map(c=>({k:"Клиенти",t:c.name||"Без име",s:(c.phones||[c.phone]).filter(Boolean).join(", "),go:()=>{showTab("clients");openClient(c)}}));
+    const E=evs.filter(e=>gsMatch(q,[e.title,e.place,e.note,e.ownerName])).sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,6).map(e=>({k:"Календар",t:e.title,s:[bgDate(e.date),e.time,e.place].filter(Boolean).join(" · "),go:()=>{CALM=(e.date||todayISO()).slice(0,7);showTab("cal");openEvent(e)}}));
+    const D=docs.filter(d=>gsMatch(q,[d.name,d.orig])).slice(0,6).map(d=>({k:"Документи",t:d.name,s:d.orig||"",go:()=>{showTab("files");$("#docSearch").value=d.name;renderDocs()}}));
+    const P=(can("req")?PARTNERS:[]).filter(x=>gsMatch(q,[x.name,x.person,x.phone,x.note,ptCat(x.cat)])).slice(0,6).map(x=>({k:"Партньори",t:x.name,s:[ptCat(x.cat),x.phone].filter(Boolean).join(" · "),go:()=>{showTab("partners");$("#ptSearch").value=x.name;renderPartners()}}));
+    items=[...R,...C,...E,...P,...D];sel=0;
+    m.q("#gsRes").innerHTML=items.length?items.map((x,i)=>`${i===0||items[i-1].k!==x.k?`<div class="gs-grp">${x.k}</div>`:""}<button class="gs-it${i===sel?" on":""}" data-i="${i}" type="button">${esc(x.t)}${x.s?`<small>${esc(x.s)}</small>`:""}</button>`).join(""):`<p class="muted">Нищо не е намерено.</p>`;
+    $$("#gsRes .gs-it").forEach(b=>b.onclick=()=>pick(+b.dataset.i))};
+  const pick=i=>{const x=items[i];if(!x)return;if(DIRTY&&!confirm("Имате незапазени промени. Да продължа ли БЕЗ запис?"))return;closeModal();x.go()};
+  const mark=()=>$$("#gsRes .gs-it").forEach((b,i)=>{b.classList.toggle("on",i===sel);if(i===sel)b.scrollIntoView({block:"nearest"})});
+  m.q("#gsQ").oninput=draw;
+  m.q("#gsQ").onkeydown=e=>{if(e.key==="ArrowDown"&&items.length){e.preventDefault();sel=(sel+1)%items.length;mark()}
+    else if(e.key==="ArrowUp"&&items.length){e.preventDefault();sel=(sel-1+items.length)%items.length;mark()}
+    else if(e.key==="Enter"){e.preventDefault();pick(sel)}};
+}
+$("#gsBtn").onclick=()=>{$("aside.side").classList.remove("open");openSearch()};
+if(/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent))$("#gsKbd").textContent="⌘K";
+document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&!e.altKey&&e.key.toLowerCase()==="k"&&ME&&$("#auth").classList.contains("hidden")){e.preventDefault();if(!$("#modalWrap #gsQ"))openSearch()}});
+/* ---------- срок за пазене на лични данни: след N години от ритуала се трият ЕГН, телефон и адреси ---------- */
+const RET_FIELDS=["decEgn","motherEgn","fatherEgn","appPhone","appStreet","appNo","resStreet","resNo","resEntr","resFloor","resApt","parentsAddr"];
+function retDue(r,y){if(!y||r.sample)return false;const d=r.ritDate||reqDay(r);if(!d)return false;
+  const lim=new Date();lim.setFullYear(lim.getFullYear()-y);return d<lim.toISOString().slice(0,10)&&RET_FIELDS.some(k=>String(r[k]??"").trim())}
+async function retCandidates(){const y=Number(SETTINGS.retainYears)||0;return y?(await allReqs()).filter(r=>retDue(r,y)):[]}
+async function runRetention(){const y=Number(SETTINGS.retainYears)||0;if(!y||!ME||ME.role!=="admin")return 0;
+  const list=await retCandidates();let n=0;
+  for(const r0 of list){const r=await DB.get("requests",r0.id);if(!r||!retDue(r,y))continue;
+    for(const k of RET_FIELDS)if(r[k]!=null)r[k]="";r.retCleared=new Date().toISOString();
+    try{await DB.put("requests",r);if(typeof BASE!=="undefined")delete BASE[r.id];n++}catch(e){}}
+  if(n)audit("Изтрити лични данни по срок",`${n} ${n===1?"заявка":"заявки"} с ритуал преди повече от ${y} години (ЕГН, телефон, адреси)`);
+  return n}
+// автоматично — веднъж на ден, при влизане на администратор
+async function retAuto(){try{const k="zayavki-ret-"+todayISO();if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1");
+  const n=await runRetention();if(n)toast(`Изтрити лични данни от ${n} стари ${n===1?"заявка":"заявки"} (по срок)`)}catch(e){}}
 const plusDays=(iso,n)=>{const d=new Date(iso+"T12:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
 const sumBy=(a,f)=>r2(a.reduce((s,x)=>s+f(x),0));
 const kpi=(k,v,s="",cls="")=>`<div class="kpi ${cls}"><div class="k">${k}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:""}</div>`;
@@ -3613,6 +3796,32 @@ async function renderFin(){
     <tfoot><tr><td colspan="4">Общо</td><td class="money">${eur(inc)}</td><td class="money">${eur(exp)}</td><td class="money ${pr<0?"neg":"pos"}">${eur(pr)}</td></tr></tfoot></table>`:`<div class="empty">Няма заявки за избрания период.</div>`;
 }
 $$("#finSeg button").forEach(b=>b.onclick=()=>{FINP=b.dataset.p;renderFin()});
+// справка за счетоводителя: CSV с „;“ и BOM — Excel на български го отваря направо
+function downloadCsv(name,head,rows){
+  const cell=v=>{if(typeof v==="string"&&/^0\d+$|^\d{10,}$/.test(v.trim()))return '="'+v.trim()+'"'; // номера и ЕГН с водеща нула — като текст
+    v=v==null?"":typeof v==="number"?String(v).replace(".",","):String(v);return /[;"\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  const txt="\ufeff"+[head,...rows].map(r=>r.map(cell).join(";")).join("\r\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/csv;charset=utf-8"}));a.download=name;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+const finIn=(d,rg)=>!!d&&(!rg||((!rg[0]||d>=rg[0])&&(!rg[1]||d<=rg[1])));
+const finTag=rg=>rg?`${rg[0]||"nachalo"}_${rg[1]||"dnes"}`:"vsichki";
+$("#finCsvInv").onclick=async()=>{const rg=finRange();
+  const rows=(await allReqs()).filter(r=>!r.sample&&r.inv&&String(r.inv.number||"").trim()&&finIn(r.inv.date,rg))
+    .sort((a,b)=>String(a.inv.number).localeCompare(String(b.inv.number))).map(r=>{const I=Object.assign(emptyInv(),r.inv),c=invCalc({...r,inv:I});
+      return [I.number,bgDate(I.date),bgDate(I.taxDate||I.date),I.buyerType==="company"?"фирма":"физическо лице",I.buyerName,I.buyerId,I.buyerVat,I.buyerAddr,c.base,c.vat,c.total,I.payment,r.number]});
+  if(!rows.length){$("#finCsvNote").textContent="Няма издадени фактури за периода.";return}
+  downloadCsv(`fakturi_${finTag(rg)}.csv`,["Фактура №","Дата","Дата на данъчното събитие","Получател","Име / фирма","ЕГН / ЕИК","ДДС №","Адрес","Основа","ДДС","Общо","Плащане","Заявка №"],rows);
+  $("#finCsvNote").textContent=`${rows.length} ${rows.length===1?"фактура":"фактури"} ✔`;audit("Справка за счетоводителя","фактури · "+rows.length)};
+$("#finCsvPay").onclick=async()=>{const rg=finRange(),rows=[];
+  for(const r of (await allReqs()).filter(x=>!x.sample)){
+    if(Array.isArray(r.payments)){for(const p of r.payments)if(finIn(p.date,rg))rows.push([p.date,bgDate(p.date),p.type==="refund"?"връщане":"плащане",(p.type==="refund"?-1:1)*(Number(p.amount)||0),p.method||"",r.number,r.appName||"",p.note||""])}
+    else{const c=calc(r),ad=r.advanceDate||reqDay(r),pd=r.paidDate||r.ritDate||reqDay(r);
+      if(c.advance>0&&finIn(ad,rg))rows.push([ad,bgDate(ad),"аванс (стар запис)",c.advance,"",r.number,r.appName||"",""]);
+      if(r.paid&&finIn(pd,rg)&&c.total-c.advance>0)rows.push([pd,bgDate(pd),"доплащане (стар запис, изчислено)",r2(c.total-c.advance),"",r.number,r.appName||"",""])}}
+  if(!rows.length){$("#finCsvNote").textContent="Няма плащания за периода.";return}
+  rows.sort((a,b)=>String(a[0]).localeCompare(String(b[0])));
+  downloadCsv(`plashtania_${finTag(rg)}.csv`,["Дата","Вид","Сума","Начин","Заявка №","Заявител","Бележка"],rows.map(x=>x.slice(1)));
+  $("#finCsvNote").textContent=`${rows.length} ${rows.length===1?"плащане":"плащания"} ✔`;audit("Справка за счетоводителя","плащания · "+rows.length)};
 $("#finFrom").onchange=$("#finTo").onchange=$("#finSamples").onchange=renderFin;
 
 /* ---------------- каталог ---------------- */
@@ -3650,7 +3859,7 @@ $("#btnResetCat").onclick=()=>{if(!confirm("Да върна ли оригина�
 
 /* ---------------- настройки ---------------- */
 async function renderSettings(){
-  const S=SETTINGS;applyTitle();
+  const S=SETTINGS;applyTitle();renderRetention();
   $("#sAgency").value=S.agency;$("#sAddr").value=S.addr;$("#sGsm").value=S.gsm;$("#sShort").value=S.short;$("#sCity").value=S.city;$("#sRep").value=S.rep;$("#sStaff").value=(S.staff||[]).join("\n");
   $("#sNext").value=S.nextNo;$("#sDigits").value=S.digits;$("#sOfferDays").value=S.offerDays;$("#sStockPin").value=S.stockPin||"";$("#sLockMin").value=S.lockMin??30;$("#sLily").checked=!!S.showLily;$("#sTag").value=S.tagline||"";
   $$("input[name=logoMode]").forEach(x=>x.checked=x.value===S.logoMode);
@@ -3711,6 +3920,7 @@ $("#btnExport").onclick=async()=>{
   // потребителите (само отпечатъци на паролите) и историята също влизат в архива — за преместване на друг компютър или флашка
   const data={app:"pogrebalni-zayavki",version:3,exported:new Date().toISOString(),settings:SETTINGS,catalog:CATALOG,necro:NECRO,inventory:INVD,
     users:USERS,auth:CLOUD?null:await getMeta("auth",null),audit:await DB.all("audit"),requests:await DB.all("requests"),
+    template:TEMPLATE,clients:await DB.all("clients").catch(()=>[]),events:await DB.all("events").catch(()=>[]),
     docs:await Promise.all((await DB.all("docs")).map(async d=>({...d,file:await blobToDataUrl(d.file||(await DB.get("docs",d.id)).file)})))};
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,1)],{type:"application/json"}));
   a.download=`arhiv-zayavki-${todayISO()}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
@@ -3726,6 +3936,8 @@ $("#importFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;e.tar
     if(d.settings){const lb=SETTINGS.lastBackup;SETTINGS=migrateSettings(d.settings);SETTINGS.lastBackup=lb;await setMeta("settings",SETTINGS)}
     if(Array.isArray(d.audit)){if(CLOUD){for(let i=0;i<d.audit.length;i+=300)await DB.putAtomic(d.audit.slice(i,i+300).map(v=>({store:"audit",value:v})))}else for(const x of d.audit)await DB.put("audit",x)}
     if(Array.isArray(d.docs))for(const x of d.docs)await DB.put("docs",{...x,file:await (await fetch(x.file)).blob()});
+    for(const st of ["clients","events"])if(Array.isArray(d[st])&&d[st].length){ // клиентски профили и събития от календара (архиви след 11.2026)
+      if(CLOUD){for(let i=0;i<d[st].length;i+=100)await DB.putAtomic(d[st].slice(i,i+100).map(v=>({store:st,value:v})))}else for(const x of d[st])await DB.put(st,x).catch(()=>{})}
     audit("Възстановен архив",f.name+" · "+d.requests.length+" заявки");
     const au=!CLOUD&&Array.isArray(d.users)?d.users.filter(u=>u.active&&u.role==="admin"):[]; // в облака потребителите се създават наново (паролите не могат да се пренесат)
     if(au.length&&confirm(`Архивът съдържа и ${d.users.length} ${d.users.length===1?"потребител":"потребители"} (${d.users.map(u=>u.username).join(", ")}).\n\nДа заменя ли сегашните потребители с тях? След това влизате с потребителското име и паролата от архива.`)){
@@ -3785,6 +3997,18 @@ function migrateCatalog(c){
   c.version=7;return c;
 }
 function migrateNecro(n){n=n||{};if(!Array.isArray(n.orders))n.orders=[];if(!Array.isArray(n.expenses))n.expenses=[];return n}
+async function renderRetention(){const sel=$("#sRetain");if(!sel)return;const adm=ME&&ME.role==="admin";
+  sel.value=SETTINGS.retainYears?String(SETTINGS.retainYears):"";sel.disabled=!adm;
+  const c=(await retCandidates()).length;$("#retInfo").textContent=SETTINGS.retainYears?(c?`${c} ${c===1?"заявка чака":"заявки чакат"} изтриване`:"няма стари заявки за изтриване"):"";
+  $("#retRun").classList.toggle("hidden",!(adm&&c))}
+$("#sRetain").onchange=async e=>{const v=e.target.value,y=Number(v)||null;
+  if(y){const c=(await allReqs()).filter(r=>retDue(r,y)).length;
+    if(c&&!confirm(`${c} ${c===1?"заявка е":"заявки са"} с ритуал преди повече от ${y} години.\nЕГН-тата, телефонът и адресите в ${c===1?"нея":"тях"} ще бъдат изтрити и не могат да се върнат.\n\nПродължаване?`)){renderRetention();return}}
+  SETTINGS.retainYears=y;await setMeta("settings",SETTINGS);audit("Срок за пазене на лични данни",y?y+" години":"без автоматично изтриване");
+  if(y){const n=await runRetention();toast(n?`Срокът е запазен. Изтрити данни от ${n} ${n===1?"заявка":"заявки"}.`:"Срокът е запазен ✔")}else toast("Автоматичното изтриване е изключено");renderRetention()};
+$("#retRun").onclick=async()=>{const c=(await retCandidates()).length;if(!c)return;
+  if(!confirm(`Да изтрия ли ЕГН-тата, телефона и адресите в ${c} ${c===1?"стара заявка":"стари заявки"}? Не могат да се върнат.`))return;
+  const n=await runRetention();toast(`Изтрити данни от ${n} ${n===1?"заявка":"заявки"}`);renderRetention()};
 function migrateSettings(s){const S=Object.assign(defaultSettings(),s||{});if(!s||!s.logoMode)S.logoMode=S.logo?"custom":isMulti()?"none":"default";return S}
 function applyTitle(){LISTS.staff=SETTINGS.staff||[];
   $("#appTitle").textContent=SETTINGS.short?`Агенция „${SETTINGS.short}“`:"Погребална агенция";$("#appTitle").title=$("#appTitle").textContent;
@@ -4026,7 +4250,7 @@ const AREAS=[ // раздел: [етикет, възможни нива]
 const FLAGS=[["reqdel","Може да изтрива заявки"],["stockadj","Може да прави складови корекции"]];
 const LVL={none:"Няма достъп",view:"Вижда",edit:"Редактира"};
 const DEFAULT_PERMS={dash:"view",req:"edit",ws:"edit",docs:"edit",clients:"view",necro:"edit",stock:"view",files:"view",catalog:"view",fin:"none",reqdel:false,stockadj:false};
-const TAB_AREA={cal:"req",dash:"dash",list:"req",edit:"req",wsl:"ws",ws:"ws",inv:"docs",clients:"clients",necro:"necro",stock:"stock",files:"files",catalog:"catalog",fin:"fin",stats:"fin",settings:"admin",users:"admin"};
+const TAB_AREA={partners:"req",cal:"req",dash:"dash",list:"req",edit:"req",wsl:"ws",ws:"ws",inv:"docs",clients:"clients",necro:"necro",stock:"stock",files:"files",catalog:"catalog",fin:"fin",stats:"fin",settings:"admin",users:"admin"};
 const isAdmin=()=>!!ME&&ME.role==="admin";
 function can(area,lvl="view"){
   if(!ME)return false;if(ME.role==="admin")return true;
@@ -4349,7 +4573,7 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="2026-11-12.3"; // сменя се при всяко публикуване
+const APP_VERSION="2026-11-12.4"; // сменя се при всяко публикуване
 function showVersion(){const v=$("#appVer");if(v)v.textContent="Версия "+APP_VERSION;
   const a=$("#auth .auth-box");if(a&&!a.querySelector(".appver")){const e=document.createElement("div");e.className="appver auth-ver";e.textContent="Версия "+APP_VERSION;a.appendChild(e)}}
 let NEWER=null;
@@ -4395,6 +4619,7 @@ function applyUser(){
   $("#sideUser").classList.remove("hidden");$("#suName").textContent=ME.name;$("#suRole").textContent=isAdmin()?"Администратор":"Служител";
   $("#suAv").textContent=ME.name.split(/\s+/).map(w=>w[0]||"").slice(0,2).join("").toUpperCase();
   permLock();
+  if(ME.role==="admin")setTimeout(retAuto,4000); // срок за пазене на лични данни
 }
 async function authStart(){
   USERS=await getMeta("users",[]);
@@ -4404,7 +4629,7 @@ async function authStart(){
   authShow("login");
 }
 $("#suOut").onclick=()=>{if(DIRTY&&!confirm("Има незапазени промени. Да изляза ли БЕЗ запис?"))return;
-  setDirty(false);wsFlush();invFlush();sessionStorage.removeItem("uid");
+  setDirty(false);wsFlush();invFlush();sessionStorage.removeItem("uid");purgeDrafts(true);
   Promise.resolve(audit("Изход")).then(()=>CLOUD&&sbLogout()).finally(()=>setTimeout(()=>location.reload(),150))};
 $("#suPw").onclick=()=>openModal({title:"Смяна на паролата",body:`<div class="grid" style="grid-template-columns:1fr">
     <label class="f">Сегашна парола<input class="ui-in" type="password" id="cpO" autocomplete="current-password"></label>
@@ -4527,6 +4752,7 @@ async function loadShared(){ // настройки, каталог, некрол
   TEMPLATE=migrateTemplate(await getMeta("template",null));applyTemplate();
   NECRO=migrateNecro(await getMeta("necro",null));
   INVD=migrateInvd(await getMeta("inventory",null));
+  await loadPartners();
   // записваме само ако липсват (първо пускане) — не при всеки вход; базата проверява правата
   if(!(await getMeta("settings",null)))await setMeta("settings",SETTINGS).catch(()=>{});
   if(!(await getMeta("catalog",null)))await setMeta("catalog",CATALOG).catch(()=>{});
