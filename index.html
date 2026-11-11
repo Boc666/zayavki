@@ -1117,8 +1117,12 @@ if(SRV)Object.assign(DB,{
     for(const o of ops){const v=JSON.stringify(await toSrv(o.store,o.value));b+=o.store+"\t"+encodeURIComponent(o.value[KEYPATH[o.store]])+"\t"+v.length+"\n"+v}
     await api("atomic",b)}});
 /* ---------- облак: вход и данни през Supabase (без библиотеки — само fetch) ---------- */
-let SBS=null;try{SBS=JSON.parse(sessionStorage.getItem("zayavki-sb")||"null")}catch(e){}
-const sbSave=s=>{SBS=s;try{s?sessionStorage.setItem("zayavki-sb",JSON.stringify(s)):sessionStorage.removeItem("zayavki-sb")}catch(e){}};
+// Входът се пази САМО в паметта: рефреш или затворен таб = нов вход.
+// Само когато програмата сама презарежда страницата (отваряне на агенция, „Към панела“, смяна на потребител),
+// входът се предава еднократно през sessionStorage и веднага се изтрива.
+let SBS=null;try{SBS=JSON.parse(sessionStorage.getItem("zayavki-sb-once")||"null");sessionStorage.removeItem("zayavki-sb-once");sessionStorage.removeItem("zayavki-sb")}catch(e){}
+const sbSave=s=>{SBS=s};
+const reloadKeep=url=>{try{if(SBS)sessionStorage.setItem("zayavki-sb-once",JSON.stringify(SBS))}catch(e){}if(url)location.href=url;else location.reload()};
 // код на агенция + потребителско име → вътрешен „имейл“ (същото като username_email()/platform_email() в setup.sql; имейли не се пращат)
 // без код = собственик на платформата
 const hexOf=s=>[...new TextEncoder().encode(s)].map(b=>b.toString(16).padStart(2,"0")).join("");
@@ -3365,13 +3369,13 @@ function authShow(mode,opt={}){
       const u=normUser($("#liU").value),p=$("#liP").value;let x=null;
       const code=adm?"":($("#liA")?$("#liA").value:"");
       if(CLOUD&&!adm&&!normUser(code)){er.textContent="Въведете кода на агенцията.";$("#liA").focus();return}
-      try{if(CLOUD){x=await cloudLogin(code,u,p);if(x&&x.platform){if(opt.locked&&ME)location.reload();else platformShow(x);return}}else{x=USERS.find(z=>z.username===u&&z.active);if(x&&(await pwHash(p,x.salt))!==x.hash)x=null}}
+      try{if(CLOUD){x=await cloudLogin(code,u,p);if(x&&x.platform){if(opt.locked&&ME)reloadKeep();else platformShow(x);return}}else{x=USERS.find(z=>z.username===u&&z.active);if(x&&(await pwHash(p,x.salt))!==x.hash)x=null}}
       catch(err){er.textContent=err.message;return}
       if(!x){FAILS++;if(FAILS>=5){LOCK_UNTIL=Date.now()+30e3;FAILS=0}audit("Неуспешен вход","потребител: "+u);er.textContent="Грешно потребителско име или парола.";$("#liP").value="";return}
       FAILS=0;
       if(opt.locked&&ME&&x.id===ME.id){$("#auth").classList.add("hidden");lastAct=Date.now();audit("Отключване");return}
       if(opt.locked&&ME&&x.id!==ME.id){if(DIRTY&&!confirm("Има незапазени промени от "+ME.name+". Те ще се загубят. Продължаване?"))return;
-        sessionStorage.setItem("uid",x.id);setDirty(false);audit("Смяна на потребител",ME.name+" → "+x.name);location.reload();return}
+        sessionStorage.setItem("uid",x.id);setDirty(false);audit("Смяна на потребител",ME.name+" → "+x.name);reloadKeep();return}
       await loginAs(x,"Вход")};
   }
   else if(mode==="recover"){$("#authSub").textContent="Възстановяване на достъпа";
@@ -3435,7 +3439,7 @@ function platformShow(P){
       if(a.active&&!confirm(`Да спра ли достъпа на „${a.name}“?\n\nНикой от агенцията няма да може да влезе, докато не я пуснете отново. Данните остават.`))return;
       try{await rpc("platform_set_agency_active",{p_agency:a.id,p_active:!a.active});toast(a.active?"Агенцията е спряна":"Агенцията е пусната ✔");loadAgencies()}catch(e){alert(e.message)}});
     $$("#plView [data-open]").forEach(b=>b.onclick=async()=>{const a=LIST[+b.dataset.open];
-      try{await rpc("platform_enter_agency",{p_agency:a.id});location.href=location.pathname}catch(e){alert(e.message)}});
+      try{await rpc("platform_enter_agency",{p_agency:a.id});reloadKeep(location.pathname)}catch(e){alert(e.message)}});
     $$("#plView [data-det]").forEach(b=>b.onclick=()=>details(LIST[+b.dataset.det]));
   }
   async function details(a){
@@ -3552,7 +3556,7 @@ async function agencyBars(){
   if(!AG.owner)try{let seen=[];try{seen=JSON.parse(sessionStorage.getItem("zayavki-seen")||"[]")}catch(e){}
     for(const n of await rpc("my_announcements"))if(!seen.includes(n.id))bars.push(`<div class="nbar info"><span>${esc(n.text)}</span><button class="btn small ghost" data-nx="${n.id}" title="Скрий">✕</button></div>`)}catch(e){}
   box.innerHTML=bars.join("");
-  const bb=$("#nbBack");if(bb)bb.onclick=async()=>{try{await rpc("platform_leave_agency")}catch(e){}location.href=location.pathname};
+  const bb=$("#nbBack");if(bb)bb.onclick=async()=>{try{await rpc("platform_leave_agency")}catch(e){}reloadKeep(location.pathname)};
   $$("#noteBars [data-nx]").forEach(b=>b.onclick=()=>{try{const s=JSON.parse(sessionStorage.getItem("zayavki-seen")||"[]");s.push(+b.dataset.nx);sessionStorage.setItem("zayavki-seen",JSON.stringify(s))}catch(e){}b.closest(".nbar").style.display="none"});
 }
 async function loginAs(u,why){
