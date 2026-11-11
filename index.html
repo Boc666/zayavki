@@ -857,6 +857,45 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
 .appver{font-size:10.5px;color:var(--text3);letter-spacing:.04em}
 .auth-ver{text-align:center;margin-top:14px}
 .updbar{position:sticky;top:8px;z-index:25}
+
+/* ---------- случай: статус, отговорник, задачи; плащания; клиенти; календар; настройване ---------- */
+.casebar{padding:14px 18px}
+.case-grid{display:grid;grid-template-columns:190px 210px minmax(0,1fr) auto;gap:12px;align-items:end}
+.case-client{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text2)}
+.case-tasks{margin-top:12px;border-top:1px solid var(--border-soft);padding-top:10px}
+.case-tasks summary{cursor:pointer;font-weight:600;font-size:13px;list-style-position:inside}
+.task{display:flex;align-items:center;gap:6px;padding:4px 0}.task .done{text-decoration:line-through;color:var(--text3)}
+.task-add{margin-top:6px}.task-add .ui-in{flex:1;min-width:0}
+.case-draft{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tag.st{margin-left:6px;white-space:nowrap}.tag.st-prep{color:var(--caution);background:var(--caution-soft);border-color:transparent}
+.tag.st-confirmed{color:var(--bronze-hi);background:var(--bronze-soft);border-color:transparent}.tag.st-done{color:var(--ok);background:var(--ok-soft);border-color:transparent}
+.tag.inferred{background:transparent!important;border:1px dashed var(--border-strong)!important;opacity:.85}
+.pay-add{display:grid;grid-template-columns:160px 140px 160px minmax(0,1fr);gap:10px;margin-top:16px}
+.cl-pick{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.cl-opt{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer}
+.cl-opt:has(input:checked){border-color:var(--bronze-line);background:var(--bronze-soft)}
+.subnav{margin:0 0 18px}
+.cal{padding:0;overflow:hidden}
+.cal-h{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);font-weight:600}
+.cal-h div{padding:10px 10px 8px}
+.cal-b{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--border-soft);border-top:1px solid var(--border-soft)}
+.cal-d{background:var(--panel);min-height:108px;padding:7px 7px 9px;min-width:0}.cal-d.out{background:var(--side)}.cal-d.we{background:#1A1816}
+.cal-n{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--text2);margin-bottom:2px}.cal-n small{display:none}
+.cal-d.today .cal-n span{background:var(--bronze);color:#1A140B;border-radius:999px;padding:0 7px;font-weight:600}
+.cal-e{display:block;width:100%;text-align:left;margin-top:4px;padding:5px 7px;border-radius:6px;border:0;border-left:3px solid var(--text3);background:var(--panel2);color:var(--text);font:12px/1.3 var(--ui);cursor:pointer;overflow:hidden;text-overflow:ellipsis}
+.cal-e small{display:block;color:var(--text3);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-e.st-prep{border-left-color:var(--caution)}.cal-e.st-confirmed{border-left-color:var(--bronze)}.cal-e.st-done{border-left-color:var(--ok);opacity:.7}
+@media(hover:hover) and (pointer:fine){.cal-e:hover{background:var(--panel3)}}
+.ob-steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.ob-steps span{font-size:11.5px;padding:3px 10px;border-radius:999px;background:var(--panel2);color:var(--text3)}
+.ob-steps .on{background:var(--bronze-soft);color:var(--bronze-hi)}.ob-steps .done{color:var(--ok)}
+@media(max-width:760px){
+  .case-grid{grid-template-columns:1fr 1fr}.case-next,.case-client{grid-column:1/-1}
+  .pay-add{grid-template-columns:1fr 1fr}.pay-note{grid-column:1/-1}
+  .cal-h{display:none}.cal-b{display:block;background:none;border:0}
+  .cal-d{min-height:0;border-bottom:1px solid var(--border-soft);padding:10px 14px}.cal-d:not(.has),.cal-d.out{display:none}
+  .cal-n small{display:inline;margin-left:8px;color:var(--text3)}.cal-n{justify-content:flex-start}
+}
 /* ---------- печат: винаги бял фон и стандартен ред — тъмният дизайн не стига до хартията ---------- */
 @media print{
   html,body{background:#fff!important;color:#000}
@@ -894,16 +933,19 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
     <div class="nsec">Работа</div>
     <button data-tab="dash"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Начално табло</button>
     <button data-tab="list"><svg viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Заявки</button>
+    <button data-tab="cal"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="1.5"/><path d="M3 10h18M8 3v4M16 3v4"/><circle cx="8.5" cy="14.5" r=".9"/><circle cx="12" cy="14.5" r=".9"/><circle cx="15.5" cy="14.5" r=".9"/></svg>Календар</button>
     <button data-tab="wsl"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="1"/><path d="M9 4V3h6v1M9 10.5l1.5 1.5L14 8.5M9 16.5h6"/></svg>Работни листове</button>
+    <div class="nsec">Клиенти и помени</div>
     <button data-tab="clients"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.6.9 2.7 2.7 3 5.2"/></svg>Клиенти</button>
     <button data-tab="necro"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>Некролози</button>
-    <button data-tab="days40"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="1.5"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8.5 15h2M13.5 15h2M8.5 18h2"/></svg>40 дни</button>
+    <button data-tab="days40"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="1.5"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8.5 15h2M13.5 15h2M8.5 18h2"/></svg>Помени (40 дни)</button>
+    <div class="nsec">Документи и склад</div>
     <button data-tab="files"><svg viewBox="0 0 24 24"><path d="M3 6.5a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>Документи</button>
-    <div class="nsec">Управление</div>
     <button data-tab="stock"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg>Инвентар</button>
     <button data-tab="catalog"><svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/></svg>Услуги и цени</button>
-    <button data-tab="fin"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="1.5"/><path d="M3 10.5h18M15.5 15h2.5M6 6V4.5h11V6"/></svg>Финанси</button>
-    <button data-tab="stats"><svg viewBox="0 0 24 24"><path d="M5 20V11M11 20V5M17 20v-6M3 20.5h18"/></svg>Статистика</button>
+    <div class="nsec">Отчети</div>
+    <button data-tab="fin"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="1.5"/><path d="M3 10.5h18M15.5 15h2.5M6 6V4.5h11V6"/></svg>Отчети</button>
+    <div class="nsec">Управление</div>
     <button data-tab="users"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="1.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14.5v2.5"/></svg>Потребители</button>
     <button data-tab="settings"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Настройки</button>
   </nav>
@@ -988,6 +1030,13 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
     <p class="muted d40-note">Денят на смъртта се брои за първи ден — така 40-ият ден е 39 дни след него (по православната традиция). Ако поменът се прави в събота, е посочена и съботата преди това.</p>
   </div>
 </section>
+<section id="tab-cal" class="hidden">
+  <div class="ph"><div><h2>Календар на ритуалите</h2><p id="calSum"></p></div><span class="spacer"></span>
+    <div class="filters"><button class="btn small" id="calPrev" title="Предишен месец">←</button><input type="month" id="calMonth" class="ui-in" style="width:170px"><button class="btn small" id="calNext" title="Следващ месец">→</button><button class="btn small ghost" id="calToday">Днес</button>
+      <select id="calOwner" class="ui-in" style="width:auto"></select>
+      <select id="calSt" class="ui-in" style="width:auto"><option value="">Всички статуси</option><option value="new">Нова заявка</option><option value="prep">Подготовка</option><option value="confirmed">Потвърден ритуал</option><option value="done">Приключена</option></select></div></div>
+  <div class="card cal" id="calGrid"></div>
+</section>
 <section id="tab-files" class="hidden">
   <div id="docListView">
     <div class="ph"><div><h2>Документи</h2><p>Бланки и документи на Word на едно място — отваряне, печат и корекции</p></div><span class="spacer"></span>
@@ -1049,13 +1098,15 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
 
 <!-- ================= КЛИЕНТИ ================= -->
 <section id="tab-clients" class="hidden">
-  <div class="ph"><div><h2>Клиенти</h2><p>Заявителите от всички заявки, групирани по име и телефон</p></div><span class="spacer"></span>
+  <div class="ph"><div><h2>Клиенти</h2><p>Клиентски профили с история на заявките. Телефоните се сравняват, за да се открият възможни дубликати — нищо не се слива автоматично.</p></div><span class="spacer"></span>
     <input id="clSearch" class="ui-in" placeholder="Търсене по име или телефон…" style="width:260px"></div>
-  <div class="card"><table class="list" id="clTable"></table></div>
+  <div class="card"><h2>Клиентски профили</h2><table class="list" id="clTable"></table></div>
+  <div class="card"><h2>Заявители без профил</h2><p class="muted" style="margin-top:-8px">Групирани по име и телефон от заявките. Профил се създава само след ваше потвърждение — нищо не се слива автоматично.</p><table class="list" id="clLoose"></table></div>
 </section>
 
 <!-- ================= ФИНАНСИ ================= -->
 <section id="tab-fin" class="hidden">
+  <div class="seg subnav"><button data-sub="fin">Финанси</button><button data-sub="stats">Статистика</button></div>
   <div class="ph"><div><h2>Финанси</h2><p id="finRange"></p></div><span class="spacer"></span>
     <div class="filters">
       <div class="seg" id="finSeg"><button data-p="month">Този месец</button><button data-p="prev">Миналия месец</button><button data-p="year">Тази година</button><button data-p="all">Всичко</button><button data-p="custom">Период</button></div>
@@ -1084,11 +1135,12 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
     <button class="btn ghost" id="btnInv">Фактура</button>
     <button class="btn ghost" id="btnOffer" title="Ценово предложение за клиента — не е документ за плащане">Оферта</button>
     <span class="tsep"></span>
-    <button class="btn" id="btnPaid">✔ Платена изцяло</button>
+    <button class="btn" id="btnPaid">Плащания</button>
     <button class="btn" id="btnPreview">Преглед</button>
     <button class="btn dark" id="btnPrint"><svg viewBox="0 0 24 24"><path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="1"/><path d="M7 14h10v7H7z"/></svg>Печат / PDF</button>
     <button class="btn primary" id="btnSave"><svg viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg>Запази</button>
   </div>
+  <div id="caseBar" class="card casebar"></div>
   <div id="sheets"></div>
   <div id="preview" class="hidden">
     <div class="row" style="margin-bottom:10px"><b>Преглед — точно така ще се отпечата</b><span class="spacer"></span><button class="btn" id="btnBack">← Обратно към попълването</button></div>
@@ -1154,6 +1206,7 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
 
 <!-- ================= СТАТИСТИКА ================= -->
 <section id="tab-stats" class="hidden">
+  <div class="seg subnav"><button data-sub="fin">Финанси</button><button data-sub="stats">Статистика</button></div>
   <div class="ph"><div><h2>Статистика</h2><p>Чиста печалба по месеци — приход по заявките минус разходите от работните листове</p></div><span class="spacer"></span>
     <label class="muted">Година <select id="stYear" class="ui-in" style="width:auto;display:inline-block;margin-left:6px"></select></label>
     <label class="muted" style="margin-left:10px"><input type="checkbox" id="stSamples"> включи примерните заявки</label>
@@ -1291,7 +1344,7 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
     </div>
     <h3>Примерни данни</h3>
     <p class="muted">Примерните заявки са <b>измислени</b> и са отбелязани с „ПРИМЕР“.</p>
-    <div class="row"><button class="btn" id="btnSamples">Добави 2 примерни заявки</button><button class="btn danger" id="btnDelSamples">Изтрий примерните заявки</button></div>
+    <div class="row"><button class="btn" id="btnOnboard">Първоначално настройване</button><button class="btn" id="btnSamples">Добави 2 примерни заявки</button><button class="btn danger" id="btnDelSamples">Изтрий примерните заявки</button></div>
     <p class="muted" id="storageInfo" style="margin-top:12px"></p>
   </div>
 </section>
@@ -1597,8 +1650,8 @@ function calc(r){
   const sub=r2(services+fees);                                   // сума преди отстъпка
   const pct=Math.min(100,Math.max(0,r.discountPct||0));          // отстъпка в %
   const discount=r2(sub*pct/100);
-  const total=r2(sub-discount),advance=r2(r.advance||0);
-  const rest=r.paid?0:r2(total-advance);                          // платена изцяло -> остатък 0
+  const ps=paySum(r),total=r2(sub-discount),advance=ps!=null?ps:r2(r.advance||0); // с история на плащанията — сумата им
+  const rest=ps!=null?r2(total-ps):(r.paid?0:r2(total-advance));                          // платена изцяло -> остатък 0
   return {services,fees,sub,pct,discount,total,advance,rest};
 }
 
@@ -1781,7 +1834,7 @@ function page2(r,mode){
     ${totalRows(r,mode,c,anyUsed)}</tbody>
   </table>
   <div class="pay">
-    <div class="pb"><span class="lb">АВАНС (€)</span>${P("advance")}
+    <div class="pb"><span class="lb">АВАНС (€)</span>${P("advance",{ro:Array.isArray(r.payments)})}
       <span class="lb">ОСТАТЪК (€)</span><span class="in money" data-t="rest" style="font-weight:700">${c.total||r.paid?fmt(c.rest):""}</span>
       ${r.paid&&mode!=="print"?`<div class="paidline">✔ Платена изцяло на ${fld(r,mode,"paidDate",{type:"date"})}</div>`:""}</div>
     <div class="txt">${esc(TEMPLATE.payText)}
@@ -1830,7 +1883,7 @@ function refresh(){ // преизчислява сумите без да пре�
   const m2=$('#sheets [data-mirror=reqDate]');if(m2)m2.textContent=bgDate(CURRENT.reqDate);
   $("#chipTotal").textContent=eur(c.total);$("#chipRest").textContent=eur(c.rest);
   $("#chipPaid").classList.toggle("hidden",!CURRENT.paid);
-  const bp=$("#btnPaid");bp.textContent=CURRENT.paid?"↩ Отмени „Платена“":"✔ Платена изцяло";bp.classList.toggle("on",!!CURRENT.paid);
+  const bp=$("#btnPaid");bp.textContent="Плащания"+(Array.isArray(CURRENT.payments)&&CURRENT.payments.length?" ("+CURRENT.payments.length+")":"");bp.classList.toggle("on",!!CURRENT.paid);
   $("#editHeading").textContent="Заявка № "+(CURRENT.number||"—")+(CURRENT.sample?" (ПРИМЕР)":"");
 }
 /* складови артикули, свързани с перо (само активните) */
@@ -2039,12 +2092,13 @@ function showTab(name){
   closeMenu();$("aside.side").classList.remove("open");
   if(ME&&!canTab(name)){toast("Нямате достъп до този раздел.",true);name=firstTab()}
   if(name==="edit"&&!CURRENT&&!can("req","edit"))name="list";
-  const navOf={edit:"list",inv:"list",ws:"wsl"}; // вътрешните екрани светят като своя раздел в менюто
+  const navOf={edit:"list",inv:"list",ws:"wsl",stats:"fin"};
+  $$("[data-sub]").forEach(b=>b.classList.toggle("on",b.dataset.sub===name)); // вътрешните екрани светят като своя раздел в менюто
   $$("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===(navOf[name]||name)));
   if(name!=="ws")wsFlush();if(name!=="inv")invFlush();
   closeModal();
-  ["dash","list","wsl","clients","fin","edit","catalog","stock","stats","settings","ws","inv","necro","users","files","days40"].forEach(t=>$("#tab-"+t).classList.toggle("hidden",t!==name));
-  if(name==="files")renderDocs();if(name==="days40")renderDays40();
+  ["dash","list","wsl","clients","fin","edit","catalog","stock","stats","settings","ws","inv","necro","users","files","days40","cal"].forEach(t=>$("#tab-"+t).classList.toggle("hidden",t!==name));
+  if(name==="files")renderDocs();if(name==="days40")renderDays40();if(name==="cal")renderCal();
   if(name==="stock")renderStock();if(name==="users")renderUsers();
   if(name==="stats")renderStats();if(name==="necro")renderNecro();
   if(name==="dash")renderDash();if(name==="wsl")renderWsl();if(name==="clients")renderClients();if(name==="fin")renderFin();
@@ -2059,9 +2113,10 @@ $$("nav.tabs button").forEach(b=>b.onclick=async()=>{
     const s=CURRENT&&await DB.get("requests",CURRENT.id);CURRENT=s?normalizeRequest(s):null;setDirty(false)}
   await srvRefresh();showTab(b.dataset.tab)});
 function openRequest(r,isNew=false){
+  if(!isNew)rememberBase(r);
   CURRENT=normalizeRequest(r);
   $("#preview").classList.add("hidden");$("#sheets").classList.remove("hidden");
-  renderSheets();setDirty(isNew);
+  renderSheets();setDirty(isNew);renderCaseBar();
 }
 
 /* малки иконки за бутоните в таблиците */
@@ -2079,7 +2134,7 @@ async function renderList(){
   const tb=$("#listBody");tb.innerHTML="";$("#listEmpty").classList.toggle("hidden",all.length>0);
   for(const raw of all){const r=normalizeRequest(structuredClone(raw)),c=calc(r),tr=document.createElement("tr");
     if(r.id===JUST_SAVED){tr.dataset.flash="1";JUST_SAVED=null}
-    tr.innerHTML=`<td><b>${esc(r.number)}</b>${r.sample?'<span class="pill">ПРИМЕР</span>':""}</td><td>${bgDate(r.reqDate)}</td>
+    tr.innerHTML=`<td><b>${esc(r.number)}</b>${r.sample?'<span class="pill">ПРИМЕР</span>':""}${stTag(r)}</td><td>${bgDate(r.reqDate)}</td>
       <td>${esc(r.appName)}</td><td>${esc(r.decName)}</td><td>${esc(r.kind)}</td><td class="money">${eur(c.total)}</td>
       <td class="money${r.paid||c.rest<0?" paidcell":""}" style="color:${c.rest>0?"var(--caution)":"var(--ok)"}">${r.paid?"✔ Платена":c.rest<0?"надплатено "+eur(-c.rest):eur(c.rest)}</td>
       ${(()=>{const w=wsCalc(r);return w.has?`<td class="money listProfit ${w.profit<0?"neg":"pos"}" title="Приход ${eur(w.income)} − разходи ${eur(w.expenses)}">${eur(w.profit)}</td>`
@@ -2112,32 +2167,346 @@ $("#search").oninput=renderList;
 $("#btnNew").onclick=()=>{openRequest(newRequest(),true);showTab("edit")};
 $$("[data-new]").forEach(b=>b.onclick=()=>$("#btnNew").click());
 
+/* =====================================================================
+   ЗАЩИТА ОТ ПРЕЗАПИСВАНЕ (няколко души по една заявка)
+   BASE[id] = заявката, както последно я прочетохме/записахме ние. При запис четем свежата.
+   Ако някой друг е писал междувременно, гледаме коя част е променил: данните на заявката (core),
+   работния лист (ws) или фактурата/офертата (inv). Друга част → тихо сливане. Същата част →
+   прозорец: кой и кога, сравнение, „Вземи тяхната“, „Запиши моята“, „Отказ“.
+   В облака с миграция 3 записът е и атомарен (save_record сравнява версията на реда).
+   ===================================================================== */
+const BASE={},DBVER={};let HAS_VER=null,HAS_SAVE_RPC=null;
+const canon=v=>Array.isArray(v)?v.map(canon):(v&&typeof v==="object")?Object.keys(v).sort().reduce((o,k)=>(o[k]=canon(v[k]),o),{}):v;
+const same=(a,b)=>JSON.stringify(canon(a??null))===JSON.stringify(canon(b??null));
+const PARTS=["core","ws","inv"],PART_NAME={core:"заявката",ws:"работния лист",inv:"фактурата / офертата"};
+const partOf=(r,p)=>{if(!r)return null;if(p!=="core")return r[p]??null;const c={...r};delete c.ws;delete c.inv;delete c.updated;delete c.updatedBy;return c};
+function withPart(fresh,mine,p){const out=structuredClone(fresh);
+  if(p==="core"){for(const k of Object.keys(out))if(k!=="ws"&&k!=="inv")delete out[k];Object.assign(out,structuredClone(partOf(mine,"core")))}
+  else out[p]=structuredClone(mine[p]);return out}
+const rememberBase=r=>{if(r&&r.id)BASE[r.id]=structuredClone(r)};
+// запис с проверка; връща {rec} при успех, {reload:fresh} ако потребителят избере тяхната версия, null при отказ
+async function guardedSave(id,part,mine){
+  for(let i=0;i<3;i++){
+    const fresh=await DB.get("requests",id),base=BASE[id];let out;
+    if(!fresh){
+      if(part!=="core")throw new Error("Заявката е изтрита от друг служител.");
+      if(base){const ch=await conflictDialog({id,part,mine,fresh:null,deleted:true});if(ch!=="mine")return null}
+      out=structuredClone(mine);
+    }else{
+      if(base&&fresh.updated!==base.updated){
+        const theirs=PARTS.filter(p=>!same(partOf(fresh,p),partOf(base,p)));
+        if(theirs.includes(part)&&!same(partOf(fresh,part),partOf(mine,part))){
+          const ch=await conflictDialog({id,part,mine,fresh,base});
+          if(ch==="reload"){rememberBase(fresh);return{reload:fresh}}
+          if(ch!=="mine")return null;
+        }
+      }
+      out=withPart(fresh,mine,part); // другите части идват от базата — не презаписваме чужд работен лист/фактура
+    }
+    out.updated=new Date().toISOString();out.updatedBy=ME?ME.name:"";
+    const res=await DB.putChecked("requests",out,fresh?DBVER[id]:null);
+    if(res&&res.conflict)continue; // някой е писал между четенето и записа — четем пак
+    rememberBase(out);return{rec:out};
+  }
+  throw new Error("Записът не успя — друг служител записва същата заявка точно сега. Опитайте отново.");
+}
+const FIELD_EXTRA={appName:"Заявител — име",decName:"Починал — име",appPhone:"Заявител — телефон",decEgn:"Починал — ЕГН",number:"Номер",reqDate:"Дата на заявката",reqCity:"Град",lines:"Услуги и цени",payments:"Плащания",advance:"Аванс",paid:"Платена",paidDate:"Дата на плащане",
+  status:"Статус",owner:"Отговорник",ownerName:"Отговорник",nextAction:"Следващо действие",tasks:"Задачи",clientId:"Клиентски профил",notes:"Забележки",kind:"Вид",ritual:"Ритуал",
+  cemetery:"Гробища",ritualPlace:"Място на ритуала",orgFee:"Цена за организация",doctorFee:"Лекарско присъствие",discountPct:"Отстъпка",internalNotes:"Вътрешни бележки"};
+function fieldLabel(k){const f=tplFields().find(x=>x.k===k);return FIELD_EXTRA[k]||(f&&f.l)||k}
+function shortVal(v){if(v==null||v==="")return"—";if(typeof v==="boolean")return v?"да":"не";if(typeof v==="number")return fmt(v);
+  if(Array.isArray(v))return v.length+(v.length===1?" запис":" записа");if(typeof v==="object")return"(променено)";const s=String(v);return s.length>60?s.slice(0,57)+"…":s}
+function diffRows(a,b){const ks=[...new Set([...Object.keys(a||{}),...Object.keys(b||{})])];
+  return ks.filter(k=>!same(a&&a[k],b&&b[k])).map(k=>({k,l:fieldLabel(k),theirs:shortVal(a&&a[k]),mine:shortVal(b&&b[k])}))
+    .filter(r=>r.theirs!==r.mine||(r.theirs!=="—"&&r.theirs!=="(променено)")||r.k==="lines"||r.k==="payments")}
+const DRAFT_KEY=id=>"zayavki-draft-"+id;
+function conflictDialog({id,part,mine,fresh,base,deleted}){
+  return new Promise(res=>{
+    const who=fresh?(fresh.updatedBy||"друг служител"):"",when=fresh&&fresh.updated?new Date(fresh.updated).toLocaleString("bg-BG",{dateStyle:"short",timeStyle:"short"}):"";
+    const rows=fresh?diffRows(part==="core"?partOf(fresh,"core"):fresh[part],part==="core"?partOf(mine,"core"):mine[part]):[];
+    const keep=()=>{try{localStorage.setItem(DRAFT_KEY(id),JSON.stringify({at:new Date().toISOString(),part,data:part==="core"?partOf(mine,"core"):mine[part]}))}catch(e){}};
+    let done=false;const fin=v=>{if(done)return;done=true;res(v)};
+    const m=openModal({title:deleted?"Заявката е изтрита":"Някой друг е променил "+PART_NAME[part],wide:true,body:deleted
+      ?`<p>Докато я редактирахте, заявката е изтрита от друг служител.</p><p class="muted">„Запиши моята“ ще я създаде отново с вашите данни.</p>`
+      :`<p>Докато работехте, в ${PART_NAME[part]} са записани промени — от <b>${esc(who)}</b>${when?`, <b>${esc(when)}</b>`:""}.</p>
+        <p class="muted">Вашите промени още <b>не са записани</b>. Изберете какво да стане.</p>
+        <button class="btn small" type="button" id="cfCmp">Сравни (${rows.length} ${rows.length===1?"разлика":"разлики"})</button>
+        <div id="cfDiff" class="hidden" style="margin-top:12px"><table class="list"><thead><tr><th>Поле</th><th>Тяхна версия</th><th>Вашата версия</th></tr></thead><tbody>
+        ${rows.map(r=>`<tr><td>${esc(r.l)}</td><td>${esc(r.theirs)}</td><td><b>${esc(r.mine)}</b></td></tr>`).join("")||`<tr><td colspan="3" class="empty">Няма видими разлики.</td></tr>`}</tbody></table></div>`,
+      actions:[{label:"Отказ — продължавам да редактирам",act:()=>{fin("cancel")}},
+        ...(deleted?[]:[{label:"Вземи тяхната версия",act:()=>{if(!confirm("Вашите незаписани промени ще бъдат заменени с тяхната версия.\n\nКопие от вашия вариант остава на този компютър и може да се възстанови от заявката. Продължаване?"))return false;keep();fin("reload")}}]),
+        {label:"Запиши моята върху тяхната",cls:"danger",act:()=>{if(!confirm("Тяхните промени в "+PART_NAME[part]+" ще бъдат заменени с вашите. Сигурни ли сте?"))return false;fin("mine")}}]});
+    const c=m.q("#cfCmp");if(c)c.onclick=()=>m.q("#cfDiff").classList.toggle("hidden");
+    const x=m.q("[data-mx]");if(x)x.addEventListener("click",()=>fin("cancel"));
+    const iv=setInterval(()=>{if(done||!document.body.contains(m.el)||m.el.id!=="modalWrap"){clearInterval(iv);fin("cancel")}},300); // затворен с Esc = отказ
+  })}
+// чернова от конфликт — показва се в заявката с „Възстанови“ / „Изтрий“
+function draftOf(id){try{const d=JSON.parse(localStorage.getItem(DRAFT_KEY(id))||"null");return d&&d.part==="core"?d:null}catch(e){return null}}
+
+/* =====================================================================
+   ПЛАЩАНИЯ — история от отделни плащания и сторно/връщания
+   Съвместимост: старите заявки (без payments) се смятат постарому от advance/paid и НЕ се
+   променят сами. При първото ново плащане старите данни се записват като редове „пренесено“.
+   ===================================================================== */
+const PAY_METHODS=["в брой","карта","банков път","друго"];
+const paySum=r=>Array.isArray(r.payments)?r2(r.payments.reduce((s,p)=>s+(p.type==="refund"?-1:1)*(Number(p.amount)||0),0)):null;
+function legacyToPayments(r){const out=[],t=calc({...r,payments:undefined,paid:false}).total,adv=r2(r.advance||0);
+  if(adv>0)out.push({id:uid(),type:"payment",date:r.advanceDate||r.reqDate||"",amount:adv,method:"неизвестен",note:"пренесено от полето „Аванс“",legacy:true});
+  if(r.paid){const rest=r2(t-adv);if(rest>0)out.push({id:uid(),type:"payment",date:r.paidDate||"",amount:rest,method:"неизвестен",note:"пренесено от „Платена изцяло“ — сумата е изчислена (общо − аванс)",legacy:true})}
+  return out}
+function syncPayFields(r){const ps=paySum(r);if(ps==null)return;const t=calc(r).total;r.advance=ps;
+  r.paid=t>0&&ps>=r2(t-0.005);const last=[...r.payments].filter(p=>p.type!=="refund").sort((a,b)=>(a.date||"").localeCompare(b.date||"")).pop();r.paidDate=r.paid?(last&&last.date||todayISO()):""}
+function openPayments(){
+  if(!CURRENT)return;const r=CURRENT,edit=can("req","edit"),legacy=!Array.isArray(r.payments),c=calc(r);
+  const list=legacy?[]:r.payments;
+  const lg=legacy&&((r.advance||0)>0||r.paid)?legacyToPayments(r):[];
+  const row=p=>`<tr><td class="num">${bgDate(p.date)||"—"}</td><td>${p.type==="refund"?'<span class="tag err">сторно / връщане</span>':'<span class="tag ok">плащане</span>'}</td>
+    <td class="money">${p.type==="refund"?"− ":""}${eur(p.amount)}</td><td>${esc(p.method||"")}</td><td class="muted">${esc(p.note||"")}${p.legacy?' <span class="pill">ПРЕНЕСЕНО</span>':""}</td><td class="muted">${esc(p.by||"")}</td></tr>`;
+  const m=openModal({title:"Плащания — заявка № "+(r.number||""),wide:true,body:`
+    <div class="row" style="gap:18px;margin-bottom:14px"><span>Обща сума <b>${eur(c.total)}</b></span><span>Платено <b>${eur(c.advance)}</b></span>
+      <span>Остатък <b style="color:${c.rest>0?"var(--caution)":"var(--ok)"}">${c.rest<0?"надплатено "+eur(-c.rest):eur(c.rest)}</b></span></div>
+    ${lg.length?`<div class="notice" style="margin-bottom:12px">Тази заявка е от преди историята на плащанията: ${(r.advance||0)>0?`аванс <b>${eur(r.advance)}</b>${r.advanceDate?" от "+bgDate(r.advanceDate):""}`:""}${r.paid?`${(r.advance||0)>0?"; ":""}отбелязана „платена изцяло“${r.paidDate?" на "+bgDate(r.paidDate):""}`:""}.
+      При първото ново плащане тези данни ще бъдат записани като отделни редове с бележка „пренесено“ (начин на плащане: неизвестен). Дотогава заявката не се променя.</div>`:""}
+    <table class="list"><thead><tr><th>Дата</th><th>Вид</th><th class="money">Сума</th><th>Начин</th><th>Бележка</th><th>Въвел</th></tr></thead>
+      <tbody>${list.map(row).join("")||`<tr><td colspan="6" class="empty">${lg.length?"Още няма записани отделни плащания.":"Още няма плащания."}</td></tr>`}</tbody></table>
+    ${edit?`<div class="pay-add"><label class="f">Дата<input type="date" class="ui-in" id="pyD" value="${todayISO()}"></label>
+      <label class="f">Сума (€)<input class="ui-in" id="pyA" inputmode="decimal" value="${c.rest>0?numIn(c.rest):""}"></label>
+      <label class="f">Начин<select class="ui-in" id="pyM">${PAY_METHODS.map(x=>`<option>${x}</option>`).join("")}</select></label>
+      <label class="f pay-note">Бележка<input class="ui-in" id="pyN" placeholder="напр. аванс, остатък, по фактура № …"></label></div>`:`<p class="muted">Нямате права да добавяте плащания.</p>`}`,
+    actions:[{label:"Затвори"},...(edit?[{label:"Сторно / връщане",cls:"danger",act:m=>addPay(m,"refund")},{label:"Добави плащане",cls:"primary",act:m=>addPay(m,"payment")}]:[])]});
+  async function addPay(m,type){
+    const amt=num(m.q("#pyA").value);if(!(amt>0))throw new Error("Въведете сума, по-голяма от 0.");
+    if(type==="refund"&&!confirm(`Да запиша ли СТОРНО / ВРЪЩАНЕ от ${eur(amt)}? То намалява платената сума.`))return false;
+    if(!Array.isArray(CURRENT.payments))CURRENT.payments=legacyToPayments(CURRENT);
+    CURRENT.payments.push({id:uid(),type,date:m.q("#pyD").value||todayISO(),amount:r2(amt),method:m.q("#pyM").value,note:m.q("#pyN").value.trim(),by:ME?ME.name:"",at:new Date().toISOString()});
+    syncPayFields(CURRENT);renderSheets();setDirty(true);
+    audit(type==="refund"?"Сторно / връщане":"Плащане","№ "+CURRENT.number+" · "+eur(amt)+" · "+m.q("#pyM").value,CURRENT.id);
+    if(await saveCurrent())toast(type==="refund"?"Сторното е записано ✔":"Плащането е записано ✔");
+    setTimeout(openPayments,60);
+  }
+}
+
+/* =====================================================================
+   КЛИЕНТСКИ ПРОФИЛИ — store „clients“, заявката пази clientId
+   Телефоните се нормализират за търсене и откриване на дубликати. Нищо не се слива само:
+   при съвпадение потребителят избира.
+   ===================================================================== */
+KEYPATH.clients="id";
+let CLIENTS=[];
+const normPhone=s=>{let d=String(s||"").replace(/\D/g,"");if(!d)return"";if(d.startsWith("00"))d=d.slice(2);
+  if(d.startsWith("0"))d="359"+d.slice(1);else if(d.length===9&&/^[89]/.test(d))d="359"+d;return d};
+const phoneKeys=s=>[...new Set(String(s||"").split(/[,;\/]|\s{2,}|\sили\s/).map(x=>normPhone(x.trim())).filter(x=>x.length>=6))];
+const normName=s=>String(s||"").toLowerCase().replace(/[^a-zа-яё0-9\s-]/gi," ").replace(/\s+/g," ").trim();
+async function loadClients(){try{CLIENTS=await DB.all("clients")}catch(e){CLIENTS=CLIENTS||[]}return CLIENTS}
+const clientById=id=>CLIENTS.find(c=>c.id===id);
+function clientCandidates(r){const ph=phoneKeys(r.appPhone),nm=normName(r.appName);
+  return CLIENTS.map(c=>{const cp=c.phoneKeys||phoneKeys(c.phones),cn=normName(c.name);
+    return{c,byPhone:ph.some(x=>cp.includes(x)),byName:!!nm&&cn===nm}}).filter(x=>x.byPhone||x.byName).sort((a,b)=>b.byPhone-a.byPhone)}
+function clientFromRequest(r){return{id:uid(),created:new Date().toISOString(),name:(r.appName||"").trim(),phones:r.appPhone||"",
+  address:[r.appCity,r.appStreet,r.appNo].filter(Boolean).join(", "),email:"",notes:""}}
+async function saveClient(c){c.phoneKeys=phoneKeys(c.phones);c.updated=new Date().toISOString();c.updatedBy=ME?ME.name:"";
+  await DB.put("clients",structuredClone(c));const i=CLIENTS.findIndex(x=>x.id===c.id);if(i>=0)CLIENTS[i]=c;else CLIENTS.push(c)}
+// след запис на заявка без профил: без съвпадения → нов профил; със съвпадения → избор
+async function suggestClient(r){
+  if(!can("clients","edit")||r.clientId||!(r.appName||"").trim())return;
+  await loadClients();const cands=clientCandidates(r);
+  if(!cands.length){const c=clientFromRequest(r);await saveClient(c);r.clientId=c.id;await saveCurrent({quiet:true});renderCaseBar();return}
+  chooseClient(r,cands);
+}
+function chooseClient(r,cands){
+  cands=cands||clientCandidates(r);
+  openModal({title:"Към кой клиентски профил е заявката?",body:`
+    <p class="muted" style="margin-top:0">Заявител: <b>${esc(r.appName||"—")}</b>${r.appPhone?` · ${esc(r.appPhone)}`:""}</p>
+    ${cands.length?`<p>Открити са възможни съвпадения. Профилите <b>не</b> се сливат автоматично — изберете:</p>`:""}
+    <div class="cl-pick">${cands.map((x,i)=>`<label class="cl-opt"><input type="radio" name="clp" value="${esc(x.c.id)}" ${i===0?"checked":""}>
+      <span><b>${esc(x.c.name)}</b> <span class="muted">${esc(x.c.phones||"")}</span><br><small class="muted">${[x.byPhone?"същия телефон":"",x.byName?"същото име":""].filter(Boolean).join(" · ")}</small></span></label>`).join("")}
+      <label class="cl-opt"><input type="radio" name="clp" value="__new" ${cands.length?"":"checked"}><span><b>Нов профил</b> от данните в заявката</span></label>
+      <label class="cl-opt"><input type="radio" name="clp" value="__none"><span>Без профил засега</span></label></div>`,
+    actions:[{label:"Отказ"},{label:"Потвърди",cls:"primary",act:async m=>{
+      const v=(m.el.querySelector("input[name=clp]:checked")||{}).value;if(!v||v==="__none")return;
+      if(v==="__new"){const c=clientFromRequest(r);await saveClient(c);r.clientId=c.id}else r.clientId=v;
+      if(CURRENT&&CURRENT.id===r.id){CURRENT.clientId=r.clientId;await saveCurrent({quiet:true});renderCaseBar()}
+      toast("Заявката е свързана с клиентския профил ✔")}}]});
+}
+async function openClient(c){
+  await loadClients();c=clientById(c.id)||c;const reqs=(await allReqs()).filter(r=>r.clientId===c.id).sort((a,b)=>reqDay(b).localeCompare(reqDay(a)));
+  const keys=phoneKeys(c.phones),loose=keys.length?(await allReqs()).filter(r=>!r.clientId&&phoneKeys(r.appPhone).some(k=>keys.includes(k))):[];
+  const dup=CLIENTS.filter(x=>x.id!==c.id&&(x.phoneKeys||[]).some(k=>keys.includes(k)));
+  const ed=can("clients","edit");
+  const m=openModal({title:"Клиент — "+(c.name||""),wide:true,body:`
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
+      <label class="f">Име<input class="ui-in" id="cpN" value="${esc(c.name||"")}" ${ed?"":"readonly"}></label>
+      <label class="f">Телефони (разделени със запетая)<input class="ui-in" id="cpP" value="${esc(c.phones||"")}" ${ed?"":"readonly"} inputmode="tel"></label>
+      <label class="f">Имейл<input class="ui-in" id="cpE" type="email" value="${esc(c.email||"")}" ${ed?"":"readonly"}></label>
+      <label class="f">Адрес<input class="ui-in" id="cpA" value="${esc(c.address||"")}" ${ed?"":"readonly"}></label>
+      <label class="f" style="grid-column:1/-1">Бележки<textarea class="ui-in" id="cpNo" rows="2" ${ed?"":"readonly"}>${esc(c.notes||"")}</textarea></label></div>
+    ${dup.length?`<div class="notice" style="margin-top:12px">Възможен дубликат: ${dup.map(x=>`<b>${esc(x.name)}</b>`).join(", ")} — същият телефон. Профилите не се сливат автоматично.</div>`:""}
+    <div class="pd-sec">Заявки на клиента (${reqs.length})</div>
+    <table class="list"><tbody>${reqs.map(r=>{const k=calc(r);return`<tr class="click" data-or="${esc(r.id)}"><td><b>${esc(r.number)}</b></td><td>${bgDate(reqDay(r))}</td><td>${esc(r.decName||"")}</td><td>${stTag(r)}</td><td class="money">${eur(k.total)}</td><td class="money" style="${k.rest>0?"color:var(--caution)":""}">${k.rest>0?eur(k.rest):"—"}</td></tr>`}).join("")||`<tr><td class="empty">Още няма свързани заявки.</td></tr>`}</tbody></table>
+    ${loose.length&&ed?`<div class="pd-sec">Заявки без профил със същия телефон (${loose.length})</div><table class="list"><tbody>${loose.map(r=>`<tr><td><b>${esc(r.number)}</b></td><td>${esc(r.appName||"")}</td><td>${bgDate(reqDay(r))}</td><td style="text-align:right"><button class="btn small" data-lk="${esc(r.id)}">Свържи</button></td></tr>`).join("")}</tbody></table>`:""}`,
+    actions:[{label:"Затвори"},...(ed?[{label:"Запази",cls:"primary",act:async m=>{
+      const n=m.q("#cpN").value.trim();if(!n)throw new Error("Попълнете името.");
+      Object.assign(c,{name:n,phones:m.q("#cpP").value.trim(),email:m.q("#cpE").value.trim(),address:m.q("#cpA").value.trim(),notes:m.q("#cpNo").value.trim()});
+      await saveClient(c);audit("Редакция на клиентски профил",c.name);toast("Профилът е запазен ✔");if(!$("#tab-clients").classList.contains("hidden"))renderClients()}}]:[])]});
+  m.el.querySelectorAll("[data-or]").forEach(tr=>tr.onclick=async()=>{const raw=await DB.get("requests",tr.dataset.or);if(!raw)return;closeModal();openRequest(structuredClone(raw));showTab("edit")});
+  m.el.querySelectorAll("[data-lk]").forEach(b=>b.onclick=async()=>{const raw=await DB.get("requests",b.dataset.lk);if(!raw)return;rememberBase(raw);
+    try{const res=await guardedSave(raw.id,"core",{...structuredClone(raw),clientId:c.id});if(res&&res.rec){b.closest("tr").remove();toast("Свързано ✔")}}catch(e){alert(e.message)}});
+}
+
+/* =====================================================================
+   РАБОТЕН ПОТОК — статус, отговорник, следващо действие, задачи
+   Старите заявки без статус се показват с изчислен статус (пунктир), без да се записва нищо.
+   ===================================================================== */
+const CASE_ST=[["new","Нова заявка"],["prep","Подготовка"],["confirmed","Потвърден ритуал"],["done","Приключена"]];
+function statusOf(r){if(r.status)return{v:r.status,inferred:false};
+  return{v:r.paid&&r.ritDate&&r.ritDate<todayISO()?"done":r.ritDate&&r.ritDate>=todayISO()?"confirmed":"new",inferred:true}}
+const stLabel=v=>(CASE_ST.find(x=>x[0]===v)||CASE_ST[0])[1];
+function stTag(r){const s=statusOf(r);return`<span class="tag st st-${s.v}${s.inferred?" inferred":""}" title="${s.inferred?"Изчислен статус — не е задаван ръчно":""}">${stLabel(s.v)}</span>`}
+function renderCaseBar(){
+  const box=$("#caseBar");if(!box)return;if(!CURRENT){box.innerHTML="";return}
+  const r=CURRENT,ed=can("req","edit"),tasks=Array.isArray(r.tasks)?r.tasks:[],dn=tasks.filter(t=>t.done).length,s=statusOf(r);
+  const cl=r.clientId?clientById(r.clientId):null,draft=draftOf(r.id);
+  const users=(USERS||[]).filter(u=>u.active!==false);
+  box.innerHTML=`${draft?`<div class="notice case-draft">Имате ваш незаписан вариант от <b>${new Date(draft.at).toLocaleString("bg-BG",{dateStyle:"short",timeStyle:"short"})}</b> (запазен при конфликт).
+      <span class="spacer"></span><button class="btn small" type="button" id="dfRestore">Възстанови го</button> <button class="btn small ghost" type="button" id="dfDrop">Изтрий</button></div>`:""}
+    <div class="case-grid">
+      <label class="f">Статус<select class="ui-in" id="csSt" ${ed?"":"disabled"}>${CASE_ST.map(([v,l])=>`<option value="${v}" ${s.v===v?"selected":""}>${l}${s.inferred&&s.v===v?" (изчислен)":""}</option>`).join("")}</select></label>
+      <label class="f">Отговорник<select class="ui-in" id="csOw" ${ed?"":"disabled"}><option value="">—</option>${users.map(u=>`<option value="${esc(u.id)}" ${r.owner===u.id?"selected":""}>${esc(u.name)}</option>`).join("")}${r.owner&&!users.some(u=>u.id===r.owner)?`<option value="${esc(r.owner)}" selected>${esc(r.ownerName||"?")}</option>`:""}</select></label>
+      <label class="f case-next">Следващо действие<input class="ui-in" id="csNx" value="${esc(r.nextAction||"")}" placeholder="напр. потвърждение с храма до 16 ч." ${ed?"":"readonly"}></label>
+      <div class="f case-client"><span>Клиентски профил</span><button class="btn small ${cl?"":"ghost"}" type="button" id="csCl">${cl?"👤 "+esc(cl.name):"Свържи с профил"}</button></div>
+    </div>
+    <details class="case-tasks" ${tasks.length?"open":""}><summary>Задачи <span class="muted">${dn}/${tasks.length}</span></summary>
+      ${tasks.map(t=>`<div class="task"><label class="ck"><input type="checkbox" data-tk="${esc(t.id)}" ${t.done?"checked":""} ${ed?"":"disabled"}> <span class="${t.done?"done":""}">${esc(t.t)}</span></label>${ed?`<button class="btn ghost small ico" type="button" data-tkx="${esc(t.id)}" title="Премахни">✕</button>`:""}</div>`).join("")}
+      ${ed?`<div class="row task-add"><input class="ui-in" id="csTk" placeholder="Нова задача, напр. „Некролози — 20 бр.“"><button class="btn small" type="button" id="csTkAdd">Добави</button></div>`:""}</details>`;
+  const ch=()=>{setDirty(true)};
+  const st=$("#csSt");if(st)st.onchange=()=>{CURRENT.status=st.value;ch();renderCaseBar()};
+  const ow=$("#csOw");if(ow)ow.onchange=()=>{CURRENT.owner=ow.value;const u=users.find(x=>x.id===ow.value);CURRENT.ownerName=u?u.name:"";ch()};
+  const nx=$("#csNx");if(nx)nx.oninput=()=>{CURRENT.nextAction=nx.value;ch()};
+  $("#csCl").onclick=async()=>{await loadClients();const c=CURRENT.clientId&&clientById(CURRENT.clientId);if(c)openClient(c);else if(can("clients","edit"))chooseClient(CURRENT);else toast("Нямате права да променяте клиентски профили.",true)};
+  box.querySelectorAll("[data-tk]").forEach(x=>x.onchange=()=>{const t=CURRENT.tasks.find(t=>t.id===x.dataset.tk);t.done=x.checked;t.doneBy=x.checked&&ME?ME.name:"";ch();renderCaseBar()});
+  box.querySelectorAll("[data-tkx]").forEach(x=>x.onclick=()=>{CURRENT.tasks=CURRENT.tasks.filter(t=>t.id!==x.dataset.tkx);ch();renderCaseBar()});
+  const add=()=>{const i=$("#csTk"),v=i.value.trim();if(!v)return;CURRENT.tasks=[...(CURRENT.tasks||[]),{id:uid(),t:v,done:false}];ch();renderCaseBar();setTimeout(()=>$("#csTk")&&$("#csTk").focus(),0)};
+  const ab=$("#csTkAdd");if(ab){ab.onclick=add;$("#csTk").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();add()}}}
+  const dr=$("#dfRestore");if(dr)dr.onclick=()=>{if(!confirm("Да заменя ли полетата на заявката с вашия запазен вариант? (После натиснете „Запази“.)"))return;
+    const keepWs=CURRENT.ws,keepInv=CURRENT.inv;CURRENT=normalizeRequest({...structuredClone(draft.data),id:CURRENT.id,ws:keepWs,inv:keepInv,updated:CURRENT.updated});renderSheets();setDirty(true);renderCaseBar();toast("Вариантът е възстановен — проверете и запазете.")};
+  const dd=$("#dfDrop");if(dd)dd.onclick=()=>{try{localStorage.removeItem(DRAFT_KEY(CURRENT.id))}catch(e){}renderCaseBar()};
+}
+
+/* ---------- календар на ритуалите ---------- */
+let CALM=null;
+async function renderCal(){
+  if(!CALM)CALM=todayISO().slice(0,7);$("#calMonth").value=CALM;
+  const own=$("#calOwner"),stf=$("#calSt");
+  const users=(USERS||[]).filter(u=>u.active!==false),ov=own.value;
+  own.innerHTML=`<option value="">Всички отговорници</option><option value="__none">Без отговорник</option>`+users.map(u=>`<option value="${esc(u.id)}">${esc(u.name)}</option>`).join("");own.value=ov;
+  const [y,m]=CALM.split("-").map(Number),first=new Date(y,m-1,1),days=new Date(y,m,0).getDate(),lead=(first.getDay()+6)%7;
+  const all=(await allReqs()).filter(r=>r.ritDate&&r.ritDate.startsWith(CALM)&&(!own.value||(own.value==="__none"?!r.owner:r.owner===own.value))&&(!stf.value||statusOf(r).v===stf.value));
+  const by={};for(const r of all)(by[r.ritDate]=by[r.ritDate]||[]).push(r);
+  for(const k in by)by[k].sort((a,b)=>String(a.ritTime||"").localeCompare(String(b.ritTime||"")));
+  const today=todayISO(),cells=[];
+  for(let i=0;i<lead;i++)cells.push(`<div class="cal-d out"></div>`);
+  for(let d=1;d<=days;d++){const iso=CALM+"-"+String(d).padStart(2,"0"),ev=by[iso]||[],wd=new Date(y,m-1,d).getDay();
+    cells.push(`<div class="cal-d${iso===today?" today":""}${ev.length?" has":""}${wd===0||wd===6?" we":""}"><div class="cal-n"><span>${d}</span><small>${BG_WD[wd]}</small></div>
+      ${ev.map(r=>{const s=statusOf(r);return`<button class="cal-e st-${s.v}" data-id="${esc(r.id)}" title="${esc([r.decName,r.kind,r.cemetery||r.ritualPlace,r.ownerName].filter(Boolean).join(" · "))}">
+        <b>${esc(r.ritTime||"")}</b> ${esc(r.decName||r.appName||"№ "+r.number)}<small>${esc(r.kind||"")}${r.ownerName?" · "+esc(r.ownerName):""}</small></button>`}).join("")}</div>`)}
+  $("#calGrid").innerHTML=`<div class="cal-h">${["пон","вт","ср","чет","пет","съб","нед"].map(x=>`<div>${x}</div>`).join("")}</div><div class="cal-b">${cells.join("")}</div>`;
+  const mn=first.toLocaleDateString("bg-BG",{month:"long",year:"numeric"});
+  $("#calSum").textContent=mn.charAt(0).toUpperCase()+mn.slice(1)+" · "+(all.length?`${all.length} ${all.length===1?"ритуал":"ритуала"}`:"няма ритуали");
+  $$("#calGrid .cal-e").forEach(b=>b.onclick=async()=>{const raw=await DB.get("requests",b.dataset.id);if(raw){openRequest(structuredClone(raw));showTab("edit")}});
+}
+const calShift=d=>{const [y,m]=(CALM||todayISO().slice(0,7)).split("-").map(Number),t=new Date(y,m-1+d,1);CALM=t.getFullYear()+"-"+String(t.getMonth()+1).padStart(2,"0");renderCal()};
+
+/* =====================================================================
+   ПЪРВОНАЧАЛНО НАСТРОЙВАНЕ на нова агенция (само администратор)
+   ===================================================================== */
+let ONBOARDED=true;
+const needsOnboarding=()=>isAdmin()&&!ONBOARDED&&(!SETTINGS.addr||!SETTINGS.gsm);
+function openOnboarding(step=0){
+  const S=SETTINGS,steps=["Фирмени данни","Цени","Лого","Служители","Шаблони и примерни данни"];
+  const body=[
+    `<div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
+      <label class="f" style="grid-column:1/-1">Наименование (за бланката)<input class="ui-in" id="obAg" value="${esc(S.agency||"")}"></label>
+      <label class="f">Кратко име<input class="ui-in" id="obSh" value="${esc(S.short||"")}"></label>
+      <label class="f">Град<input class="ui-in" id="obCi" value="${esc(S.city||"")}"></label>
+      <label class="f" style="grid-column:1/-1">Адрес<input class="ui-in" id="obAd" value="${esc(S.addr||"")}"></label>
+      <label class="f" style="grid-column:1/-1">Телефони<input class="ui-in" id="obGs" value="${esc(S.gsm||"")}" inputmode="tel"></label></div>`,
+    `<div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
+      <label class="f">Цена за организация (€)<input class="ui-in" id="obOrg" inputmode="decimal" value="${numIn(CATALOG.orgFee)}"></label>
+      <label class="f">Лекарско присъствие (€)<input class="ui-in" id="obDoc" inputmode="decimal" value="${numIn(CATALOG.doctorFee)}"></label></div>
+      <p class="muted">Цените на отделните услуги се задават в „Услуги и цени“ — може и по-късно.</p>`,
+    `<p class="muted" style="margin-top:0">Логото се показва горе в програмата и на бланките.</p>
+      <div class="row"><input type="file" id="obLogo" accept="image/*"><img id="obLogoPrev" src="${S.logoMode==="custom"&&S.logo?S.logo:""}" alt="" style="max-height:56px;${S.logo?"":"display:none"}"></div>`,
+    `<p style="margin-top:0">Служителите се добавят от <b>Управление → Потребители</b>: име, потребителско име, парола и какво могат да виждат и променят.</p>
+      <button class="btn" type="button" id="obUsers">Отвори „Потребители“</button>`,
+    `<p style="margin-top:0">Шаблонът на заявката (полета и пера) и Word шаблоните за документи се настройват от администратора на платформата и в раздел „Документи“.</p>
+      <label class="ck" style="margin-top:8px"><input type="checkbox" id="obSamples"> Добави 2 <b>примерни</b> заявки, за да разгледате програмата (обозначени „ПРИМЕР“, могат да се изтрият)</label>`][step];
+  const collect=m=>{const g=s=>m.q(s);
+    if(step===0)Object.assign(SETTINGS,{agency:g("#obAg").value.trim(),short:g("#obSh").value.trim(),city:g("#obCi").value.trim(),addr:g("#obAd").value.trim(),gsm:g("#obGs").value.trim()});
+    if(step===1){CATALOG.orgFee=num(g("#obOrg").value);CATALOG.doctorFee=num(g("#obDoc").value)}};
+  const m=openModal({title:`Първоначално настройване · ${step+1} от ${steps.length} — ${steps[step]}`,wide:true,
+    body:`<div class="ob-steps">${steps.map((s,i)=>`<span class="${i===step?"on":i<step?"done":""}">${i+1}. ${s}</span>`).join("")}</div>${body}`,
+    actions:[{label:"По-късно",act:()=>{try{sessionStorage.setItem("zayavki-ob-later","1")}catch(e){}}},
+      ...(step>0?[{label:"← Назад",act:m=>{collect(m);setTimeout(()=>openOnboarding(step-1),40)}}]:[]),
+      step<steps.length-1?{label:"Напред →",cls:"primary",act:async m=>{collect(m);
+          if(step===0)await setMeta("settings",SETTINGS);if(step===1)await setMeta("catalog",CATALOG);applyTitle();setTimeout(()=>openOnboarding(step+1),40)}}
+        :{label:"Готово",cls:"primary",act:async m=>{
+          if(m.q("#obSamples").checked)for(const r of sampleRequests())await DB.put("requests",r);
+          await setMeta("onboarded",true);ONBOARDED=true;audit("Първоначално настройване");toast("Готово — добре дошли ✔");showTab(firstTab())}}]});
+  const lf=m.q("#obLogo");if(lf)lf.onchange=()=>{const f=lf.files[0];if(!f)return;const rd=new FileReader();rd.onload=async()=>{SETTINGS.logo=rd.result;SETTINGS.logoMode="custom";await setMeta("settings",SETTINGS);applyTitle();const p=m.q("#obLogoPrev");p.src=rd.result;p.style.display=""};rd.readAsDataURL(f)};
+  const ub=m.q("#obUsers");if(ub)ub.onclick=()=>{closeModal();showTab("users")};
+}
+
+/* версия на реда (миграция 3): DB.get за заявки взима и version; putChecked пише през save_record.
+   Без миграцията — стария запис (приложението само разпознава липсата). */
+if(CLOUD){
+  const baseGet=DB.get;
+  DB.get=async(s,k)=>{if(s!=="requests")return baseGet(s,k);
+    if(HAS_VER!==false){try{const p=await sb(`/rest/v1/records?select=value,version&store=eq.requests&key=eq.${enc_(k)}`);HAS_VER=true;
+        if(p[0]){DBVER[k]=p[0].version;return p[0].value}return undefined}catch(e){if(e.net)throw e;HAS_VER=false}}
+    return baseGet(s,k)};
+  DB.putChecked=async(s,o,exp)=>{const k=o[KEYPATH[s]];
+    if(HAS_VER&&HAS_SAVE_RPC!==false){
+      try{const r=await rpc("save_record",{p_store:s,p_key:k,p_value:o,p_expected:exp??null});HAS_SAVE_RPC=true;
+        if(r&&r.ok){DBVER[k]=r.version;return{ok:true}}return r}
+      catch(e){if(e.net||!/save_record|PGRST202|schema cache/i.test(e.message))throw e;HAS_SAVE_RPC=false}}
+    await DB.put(s,o);return{ok:true}};
+}else DB.putChecked=async(s,o)=>{await DB.put(s,o);return{ok:true}};
+// служителите увеличават само номерацията — четем свежите настройки и сменяме само нея
+async function bumpCounter(k,val){try{const st=await getMeta("settings",null);if(!st){SETTINGS[k]=val;return}
+  if((st[k]||0)>=val){SETTINGS[k]=st[k];return}st[k]=val;await setMeta("settings",st);SETTINGS[k]=val}catch(e){console.warn("номерация:",e.message)}}
+
 /* ---------------- запис ---------------- */
 let JUST_SAVED=null; // id на току-що записана заявка — просветва в списъка
-async function saveCurrent(){
+async function saveCurrent(opts={}){
   if(!CURRENT)return false;
   if(!can("req","edit")){toast("Нямате права да променяте заявки.",true);return false}
   if(!String(CURRENT.number||"").trim()){alert("Моля, въведете номер на заявката.");return false}
-  const over=overMaxList(CURRENT);
+  const over=opts.quiet?[]:overMaxList(CURRENT);
   if(over.length&&!confirm("⚠ Има цени над максималните допустими:\n\n"+over.map(o=>`• ${o.label}: ${fmt(o.v)} € (макс. ${fmt(o.max)} €)`).join("\n")+"\n\nДа запазя ли заявката въпреки това?"))return false;
-  const dup=(await DB.all("requests")).find(r=>r.id!==CURRENT.id&&String(r.number).trim()===String(CURRENT.number).trim());
+  const dup=opts.quiet?null:(await DB.all("requests")).find(r=>r.id!==CURRENT.id&&String(r.number).trim()===String(CURRENT.number).trim());
   if(dup&&!confirm(`Вече има заявка с № ${CURRENT.number}. Да запазя ли въпреки това?`))return false;
-  const isNew=!(await DB.get("requests",CURRENT.id));
-  CURRENT.updated=new Date().toISOString();
-  await DB.put("requests",structuredClone(CURRENT));JUST_SAVED=CURRENT.id;
+  const isNew=!BASE[CURRENT.id]&&!(await DB.get("requests",CURRENT.id));
+  let res;try{res=await guardedSave(CURRENT.id,"core",structuredClone(CURRENT))}catch(e){alert("Заявката НЕ е запазена: "+e.message);return false}
+  if(!res)return false;
+  if(res.reload){openRequest(structuredClone(res.reload));toast("Заредена е тяхната версия. Вашият вариант е запазен на този компютър — „Възстанови го“ над бланката.",true);return false}
+  CURRENT.updated=res.rec.updated;CURRENT.updatedBy=res.rec.updatedBy;CURRENT.ws=structuredClone(res.rec.ws);CURRENT.inv=Object.assign(emptyInv(),structuredClone(res.rec.inv||{}));ensureWs(CURRENT);
+  JUST_SAVED=CURRENT.id;
   // запомняне на нови бележки в каталога (за падащото меню)
   let learned=false;
   CURRENT.lines.forEach((l,i)=>{const it=CATALOG.items[i],v=(l.note||"").trim();
     if(v&&!GENERAL_PRESETS.includes(v)&&!(it.presets||[]).includes(v)){it.presets=[v,...(it.presets||[])].slice(0,12);learned=true}});
-  if(learned)await setMeta("catalog",CATALOG);
+  if(learned&&can("catalog","edit"))await setMeta("catalog",CATALOG).catch(()=>{});
   const n=parseInt(CURRENT.number,10);
-  if(isNew&&isFinite(n)&&n>=SETTINGS.nextNo){SETTINGS.nextNo=n+1;await setMeta("settings",SETTINGS)}
-  audit(isNew?"Нова заявка":"Запазена заявка","№ "+CURRENT.number+(CURRENT.decName?" — "+CURRENT.decName:"")+" · общо "+eur(calc(CURRENT).total),CURRENT.id);
-  setDirty(false);toast("Заявката е запазена ✔");return true;
+  if(isNew&&isFinite(n)&&n>=SETTINGS.nextNo)await bumpCounter("nextNo",n+1);
+  if(!opts.quiet)audit(isNew?"Нова заявка":"Запазена заявка","№ "+CURRENT.number+(CURRENT.decName?" — "+CURRENT.decName:"")+" · общо "+eur(calc(CURRENT).total),CURRENT.id);
+  setDirty(false);renderCaseBar();
+  if(!opts.quiet){toast("Заявката е запазена ✔");if(!CURRENT.clientId)suggestClient(CURRENT).catch(e=>console.warn(e))}
+  return true;
 }
 $("#btnSave").onclick=async()=>{if(await saveCurrent()&&stockPlan(CURRENT).length)setTimeout(()=>toast("Заявката е запазена. Складът още НЕ е обновен — натиснете „Изпиши от склада“.",true),900)};
 $("#btnIssue").onclick=confirmIssue;
-$("#btnPaid").onclick=async()=>{
+$("#btnPaid").onclick=()=>openPayments();
+const oldPaidToggle=async()=>{ // старото „Платена изцяло“ — заменено от историята на плащанията
   if(!CURRENT)return;const c=calc(CURRENT);
   if(!CURRENT.paid){
     if(!confirm(`Да отбележа ли заявка № ${CURRENT.number} като ИЗЦЯЛО ПЛАТЕНА?\n\nОбща сума: ${eur(c.total)}\nОстатъкът ще стане 0,00 €.`))return;
@@ -2205,7 +2574,7 @@ let WS=null,wsTimer=null,wsPending=false;
 async function openWorksheet(id){
   if(CURRENT&&CURRENT.id===id&&DIRTY&&!(await saveCurrent()))return;
   const raw=await DB.get("requests",id);if(!raw){toast("Първо запазете заявката.",true);return}
-  WS=normalizeRequest(structuredClone(raw));renderWs();showTab("ws");
+  rememberBase(raw);WS=normalizeRequest(structuredClone(raw));renderWs();showTab("ws");
 }
 $("#btnWs").onclick=async()=>{if(!CURRENT)return;
   const inDb=await DB.get("requests",CURRENT.id);
@@ -2338,8 +2707,10 @@ wsBody.addEventListener("click",e=>{const b=e.target.closest("[data-wa]");if(!b|
   wsSaveSoon()});
 function wsSaveSoon(){wsPending=true;const s=$("#wsState");s.textContent="Записване…";s.classList.add("dirty");clearTimeout(wsTimer);wsTimer=setTimeout(wsFlush,400)}
 async function wsFlush(){clearTimeout(wsTimer);if(!wsPending||!WS)return;wsPending=false;
-  const fresh=await DB.get("requests",WS.id);if(!fresh)return;
-  fresh.ws=structuredClone(WS.ws);fresh.updated=new Date().toISOString();await DB.put("requests",fresh);auditThrottled("ws"+WS.id,"Промени в работен лист","№ "+WS.number,WS.id);
+  let res;try{res=await guardedSave(WS.id,"ws",{ws:structuredClone(WS.ws)})}catch(e){wsPending=true;toast("Работният лист НЕ е записан: "+e.message,true);return}
+  if(!res){wsPending=true;return} // отказ — промените остават на екрана
+  if(res.reload){WS=normalizeRequest(structuredClone(res.reload));renderWs();toast("Заредена е тяхната версия на работния лист.",true);return}
+  auditThrottled("ws"+WS.id,"Промени в работен лист","№ "+WS.number,WS.id);
   if(CURRENT&&CURRENT.id===WS.id)CURRENT.ws=structuredClone(WS.ws);
   const s=$("#wsState");s.textContent="Запазено ✓";s.classList.remove("dirty")}
 
@@ -2461,7 +2832,7 @@ let INV=null,invTimer=null,invPending=false;
 async function openInvoice(id){
   if(CURRENT&&CURRENT.id===id&&DIRTY&&!(await saveCurrent()))return;
   const raw=await DB.get("requests",id);if(!raw){toast("Първо запазете заявката.",true);return}
-  INV=normalizeRequest(structuredClone(raw));const I=INV.inv,r=INV;
+  rememberBase(raw);INV=normalizeRequest(structuredClone(raw));const I=INV.inv,r=INV;
   // попълване по подразбиране от заявката и настройките
   if(!I.date)I.date=todayISO();if(!I.taxDate)I.taxDate=I.date;if(!I.place)I.place=SETTINGS.city||"";
   if(!I.buyerName&&I.buyerType==="person")I.buyerName=r.appName;
@@ -2482,10 +2853,10 @@ const invNextNo=()=>String(SETTINGS.invNext||1).padStart(10,"0");
 async function invAssignNo(){
   const I=INV.inv;I.number=I.number.trim();
   if(SRV||CLOUD){const s=await getMeta("settings",null);if(s&&(s.invNext||1)>(SETTINGS.invNext||1))SETTINGS.invNext=s.invNext}
-  if(!I.number){I.number=invNextNo();SETTINGS.invNext=(SETTINGS.invNext||1)+1;await setMeta("settings",SETTINGS);return true}
+  if(!I.number){I.number=invNextNo();await bumpCounter("invNext",(SETTINGS.invNext||1)+1);return true}
   const dup=(await DB.all("requests")).find(x=>x.id!==INV.id&&x.inv&&String(x.inv.number).trim()===I.number);
   if(dup&&!confirm(`Фактура № ${I.number} вече е издадена по заявка № ${dup.number}. Да продължа ли?`))return false;
-  const n=parseInt(I.number,10);if(isFinite(n)&&n>=(SETTINGS.invNext||1)){SETTINGS.invNext=n+1;await setMeta("settings",SETTINGS)}
+  const n=parseInt(I.number,10);if(isFinite(n)&&n>=(SETTINGS.invNext||1)){await bumpCounter("invNext",n+1)}
   return true;
 }
 $("#invPrint").onclick=async()=>{if(!needEdit("docs","издаване на фактури"))return;
@@ -2541,8 +2912,10 @@ invBody.addEventListener("change",e=>{const el=e.target,k=el.dataset.i;if(!INV||
   invSaveSoon()});
 function invSaveSoon(){invPending=true;const s=$("#invState");s.textContent="Записване…";s.classList.add("dirty");clearTimeout(invTimer);invTimer=setTimeout(invFlush,400)}
 async function invFlush(){clearTimeout(invTimer);if(!invPending||!INV)return;invPending=false;
-  const fresh=await DB.get("requests",INV.id);if(!fresh)return;
-  fresh.inv=structuredClone(INV.inv);fresh.updated=new Date().toISOString();await DB.put("requests",fresh);auditThrottled("inv"+INV.id,"Промени във фактура","заявка № "+INV.number,INV.id);
+  let res;try{res=await guardedSave(INV.id,"inv",{inv:structuredClone(INV.inv)})}catch(e){invPending=true;toast("Фактурата НЕ е записана: "+e.message,true);return}
+  if(!res){invPending=true;return}
+  if(res.reload){INV=normalizeRequest(structuredClone(res.reload));renderInv();toast("Заредена е тяхната версия на фактурата.",true);return}
+  auditThrottled("inv"+INV.id,"Промени във фактура","заявка № "+INV.number,INV.id);
   if(CURRENT&&CURRENT.id===INV.id)CURRENT.inv=structuredClone(INV.inv);
   const s=$("#invState");s.textContent="Запазено ✓";s.classList.remove("dirty")}
 
@@ -2800,7 +3173,7 @@ async function invCommit(mut,req){
   try{if(SRV||CLOUD)INVD=migrateInvd(await getMeta("inventory",null)); // друго устройство може да е изписало междувременно
     const d=structuredClone(INVD),rq=req?structuredClone(req):null;const out=mut(d,rq);
     const ops=[{store:"meta",value:{key:"inventory",value:d}}];if(rq){rq.updated=new Date().toISOString();ops.push({store:"requests",value:rq})}
-    await DB.putAtomic(ops);INVD=d;return{out,req:rq}}
+    await DB.putAtomic(ops);INVD=d;if(rq)rememberBase(rq);return{out,req:rq}}
   finally{INV_BUSY=false}
 }
 const addMove=(d,m)=>{m.id=uid();m.ts=new Date().toISOString();d.moves.push(m);return m};
@@ -3100,19 +3473,36 @@ $("#wslTable").addEventListener("click",e=>{const b=e.target.closest("[data-wsl]
 
 /* ---- клиенти (от заявителите в заявките) ---- */
 async function renderClients(){
-  const q=$("#clSearch").value.trim().toLowerCase(),m=new Map();
-  for(const r of await allReqs()){const name=(r.appName||"").trim();if(!name)continue;
-    const key=name.toLowerCase()+"|"+(r.appPhone||"").replace(/\s/g,""),c=calc(r);
-    const x=m.get(key)||{name,phone:r.appPhone,addr:[r.appCity,r.appStreet,r.appNo].filter(Boolean).join(", "),n:0,total:0,rest:0,last:"",sample:true,nums:[]};
-    x.n++;x.total=r2(x.total+c.total);x.rest=r2(x.rest+(r.paid?0:Math.max(0,c.rest)));x.sample=x.sample&&r.sample;x.nums.push(r.number);
-    if(reqDay(r)>x.last)x.last=reqDay(r);m.set(key,x)}
-  let cl=[...m.values()].sort((a,b)=>b.last.localeCompare(a.last));
-  if(q)cl=cl.filter(x=>[x.name,x.phone].join(" ").toLowerCase().includes(q));
-  $("#clTable").innerHTML=`<thead><tr><th>Клиент</th><th>Телефон</th><th>Адрес</th><th class="money">Заявки</th><th class="money">Обща сума</th><th class="money">Неплатено</th><th>Последна</th><th></th></tr></thead><tbody>${
-    cl.map(x=>`<tr><td><b>${esc(x.name)}</b>${x.sample?'<span class="pill">ПРИМЕР</span>':""}</td><td class="num">${x.phone?`<a href="tel:${esc(x.phone)}">${esc(x.phone)}</a>`:"—"}</td><td class="muted">${esc(x.addr)||"—"}</td>
-      <td class="money">${x.n}</td><td class="money">${eur(x.total)}</td><td class="money" style="${x.rest>0?"color:var(--caution);font-weight:600":""}">${x.rest>0?eur(x.rest):"—"}</td>
-      <td class="num">${bgDate(x.last)}</td><td style="text-align:right"><button class="btn small" data-cl="${esc(x.name)}" title="Покажи заявките: ${esc(x.nums.join(", "))}">Заявки</button></td></tr>`).join("")
-    ||`<tr><td colspan="8" class="empty">${q?"Няма намерени клиенти.":"Още няма клиенти — те се появяват от попълнените заявки."}</td></tr>`}</tbody>`;
+  await loadClients();const q=$("#clSearch").value.trim().toLowerCase(),qd=q.replace(/\D/g,""),reqs=await allReqs(),ed=can("clients","edit");
+  const st=new Map();for(const r of reqs){if(!r.clientId)continue;const c=calc(r),x=st.get(r.clientId)||{n:0,total:0,rest:0,last:""};
+    x.n++;x.total=r2(x.total+c.total);x.rest=r2(x.rest+Math.max(0,c.rest));if(reqDay(r)>x.last)x.last=reqDay(r);st.set(r.clientId,x)}
+  const cnt=new Map();for(const c of CLIENTS)for(const k of (c.phoneKeys||[]))cnt.set(k,(cnt.get(k)||0)+1);
+  let prof=CLIENTS.map(c=>({c,s:st.get(c.id)||{n:0,total:0,rest:0,last:""},dup:(c.phoneKeys||[]).some(k=>cnt.get(k)>1)}));
+  if(q)prof=prof.filter(x=>(x.c.name||"").toLowerCase().includes(q)||(x.c.phones||"").toLowerCase().includes(q)||(qd.length>=3&&(x.c.phoneKeys||[]).some(k=>k.includes(qd))));
+  prof.sort((a,b)=>(b.s.last||"").localeCompare(a.s.last||"")||(a.c.name||"").localeCompare(b.c.name||"","bg"));
+  $("#clTable").innerHTML=`<thead><tr><th>Клиент</th><th>Телефони</th><th class="money">Заявки</th><th class="money">Обща сума</th><th class="money">Неплатено</th><th>Последна</th><th></th></tr></thead><tbody>${
+    prof.map((x,i)=>`<tr class="click" data-cp="${i}"><td><b>${esc(x.c.name)}</b>${x.dup?' <span class="tag warn" title="Друг профил има същия телефон — проверете дали не е същият човек">възможен дубликат</span>':""}</td>
+      <td class="num">${esc(x.c.phones||"—")}</td><td class="money">${x.s.n}</td><td class="money">${eur(x.s.total)}</td>
+      <td class="money" style="${x.s.rest>0?"color:var(--caution);font-weight:600":""}">${x.s.rest>0?eur(x.s.rest):"—"}</td><td class="num">${bgDate(x.s.last)||"—"}</td>
+      <td style="text-align:right"><button class="btn small" data-cp="${i}">Профил</button></td></tr>`).join("")
+    ||`<tr><td colspan="7" class="empty">${q?"Няма намерени профили.":"Още няма клиентски профили — създават се при запис на заявка или от „Заявители без профил“."}</td></tr>`}</tbody>`;
+  const m=new Map();for(const r of reqs){if(r.clientId)continue;const name=(r.appName||"").trim();if(!name)continue;
+    const key=normName(name)+"|"+(phoneKeys(r.appPhone)[0]||"");const x=m.get(key)||{name,phone:r.appPhone,ids:[],last:"",sample:true,first:r};
+    x.ids.push(r.id);x.sample=x.sample&&r.sample;if(reqDay(r)>x.last){x.last=reqDay(r);x.first=r}m.set(key,x)}
+  let loose=[...m.values()].sort((a,b)=>b.last.localeCompare(a.last));if(q)loose=loose.filter(x=>[x.name,x.phone].join(" ").toLowerCase().includes(q));
+  $("#clLoose").innerHTML=loose.length?`<thead><tr><th>Заявител</th><th>Телефон</th><th class="money">Заявки</th><th>Последна</th><th></th></tr></thead><tbody>${
+    loose.map((x,i)=>`<tr><td><b>${esc(x.name)}</b>${x.sample?'<span class="pill">ПРИМЕР</span>':""}</td><td class="num">${esc(x.phone||"—")}</td><td class="money">${x.ids.length}</td><td class="num">${bgDate(x.last)}</td>
+      <td style="text-align:right">${ed?`<button class="btn small" data-mk="${i}">Създай профил</button>`:""}</td></tr>`).join("")}</tbody>`
+    :`<tbody><tr><td class="empty">${q?"Няма намерени.":"Всички заявители имат профил."}</td></tr></tbody>`;
+  $$("#clTable [data-cp]").forEach(e=>e.onclick=ev=>{ev.stopPropagation();openClient(prof[+e.dataset.cp].c)});
+  $$("#clLoose [data-mk]").forEach(btn=>btn.onclick=async()=>{const x=loose[+btn.dataset.mk];await loadClients();
+    const cands=clientCandidates(x.first);
+    if(cands.length){chooseClient(structuredClone(x.first),cands);return}
+    if(!confirm(`Да създам ли профил „${x.name}“ и да свържа ${x.ids.length} ${x.ids.length===1?"заявка":"заявки"} с него?`))return;
+    const c=clientFromRequest(x.first);await saveClient(c);let ok=0;
+    for(const id of x.ids){const raw=await DB.get("requests",id);if(!raw)continue;rememberBase(raw);
+      try{const res=await guardedSave(id,"core",{...structuredClone(raw),clientId:c.id});if(res&&res.rec)ok++}catch(e){alert(e.message);break}}
+    audit("Нов клиентски профил",c.name+" · "+ok+" заявки");toast(`Профилът е създаден ✔ (${ok} ${ok===1?"заявка":"заявки"})`);renderClients()});
 }
 $("#clSearch").oninput=renderClients;
 $("#clTable").addEventListener("click",e=>{const b=e.target.closest("[data-cl]");if(!b)return;$("#search").value=b.dataset.cl;showTab("list")});
@@ -3554,12 +3944,12 @@ function printDoc(d){
 let USERS=[],ME=null;
 const AREAS=[ // раздел: [етикет, възможни нива]
   ["dash","Начално табло",["none","view"]],["req","Заявки",["none","view","edit"]],["ws","Работни листове",["none","view","edit"]],
-  ["docs","Фактури и оферти",["none","view","edit"]],["clients","Клиенти",["none","view"]],["necro","Некролози",["none","view","edit"]],
+  ["docs","Фактури и оферти",["none","view","edit"]],["clients","Клиенти",["none","view","edit"]],["necro","Некролози",["none","view","edit"]],
   ["stock","Инвентар",["none","view","edit"]],["files","Документи",["none","view","edit"]],["catalog","Услуги и цени",["none","view","edit"]],["fin","Финанси и статистика",["none","view"]]];
 const FLAGS=[["reqdel","Може да изтрива заявки"],["stockadj","Може да прави складови корекции"]];
 const LVL={none:"Няма достъп",view:"Вижда",edit:"Редактира"};
 const DEFAULT_PERMS={dash:"view",req:"edit",ws:"edit",docs:"edit",clients:"view",necro:"edit",stock:"view",files:"view",catalog:"view",fin:"none",reqdel:false,stockadj:false};
-const TAB_AREA={dash:"dash",list:"req",edit:"req",wsl:"ws",ws:"ws",inv:"docs",clients:"clients",necro:"necro",stock:"stock",files:"files",catalog:"catalog",fin:"fin",stats:"fin",settings:"admin",users:"admin"};
+const TAB_AREA={cal:"req",dash:"dash",list:"req",edit:"req",wsl:"ws",ws:"ws",inv:"docs",clients:"clients",necro:"necro",stock:"stock",files:"files",catalog:"catalog",fin:"fin",stats:"fin",settings:"admin",users:"admin"};
 const isAdmin=()=>!!ME&&ME.role==="admin";
 function can(area,lvl="view"){
   if(!ME)return false;if(ME.role==="admin")return true;
@@ -3873,7 +4263,7 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="2026-11-11.5"; // сменя се при всяко публикуване
+const APP_VERSION="2026-11-12.1"; // сменя се при всяко публикуване
 function showVersion(){const v=$("#appVer");if(v)v.textContent="Версия "+APP_VERSION;
   const a=$("#auth .auth-box");if(a&&!a.querySelector(".appver")){const e=document.createElement("div");e.className="appver auth-ver";e.textContent="Версия "+APP_VERSION;a.appendChild(e)}}
 let NEWER=null;
@@ -3913,6 +4303,7 @@ async function loginAs(u,why){
   if(why==="Вход")audit("Вход");
   $("#auth").classList.add("hidden");lastAct=Date.now();
   playIntro();applyUser();showTab(firstTab());agencyBars();
+  if(needsOnboarding()&&!sessionStorage.getItem("zayavki-ob-later"))setTimeout(()=>openOnboarding(0),500);
 }
 function applyUser(){
   $("#sideUser").classList.remove("hidden");$("#suName").textContent=ME.name;$("#suRole").textContent=isAdmin()?"Администратор":"Служител";
@@ -4050,10 +4441,18 @@ async function loadShared(){ // настройки, каталог, некрол
   TEMPLATE=migrateTemplate(await getMeta("template",null));applyTemplate();
   NECRO=migrateNecro(await getMeta("necro",null));
   INVD=migrateInvd(await getMeta("inventory",null));
-  await setMeta("settings",SETTINGS);await setMeta("catalog",CATALOG);
-  if(!(await getMeta("initialized",false))){for(const r of sampleRequests())await DB.put("requests",r);await setMeta("initialized",true)}
+  // записваме само ако липсват (първо пускане) — не при всеки вход; базата проверява правата
+  if(!(await getMeta("settings",null)))await setMeta("settings",SETTINGS).catch(()=>{});
+  if(!(await getMeta("catalog",null)))await setMeta("catalog",CATALOG).catch(()=>{});
+  if(!(await getMeta("initialized",false)))await setMeta("initialized",true).catch(()=>{}); // примерни заявки — само по избор
+  ONBOARDED=!!(await getMeta("onboarded",false))||!!(SETTINGS.addr&&SETTINGS.gsm);
+  await loadClients();
   SHARED=true;applyTitle();
 }
+$("#btnOnboard").onclick=()=>openOnboarding(0);
+$$("[data-sub]").forEach(b=>b.onclick=()=>showTab(b.dataset.sub));
+$("#calPrev").onclick=()=>calShift(-1);$("#calNext").onclick=()=>calShift(1);$("#calToday").onclick=()=>{CALM=null;renderCal()};
+$("#calMonth").onchange=()=>{if($("#calMonth").value){CALM=$("#calMonth").value;renderCal()}};$("#calOwner").onchange=renderCal;$("#calSt").onchange=renderCal;
 (async function start(){
   const bootOut=()=>{const bt=$("#boot");if(bt){bt.classList.add("out");setTimeout(()=>bt.remove(),300)}};
   if(CLOUD){await cloudStart();bootOut();return}
