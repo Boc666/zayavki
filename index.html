@@ -884,6 +884,13 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
 .cal-d.today .cal-n span{background:var(--bronze);color:#1A140B;border-radius:999px;padding:0 7px;font-weight:600}
 .cal-e{display:block;width:100%;text-align:left;margin-top:4px;padding:5px 7px;border-radius:6px;border:0;border-left:3px solid var(--text3);background:var(--panel2);color:var(--text);font:12px/1.3 var(--ui);cursor:pointer;overflow:hidden;text-overflow:ellipsis}
 .cal-e small{display:block;color:var(--text3);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-e.ev{background:transparent;border:1px dashed var(--border-strong);border-left:3px solid var(--text2)}
+.cal-e.ev b::before{content:"◆ ";color:var(--text3);font-weight:400}
+.cal-e.ev-meeting{border-left-color:#8FA9C4}.cal-e.ev-ritual{border-left-color:var(--bronze-hi)}.cal-e.ev-task{border-left-color:var(--caution)}
+.cal-add{margin-left:auto;width:22px;height:22px;border-radius:6px;border:0;background:transparent;color:var(--text3);font:600 15px/1 var(--ui);cursor:pointer;opacity:.0;transition-property:opacity,background;transition-duration:.15s}
+.cal-d:hover .cal-add,.cal-add:focus-visible{opacity:1}
+@media(hover:none){.cal-add{opacity:.7}}
+@media(hover:hover) and (pointer:fine){.cal-add:hover{background:var(--panel3);color:var(--text)}}
 .cal-e.st-prep{border-left-color:var(--caution)}.cal-e.st-confirmed{border-left-color:var(--bronze)}.cal-e.st-done{border-left-color:var(--ok);opacity:.7}
 @media(hover:hover) and (pointer:fine){.cal-e:hover{background:var(--panel3)}}
 .ob-steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
@@ -1032,7 +1039,7 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
 </section>
 <section id="tab-cal" class="hidden">
   <div class="ph"><div><h2>Календар на ритуалите</h2><p id="calSum"></p></div><span class="spacer"></span>
-    <div class="filters"><button class="btn small" id="calPrev" title="Предишен месец">←</button><input type="month" id="calMonth" class="ui-in" style="width:170px"><button class="btn small" id="calNext" title="Следващ месец">→</button><button class="btn small ghost" id="calToday">Днес</button>
+    <div class="filters"><button class="btn small" id="calPrev" title="Предишен месец">←</button><input type="month" id="calMonth" class="ui-in" style="width:170px"><button class="btn small" id="calNext" title="Следващ месец">→</button><button class="btn small ghost" id="calToday">Днес</button><button class="btn small primary" id="calAdd">+ Събитие</button>
       <select id="calOwner" class="ui-in" style="width:auto"></select>
       <select id="calSt" class="ui-in" style="width:auto"><option value="">Всички статуси</option><option value="new">Нова заявка</option><option value="prep">Подготовка</option><option value="confirmed">Потвърден ритуал</option><option value="done">Приключена</option></select></div></div>
   <div class="card cal" id="calGrid"></div>
@@ -2394,25 +2401,66 @@ function renderCaseBar(){
 
 /* ---------- календар на ритуалите ---------- */
 let CALM=null;
+/* ---------- календар: ритуалите от заявките + ръчни събития (store „events“) ---------- */
+KEYPATH.events="id";
+const EV_TYPES=[["meeting","Среща"],["ritual","Ритуал / помен"],["task","Задача"],["other","Друго"]];
+const evType=v=>(EV_TYPES.find(x=>x[0]===v)||EV_TYPES[3])[1];
+async function loadEvents(){try{return await DB.all("events")}catch(e){return[]}}
 async function renderCal(){
   if(!CALM)CALM=todayISO().slice(0,7);$("#calMonth").value=CALM;
-  const own=$("#calOwner"),stf=$("#calSt");
+  const own=$("#calOwner"),stf=$("#calSt"),ed=can("req","edit");
+  $("#calAdd").classList.toggle("hidden",!ed);
   const users=(USERS||[]).filter(u=>u.active!==false),ov=own.value;
   own.innerHTML=`<option value="">Всички отговорници</option><option value="__none">Без отговорник</option>`+users.map(u=>`<option value="${esc(u.id)}">${esc(u.name)}</option>`).join("");own.value=ov;
   const [y,m]=CALM.split("-").map(Number),first=new Date(y,m-1,1),days=new Date(y,m,0).getDate(),lead=(first.getDay()+6)%7;
-  const all=(await allReqs()).filter(r=>r.ritDate&&r.ritDate.startsWith(CALM)&&(!own.value||(own.value==="__none"?!r.owner:r.owner===own.value))&&(!stf.value||statusOf(r).v===stf.value));
-  const by={};for(const r of all)(by[r.ritDate]=by[r.ritDate]||[]).push(r);
-  for(const k in by)by[k].sort((a,b)=>String(a.ritTime||"").localeCompare(String(b.ritTime||"")));
+  const okOwner=o=>!own.value||(own.value==="__none"?!o:o===own.value);
+  const reqs=(await allReqs()).filter(r=>r.ritDate&&r.ritDate.startsWith(CALM)&&okOwner(r.owner)&&(!stf.value||statusOf(r).v===stf.value));
+  // ръчните събития нямат статус — при избран статус се скриват
+  const evs=stf.value?[]:(await loadEvents()).filter(e=>e.date&&e.date.startsWith(CALM)&&okOwner(e.owner));
+  const by={};
+  for(const r of reqs)(by[r.ritDate]=by[r.ritDate]||[]).push({t:String(r.ritTime||""),r});
+  for(const e of evs)(by[e.date]=by[e.date]||[]).push({t:String(e.time||""),e});
+  for(const k in by)by[k].sort((a,b)=>(a.t||"99").localeCompare(b.t||"99"));
   const today=todayISO(),cells=[];
   for(let i=0;i<lead;i++)cells.push(`<div class="cal-d out"></div>`);
-  for(let d=1;d<=days;d++){const iso=CALM+"-"+String(d).padStart(2,"0"),ev=by[iso]||[],wd=new Date(y,m-1,d).getDay();
-    cells.push(`<div class="cal-d${iso===today?" today":""}${ev.length?" has":""}${wd===0||wd===6?" we":""}"><div class="cal-n"><span>${d}</span><small>${BG_WD[wd]}</small></div>
-      ${ev.map(r=>{const s=statusOf(r);return`<button class="cal-e st-${s.v}" data-id="${esc(r.id)}" title="${esc([r.decName,r.kind,r.cemetery||r.ritualPlace,r.ownerName].filter(Boolean).join(" · "))}">
-        <b>${esc(r.ritTime||"")}</b> ${esc(r.decName||r.appName||"№ "+r.number)}<small>${esc(r.kind||"")}${r.ownerName?" · "+esc(r.ownerName):""}</small></button>`}).join("")}</div>`)}
+  for(let d=1;d<=days;d++){const iso=CALM+"-"+String(d).padStart(2,"0"),list=by[iso]||[],wd=new Date(y,m-1,d).getDay();
+    cells.push(`<div class="cal-d${iso===today?" today":""}${list.length?" has":""}${wd===0||wd===6?" we":""}"><div class="cal-n"><span>${d}</span><small>${BG_WD[wd]}</small>${ed?`<button class="cal-add" type="button" data-day="${iso}" title="Ново събитие на ${bgDate(iso)}">+</button>`:""}</div>
+      ${list.map(x=>{if(x.r){const r=x.r,s=statusOf(r);return`<button class="cal-e st-${s.v}" data-id="${esc(r.id)}" title="${esc([r.decName,r.kind,r.cemetery||r.ritualPlace,r.ownerName].filter(Boolean).join(" · "))}">
+        <b>${esc(r.ritTime||"")}</b> ${esc(r.decName||r.appName||"№ "+r.number)}<small>${esc(r.kind||"")}${r.ownerName?" · "+esc(r.ownerName):""}</small></button>`}
+        const e=x.e;return`<button class="cal-e ev ev-${esc(e.type||"other")}" data-ev="${esc(e.id)}" title="${esc([evType(e.type),e.place,e.ownerName,e.note].filter(Boolean).join(" · "))}">
+        <b>${esc(e.time||"")}</b> ${esc(e.title)}<small>${esc(evType(e.type))}${e.place?" · "+esc(e.place):""}${e.ownerName?" · "+esc(e.ownerName):""}</small></button>`}).join("")}</div>`)}
   $("#calGrid").innerHTML=`<div class="cal-h">${["пон","вт","ср","чет","пет","съб","нед"].map(x=>`<div>${x}</div>`).join("")}</div><div class="cal-b">${cells.join("")}</div>`;
-  const mn=first.toLocaleDateString("bg-BG",{month:"long",year:"numeric"});
-  $("#calSum").textContent=mn.charAt(0).toUpperCase()+mn.slice(1)+" · "+(all.length?`${all.length} ${all.length===1?"ритуал":"ритуала"}`:"няма ритуали");
-  $$("#calGrid .cal-e").forEach(b=>b.onclick=async()=>{const raw=await DB.get("requests",b.dataset.id);if(raw){openRequest(structuredClone(raw));showTab("edit")}});
+  const mn=first.toLocaleDateString("bg-BG",{month:"long",year:"numeric"}),nr=reqs.length,ne=evs.length;
+  $("#calSum").textContent=mn.charAt(0).toUpperCase()+mn.slice(1)+" · "+(nr||ne?[nr?`${nr} ${nr===1?"ритуал":"ритуала"}`:"",ne?`${ne} ${ne===1?"събитие":"събития"}`:""].filter(Boolean).join(", "):"няма ритуали и събития");
+  $$("#calGrid .cal-e[data-id]").forEach(b=>b.onclick=async()=>{const raw=await DB.get("requests",b.dataset.id);if(raw){openRequest(structuredClone(raw));showTab("edit")}});
+  $$("#calGrid .cal-e[data-ev]").forEach(b=>b.onclick=async()=>{const e=(await loadEvents()).find(x=>x.id===b.dataset.ev);if(e)openEvent(e)});
+  $$("#calGrid .cal-add").forEach(b=>b.onclick=ev=>{ev.stopPropagation();openEvent(null,b.dataset.day)});
+}
+// ново или редакция на събитие
+function openEvent(e,day){
+  const ed=can("req","edit"),isNew=!e,users=(USERS||[]).filter(u=>u.active!==false);
+  e=e?structuredClone(e):{id:uid(),title:"",type:"meeting",date:day||todayISO(),time:"",place:"",owner:"",note:""};
+  const ro=ed?"":"readonly";
+  openModal({title:isNew?"Ново събитие":"Събитие",body:`<div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
+      <label class="f" style="grid-column:1/-1">Заглавие<input class="ui-in" id="evT" value="${esc(e.title)}" placeholder="напр. Среща с близките за подробностите" ${ro}></label>
+      <label class="f">Дата<input class="ui-in" type="date" id="evD" value="${esc(e.date)}" ${ro}></label>
+      <label class="f">Час<input class="ui-in" id="evH" value="${esc(e.time||"")}" placeholder="напр. 10.30" inputmode="decimal" ${ro}></label>
+      <label class="f">Вид<select class="ui-in" id="evK" ${ed?"":"disabled"}>${EV_TYPES.map(([v,l])=>`<option value="${v}" ${e.type===v?"selected":""}>${l}</option>`).join("")}</select></label>
+      <label class="f">Отговорник<select class="ui-in" id="evO" ${ed?"":"disabled"}><option value="">—</option>${users.map(u=>`<option value="${esc(u.id)}" ${e.owner===u.id?"selected":""}>${esc(u.name)}</option>`).join("")}</select></label>
+      <label class="f" style="grid-column:1/-1">Място<input class="ui-in" id="evP" value="${esc(e.place||"")}" placeholder="напр. офиса, храм „Св. Неделя“" ${ro}></label>
+      <label class="f" style="grid-column:1/-1">Бележка<textarea class="ui-in" id="evN" rows="2" ${ro}>${esc(e.note||"")}</textarea></label></div>
+      ${!isNew&&e.by?`<p class="muted" style="margin:10px 0 0">Добавено от ${esc(e.by)}${e.updatedBy&&e.updatedBy!==e.by?` · променено от ${esc(e.updatedBy)}`:""}</p>`:""}`,
+    actions:[{label:ed?"Отказ":"Затвори"},
+      ...(ed&&!isNew?[{label:"Изтрий",cls:"danger",act:async()=>{if(!confirm(`Да изтрия ли събитието „${e.title}“?`))return false;
+        await DB.del("events",e.id);audit("Изтрито събитие",e.title+" · "+bgDate(e.date));toast("Събитието е изтрито");renderCal()}}]:[]),
+      ...(ed?[{label:isNew?"Добави":"Запази",cls:"primary",act:async m=>{
+        const t=m.q("#evT").value.trim(),d=m.q("#evD").value;if(!t)throw new Error("Напишете заглавие.");if(!d)throw new Error("Изберете дата.");
+        const o=m.q("#evO").value,u=users.find(x=>x.id===o);
+        Object.assign(e,{title:t,date:d,time:m.q("#evH").value.trim(),type:m.q("#evK").value,place:m.q("#evP").value.trim(),note:m.q("#evN").value.trim(),owner:o,ownerName:u?u.name:"",
+          updated:new Date().toISOString(),updatedBy:ME?ME.name:""});
+        if(isNew){e.created=e.updated;e.by=ME?ME.name:""}
+        await DB.put("events",e);audit(isNew?"Ново събитие в календара":"Променено събитие",t+" · "+bgDate(d)+(e.time?" "+e.time:""));
+        toast(isNew?"Събитието е добавено ✔":"Събитието е запазено ✔");if(d.slice(0,7)!==CALM)CALM=d.slice(0,7);renderCal()}}]:[])]});
 }
 const calShift=d=>{const [y,m]=(CALM||todayISO().slice(0,7)).split("-").map(Number),t=new Date(y,m-1+d,1);CALM=t.getFullYear()+"-"+String(t.getMonth()+1).padStart(2,"0");renderCal()};
 
@@ -4263,7 +4311,7 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="2026-11-12.1"; // сменя се при всяко публикуване
+const APP_VERSION="2026-11-12.2"; // сменя се при всяко публикуване
 function showVersion(){const v=$("#appVer");if(v)v.textContent="Версия "+APP_VERSION;
   const a=$("#auth .auth-box");if(a&&!a.querySelector(".appver")){const e=document.createElement("div");e.className="appver auth-ver";e.textContent="Версия "+APP_VERSION;a.appendChild(e)}}
 let NEWER=null;
@@ -4452,6 +4500,7 @@ async function loadShared(){ // настройки, каталог, некрол
 $("#btnOnboard").onclick=()=>openOnboarding(0);
 $$("[data-sub]").forEach(b=>b.onclick=()=>showTab(b.dataset.sub));
 $("#calPrev").onclick=()=>calShift(-1);$("#calNext").onclick=()=>calShift(1);$("#calToday").onclick=()=>{CALM=null;renderCal()};
+$("#calAdd").onclick=()=>openEvent(null,(CALM&&CALM!==todayISO().slice(0,7))?CALM+"-01":todayISO());
 $("#calMonth").onchange=()=>{if($("#calMonth").value){CALM=$("#calMonth").value;renderCal()}};$("#calOwner").onchange=renderCal;$("#calSt").onchange=renderCal;
 (async function start(){
   const bootOut=()=>{const bt=$("#boot");if(bt){bt.classList.add("out");setTimeout(()=>bt.remove(),300)}};
