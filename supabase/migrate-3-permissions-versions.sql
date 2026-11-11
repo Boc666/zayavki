@@ -64,6 +64,14 @@ begin
     return new;
   end if;
 
+  -- upsert (INSERT … ON CONFLICT DO UPDATE) върху съществуващ ред: Postgres пуска първо INSERT-фазата.
+  -- Тогава пропускаме — същият тригер проверява реда изцяло в UPDATE-фазата, която следва.
+  -- (Обикновен INSERT върху съществуващ ред така или иначе пада на уникалния ключ.)
+  if tg_op = 'INSERT' and exists (select 1 from public.records r
+      where r.agency_id = new.agency_id and r.store = st and r.key = k) then
+    return new;
+  end if;
+
   if tg_op = 'DELETE' then
     if st = 'requests' and not public.my_flag('reqdel') then raise exception 'Нямате права да изтривате заявки.'; end if;
     if st = 'docs' and not public.can_area('files','edit') then raise exception 'Нямате права да изтривате документи.'; end if;
