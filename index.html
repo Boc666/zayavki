@@ -67,6 +67,11 @@ main>section:not(.hidden){animation:pageIn .24s var(--ease)}
 .ph{display:flex;align-items:flex-end;gap:16px;margin:0 0 20px;flex-wrap:wrap}
 .ph h2{font:600 22px/1.2 var(--ui);margin:0;letter-spacing:-.2px;color:var(--text)}
 .ph p{margin:4px 0 0;color:var(--text2);font-size:13px}
+.d40{max-width:680px}.d40-in{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.d40-in .f{max-width:230px}
+.d40-big{margin:18px 0 6px;padding:16px 18px;border-radius:var(--r);background:var(--bronze-soft);font-size:15px;line-height:1.6}
+.d40-big b{font-size:19px;color:var(--bronze-hi)}.d40-sat{color:var(--text2);font-size:13.5px}
+.d40-tbl{width:100%;border-collapse:collapse;margin:10px 0 4px}.d40-tbl td{padding:8px 4px;border-bottom:1px solid var(--border-soft);font-size:13.5px}
+.d40-tbl td:first-child{color:var(--text2);width:120px}.d40-note{font-size:12.5px;line-height:1.5;margin:12px 0 0}
 .card{background:var(--panel);border:1px solid var(--border-soft);border-radius:var(--r);padding:18px 20px;margin-bottom:16px}
 .card h2{font:600 15px var(--ui);margin:0 0 14px;color:var(--text);letter-spacing:.1px}
 .card h3{font:600 11px var(--ui);margin:22px 0 10px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border-soft);padding-bottom:7px}
@@ -612,6 +617,7 @@ table.inv-t .d{color:#4b5a8a;font-style:italic;font-size:9pt}
     <button data-tab="wsl"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="1"/><path d="M9 4V3h6v1M9 10.5l1.5 1.5L14 8.5M9 16.5h6"/></svg>Работни листове</button>
     <button data-tab="clients"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.6.9 2.7 2.7 3 5.2"/></svg>Клиенти</button>
     <button data-tab="necro"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>Некролози</button>
+    <button data-tab="days40"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="1.5"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8.5 15h2M13.5 15h2M8.5 18h2"/></svg>40 дни</button>
     <button data-tab="files"><svg viewBox="0 0 24 24"><path d="M3 6.5a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>Документи</button>
     <div class="nsec">Управление</div>
     <button data-tab="stock"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg>Инвентар</button>
@@ -693,6 +699,15 @@ table.inv-t .d{color:#4b5a8a;font-style:italic;font-size:9pt}
 </section>
 
 <!-- ================= ДОКУМЕНТИ ================= -->
+<section id="tab-days40" class="hidden">
+  <div class="toolbar"><b class="tb-title">Калкулатор за помени</b></div>
+  <div class="card d40">
+    <div class="d40-in"><label class="f">Дата на смъртта<input type="date" id="d40Date" class="ui-in"></label>
+      <button class="btn small" id="d40Today" type="button">Днес</button></div>
+    <div id="d40Out"></div>
+    <p class="muted d40-note">Денят на смъртта се брои за първи ден — така 40-ият ден е 39 дни след него (по православната традиция). Ако поменът се прави в събота, е посочена и съботата преди това.</p>
+  </div>
+</section>
 <section id="tab-files" class="hidden">
   <div id="docListView">
     <div class="ph"><div><h2>Документи</h2><p>Бланки и документи на Word на едно място — отваряне, печат и корекции</p></div><span class="spacer"></span>
@@ -1712,6 +1727,23 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMenu()});
    РАЗДЕЛИ
    ===================================================================== */
 $("#sideBurger").onclick=()=>{const a=$("aside.side"),o=a.classList.toggle("open");$("#sideBurger").setAttribute("aria-expanded",o)};
+/* ---------------- 40 дни (и другите помени) ---------------- */
+const BG_WD=["неделя","понеделник","вторник","сряда","четвъртък","петък","събота"];
+const d40fmt=d=>BG_WD[d.getDay()]+", "+d.toLocaleDateString("bg-BG",{day:"2-digit",month:"2-digit",year:"numeric"});
+const d40add=(d,days,months=0,years=0)=>{const x=new Date(d.getFullYear()+years,d.getMonth()+months,d.getDate()+days);
+  if(months||years){const want=(d.getMonth()+months+12*years)%12;if(x.getMonth()!==(want+12)%12)x.setDate(0)}return x}; // 31.08 + 6 мес. → 28/29.02
+function renderDays40(){
+  const inp=$("#d40Date");if(!inp.value){const t=new Date();inp.value=t.getFullYear()+"-"+String(t.getMonth()+1).padStart(2,"0")+"-"+String(t.getDate()).padStart(2,"0")}
+  const [y,m,dd]=inp.value.split("-").map(Number),d=new Date(y,m-1,dd);
+  if(!y||isNaN(d)){$("#d40Out").innerHTML="";return}
+  const f40=d40add(d,39),sat=f40.getDay()===6?null:d40add(f40,-((f40.getDay()+1)%7));
+  const rows=[["3 дни",d40add(d,2)],["9 дни",d40add(d,8)],["40 дни",f40],["6 месеца",d40add(d,0,6)],["1 година",d40add(d,0,0,1)]];
+  $("#d40Out").innerHTML=`<div class="d40-big">40 дни се навършват на<br><b>${d40fmt(f40)}</b>
+      ${sat?`<div class="d40-sat">Съботата преди това: <b style="font-size:inherit;color:inherit">${d40fmt(sat)}</b></div>`:`<div class="d40-sat">Денят е събота.</div>`}</div>
+    <table class="d40-tbl"><tbody>${rows.map(([l,x])=>`<tr><td>${l}</td><td>${l==="40 дни"?"<b>":""}${d40fmt(x)}${l==="40 дни"?"</b>":""}</td></tr>`).join("")}</tbody></table>`;
+}
+$("#d40Date").oninput=$("#d40Date").onchange=renderDays40;
+$("#d40Today").onclick=()=>{$("#d40Date").value="";renderDays40()};
 function showTab(name){
   closeMenu();$("aside.side").classList.remove("open");
   if(ME&&!canTab(name)){toast("Нямате достъп до този раздел.",true);name=firstTab()}
@@ -1720,8 +1752,8 @@ function showTab(name){
   $$("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===(navOf[name]||name)));
   if(name!=="ws")wsFlush();if(name!=="inv")invFlush();
   closeModal();
-  ["dash","list","wsl","clients","fin","edit","catalog","stock","stats","settings","ws","inv","necro","users","files"].forEach(t=>$("#tab-"+t).classList.toggle("hidden",t!==name));
-  if(name==="files")renderDocs();
+  ["dash","list","wsl","clients","fin","edit","catalog","stock","stats","settings","ws","inv","necro","users","files","days40"].forEach(t=>$("#tab-"+t).classList.toggle("hidden",t!==name));
+  if(name==="files")renderDocs();if(name==="days40")renderDays40();
   if(name==="stock")renderStock();if(name==="users")renderUsers();
   if(name==="stats")renderStats();if(name==="necro")renderNecro();
   if(name==="dash")renderDash();if(name==="wsl")renderWsl();if(name==="clients")renderClients();if(name==="fin")renderFin();
@@ -3239,8 +3271,8 @@ function can(area,lvl="view"){
   const p=ME.perms||{};if(FLAGS.some(f=>f[0]===area))return !!p[area];
   if(area==="admin")return false;const v=p[area]||"none";return lvl==="edit"?v==="edit":v!=="none";
 }
-const canTab=t=>can(TAB_AREA[t]||"admin");
-const firstTab=()=>["dash","list","wsl","clients","necro","files","stock","catalog","fin","stats"].find(canTab)||"settings";
+const canTab=t=>t==="days40"||can(TAB_AREA[t]||"admin"); // калкулаторът за помени — за всички
+const firstTab=()=>["dash","list","wsl","clients","necro","files","stock","catalog","fin","stats"].find(canTab)||(canTab("settings")?"settings":"days40");
 
 /* --- пароли --- */
 const enc=s=>new TextEncoder().encode(s);
