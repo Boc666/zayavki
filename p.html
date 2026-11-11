@@ -97,6 +97,7 @@ function review(L){const d=L.data||{};let rating=0;
   try{const L=await rpc("public_link_get",{p_token:TOKEN});
     if(!L||L.error==="missing"){app.innerHTML=msg("err","Линкът не е намерен. Проверете дали е копиран изцяло.");return}
     if(L.error==="expired"){app.innerHTML=msg("err","Линкът е изтекъл. Свържете се с агенцията за нов.");return}
+    if(L.closed){app.innerHTML=head(L,L.kind==="offer"?"Оферта":"Отзив","")+msg("ok",L.kind==="offer"?(L.response&&L.response.answer==="accept"?`Офертата е потвърдена${L.responded_at?" на "+bgDate(L.responded_at):""}. Благодарим!`:"Отговорът Ви е получен."):"Оценката Ви е получена. Благодарим!")+`<p class="foot">Линкът е изтекъл — подробностите са при агенцията.</p>`;return}
     (L.kind==="offer"?offer:review)(L)}
   catch(e){app.innerHTML=msg("err",esc(e.message))}
 })();

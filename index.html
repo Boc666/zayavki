@@ -4125,8 +4125,9 @@ $("#importFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;e.tar
     if(d.inventory){INVD=migrateInvd(d.inventory);await setMeta("inventory",INVD)}
     if(d.settings){const lb=SETTINGS.lastBackup;SETTINGS=migrateSettings(d.settings);SETTINGS.lastBackup=lb;await setMeta("settings",SETTINGS)}
     if(Array.isArray(d.audit)){if(CLOUD){for(let i=0;i<d.audit.length;i+=300)await DB.putAtomic(d.audit.slice(i,i+300).map(v=>({store:"audit",value:v})))}else for(const x of d.audit)await DB.put("audit",x)}
-    if(Array.isArray(d.docs))for(const x of d.docs)await DB.put("docs",{...x,file:await (await fetch(x.file)).blob()});
-    for(const st of ["clients","events"])if(Array.isArray(d[st])&&d[st].length){ // клиентски профили и събития от календара (архиви след 11.2026)
+    if(Array.isArray(d.docs))for(const x of d.docs){if(!x.file)continue; // износът от панела не съдържа самите Word файлове (остават в хранилището)
+      await DB.put("docs",{...x,file:await (await fetch(x.file)).blob()})}
+    for(const st of ["clients","events","partners"])if(Array.isArray(d[st])&&d[st].length){ // клиентски профили и събития от календара (архиви след 11.2026)
       if(CLOUD){for(let i=0;i<d[st].length;i+=100)await DB.putAtomic(d[st].slice(i,i+100).map(v=>({store:st,value:v})))}else for(const x of d[st])await DB.put(st,x).catch(()=>{})}
     audit("Възстановен архив",f.name+" · "+d.requests.length+" заявки");
     const au=!CLOUD&&Array.isArray(d.users)?d.users.filter(u=>u.active&&u.role==="admin"):[]; // в облака потребителите се създават наново (паролите не могат да се пренесат)
@@ -4757,6 +4758,9 @@ function platformShow(P){
         <label class="ck"><input type="checkbox" id="pyInv" checked> и издай фактура</label>
         <button class="btn small primary" id="pyAdd">Добави плащане</button></div>
       <table class="list" style="margin-top:6px"><tbody>${D.payments.map(p=>{const iv=INVS.find(i=>i.payment_id===p.id&&!i.cancelled);return `<tr><td>${dd(p.paid_on)}</td><td class="money">${money(p.amount)}</td><td class="muted">${esc(p.note)}</td><td style="text-align:right;white-space:nowrap">${iv?`<button class="btn small" data-pinv="${iv.id}">Фактура № ${invNo(iv.number)}</button>`:`<button class="btn small" data-pmk="${p.id}">Издай фактура</button>`} <button class="btn small" data-pdel="${p.id}">Изтрий</button></td></tr>`}).join("")||`<tr><td class="empty">Няма плащания.</td></tr>`}</tbody></table>
+      <div class="pd-sec">Данни на агенцията</div>
+      <div class="pd-btns"><button class="btn small" id="pdExport" type="button">Свали всички данни (архив)</button>
+        <span class="muted" style="font-size:12.5px">заявки, клиенти, настройки, каталог, склад, история, потребители (без пароли). Файлът се връща в агенция с „Възстанови от архив“.</span></div>
       <div class="pd-sec">Потребители</div>
       <table class="list"><tbody>${D.users.map(u=>`<tr><td><b>${esc(u.name)}</b> <span class="muted">${esc(u.username)}</span></td><td>${u.role==="admin"?"администратор":"служител"}${u.active?"":" · <span style='color:var(--err)'>спрян</span>"}</td><td class="muted">последен вход ${dt(u.last_login)}</td><td style="text-align:right"><button class="btn small" data-upw="${esc(u.username)}">Нова парола</button></td></tr>`).join("")}</tbody></table>
       <div class="pd-sec">Входове (последни 100)</div>
@@ -4770,6 +4774,19 @@ function platformShow(P){
     m.q("#pdSetUntil").onclick=()=>{const v=m.q("#pdUntil").value;if(!v){m.err("Изберете дата.");return}
       run(()=>rpc("platform_set_access",{p_agency:a.id,p_until:new Date(v+"T23:59:59").toISOString(),p_note:""}))};
     m.q("#pdNoLimit").onclick=()=>run(()=>rpc("platform_set_access",{p_agency:a.id,p_until:null,p_note:""}));
+    m.q("#pdExport").onclick=async()=>{const b=m.q("#pdExport");b.disabled=true;b.textContent="Подготвям…";
+      try{const X=await rpc("platform_export_agency",{p_agency:a.id}),by=st=>X.records.filter(r=>r.store===st).map(r=>r.value),meta=k=>{const r=X.records.find(r=>r.store==="meta"&&r.key===k);return r?r.value.value:null};
+        // същият формат като „Свали архив“ в агенцията — връща се с „Възстанови от архив“
+        const data={app:"pogrebalni-zayavki",version:3,exported:new Date().toISOString(),source:"platform",agency:X.agency,
+          settings:meta("settings"),catalog:meta("catalog"),necro:meta("necro"),inventory:meta("inventory"),template:meta("template"),
+          users:X.profiles,audit:by("audit"),requests:by("requests"),clients:by("clients"),events:by("events"),partners:by("partners"),
+          docs:by("docs").map(d=>({...d,file:null})),files:X.files,
+          note:"Word файловете не са вътре — остават в хранилището на базата (списъкът е в „files“)."};
+        const blob=new Blob([JSON.stringify(data,null,1)],{type:"application/json"}),lnk=document.createElement("a");
+        lnk.href=URL.createObjectURL(blob);lnk.download=`arhiv-${a.code}-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(lnk);lnk.click();lnk.remove();setTimeout(()=>URL.revokeObjectURL(lnk.href),3000);
+        toast(`Архивът е свален: ${data.requests.length} заявки, ${data.clients.length} клиента, ${(blob.size/1024).toFixed(0)} KB ✔`)}
+      catch(e){m.err(/Could not find the function|PGRST202/.test(e.message)?"Липсва миграция 10 в базата.":e.message)}
+      finally{b.disabled=false;b.textContent="Свали всички данни (архив)"}};
     m.q("#pdSave").onclick=()=>run(()=>rpc("platform_update_agency",{p_agency:a.id,p:{name:m.q("#pdName").value,monthly_fee:m.q("#pdFee").value.replace(",",".").trim(),
       contact_person:m.q("#pdPerson").value,contact_phone:m.q("#pdPhone").value,contact_email:m.q("#pdEmail").value,eik:m.q("#pdEik").value,address:m.q("#pdAddr").value,notes:m.q("#pdNotes").value}}));
     m.q("#pyAdd").onclick=()=>{const amt=Number(m.q("#pyAmt").value.replace(",","."));if(!(amt>0)){m.err("Въведете сума.");return}
@@ -4922,7 +4939,7 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="2026-11-12.7"; // сменя се при всяко публикуване
+const APP_VERSION="2026-11-12.8"; // сменя се при всяко публикуване
 /* ---------- инсталиране като приложение (иконка на телефона / компютъра) ---------- */
 let PWA_EV=null;
 const PWA_STANDALONE=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
@@ -5098,11 +5115,17 @@ function userModal(id){
 async function renderLog(){
   const us=$("#lgUser"),uv=us.value;us.innerHTML=`<option value="">Всички потребители</option>`+USERS.map(u=>`<option value="${u.id}" ${u.id===uv?"selected":""}>${esc(u.name)}</option>`).join("");
   const f=$("#lgFrom").value,t=$("#lgTo").value,q=$("#lgQ").value.trim().toLowerCase();
-  let list=(await DB.all("audit")).sort((a,b)=>b.ts.localeCompare(a.ts));
-  list=list.filter(x=>(!us.value||x.userId===us.value)&&(!f||x.ts.slice(0,10)>=f)&&(!t||x.ts.slice(0,10)<=t)&&(!q||[x.action,x.details,x.user].join(" ").toLowerCase().includes(q)));
-  $("#lgCount").textContent=list.length>500?`показани 500 от ${list.length}`:`${list.length} записа`;
+  let list,more=false;
+  if(CLOUD){ // не теглим цялата история (с години стават хиляди записи) — базата връща най-новите 500 за периода/потребителя
+    let qs=`/rest/v1/records?select=value&store=eq.audit&order=updated_at.desc&limit=${q?2000:501}`;
+    if(f)qs+=`&updated_at=gte.${enc_(f+"T00:00:00")}`;if(t)qs+=`&updated_at=lt.${enc_(new Date(new Date(t+"T00:00:00").getTime()+864e5).toISOString().slice(0,10)+"T00:00:00")}`;
+    if(us.value)qs+=`&value->>userId=eq.${enc_(us.value)}`;
+    list=(await sb(qs)).map(x=>x.value).sort((a,b)=>String(b.ts).localeCompare(String(a.ts)));more=list.length>(q?1999:500)}
+  else list=(await DB.all("audit")).sort((a,b)=>b.ts.localeCompare(a.ts));
+  list=list.filter(x=>(!us.value||x.userId===us.value)&&(!f||String(x.ts||"").slice(0,10)>=f)&&(!t||String(x.ts||"").slice(0,10)<=t)&&(!q||[x.action,x.details,x.user].join(" ").toLowerCase().includes(q)));
+  $("#lgCount").textContent=more?"показани най-новите 500 — стеснете периода, за да видите по-старите":list.length>500?`показани 500 от ${list.length}`:`${list.length} записа`;
   $("#lgBody").innerHTML=`<table class="list"><thead><tr><th>Дата и час</th><th>Потребител</th><th>Действие</th><th>Подробности</th></tr></thead><tbody>${
-    list.slice(0,500).map(x=>{const d=new Date(x.ts);return `<tr><td class="num" style="white-space:nowrap">${d.toLocaleDateString("bg-BG")} <span class="muted">${d.toLocaleTimeString("bg-BG")}</span></td>
+    list.slice(0,500).map(x=>{const d=new Date(x.ts||x.serverTs||0);return `<tr><td class="num" style="white-space:nowrap">${d.toLocaleDateString("bg-BG")} <span class="muted">${d.toLocaleTimeString("bg-BG")}</span></td>
       <td style="white-space:nowrap">${esc(x.user)}</td><td><b>${esc(x.action)}</b></td><td class="muted">${esc(x.details)}</td></tr>`}).join("")||`<tr><td colspan="4" class="empty">Няма записи.</td></tr>`}</tbody></table>`;
 }
 $("#lgUser").onchange=$("#lgFrom").onchange=$("#lgTo").onchange=renderLog;$("#lgQ").oninput=renderLog;
