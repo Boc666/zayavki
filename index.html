@@ -135,7 +135,11 @@ td.acts{text-align:right;white-space:nowrap;width:1%}
 .docpaper{margin:0 auto;background:#fff;box-shadow:0 1px 0 rgba(255,255,255,.04),0 18px 40px rgba(0,0,0,.55);border-radius:2px;min-height:200mm}
 .docpaper[contenteditable=true]{outline:2px solid var(--bronze);outline-offset:4px;cursor:text}
 .dochtml{color:#000;line-height:1.15;white-space:pre-wrap;tab-size:1.27cm;overflow-wrap:break-word}
-.dochtml p{margin:0}
+.dochtml p{margin:0;line-height:inherit} /* общите стилове дават 1.55 на абзаците — в Word „единично“ е ~1.15 */
+.docpdf{display:block;width:100%;max-width:900px;height:calc(100vh - 170px);min-height:480px;margin:0 auto;border:1px solid var(--border);border-radius:var(--r-sm);background:#fff}
+.docpdf.hidden{display:none}
+.docpdf-alt{text-align:center;font-size:13px;color:var(--text2);margin:8px 0 0}.docpdf-alt a{color:var(--bronze-hi,var(--bronze))}
+.tag.pdf{background:var(--bronze-soft);color:var(--bronze-hi,var(--bronze))}
 .dochtml table{border-collapse:collapse}
 .dochtml td{vertical-align:top;padding:0 5.4pt}
 .dochtml table.bd td{border:.5pt solid #000}
@@ -1133,12 +1137,12 @@ button.appver:hover{color:var(--text2)}
 </section>
 <section id="tab-files" class="hidden">
   <div id="docListView">
-    <div class="ph"><div><h2>Документи</h2><p>Бланки и документи на Word на едно място — отваряне, печат и корекции</p></div><span class="spacer"></span>
+    <div class="ph"><div><h2>Документи</h2><p>Бланки на Word или PDF на едно място — отваряне и печат</p></div><span class="spacer"></span>
       <input id="docSearch" class="ui-in" placeholder="Търсене по име…" style="width:240px">
-      <label class="btn primary" id="docUpload"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>Качи документи<input type="file" id="docFile" accept=".docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple class="hidden"></label>
+      <label class="btn primary" id="docUpload"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>Качи документи<input type="file" id="docFile" accept=".pdf,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple class="hidden"></label>
     </div>
     <div class="card" id="docCard">
-      <div class="dropzone" id="docDrop">Пуснете тук файлове на Word (.docx) или натиснете „Качи документи“ · може няколко наведнъж</div>
+      <div class="dropzone" id="docDrop">Пуснете тук файлове PDF или Word (.docx), или натиснете „Качи документи“ · може няколко наведнъж<br><small>За печат <b>точно като във Word</b>: във Word → „Запиши като“ → PDF и качете PDF файла.</small></div>
       <table class="list" id="docTable"></table>
     </div>
   </div>
@@ -1161,7 +1165,7 @@ button.appver:hover{color:var(--text2)}
         <button class="btn primary" id="dvSave">Запази</button>
       </span>
     </div>
-    <div class="docscroll"><div class="docpaper dochtml" id="docPaper"></div></div>
+    <div class="docscroll"><iframe id="docPdf" class="docpdf hidden" title="PDF документ"></iframe><p class="docpdf-alt hidden" id="docPdfAlt">PDF-ът не се вижда? <a href="#" id="docPdfOpen">Отвори го в нов прозорец</a></p><div class="docpaper dochtml" id="docPaper"></div></div>
   </div>
 </section>
 
@@ -4524,13 +4528,13 @@ async function renderDocs(){
   const q=$("#docSearch").value.trim().toLowerCase();
   const all=(await DB.all("docs")).sort((a,b)=>a.name.localeCompare(b.name,"bg")),list=all.filter(d=>!q||(d.name+" "+d.orig).toLowerCase().includes(q));
   $("#docTable").innerHTML=`<thead><tr><th>Документ</th><th>Качен</th><th>Последна промяна</th><th class="money">Размер</th><th></th></tr></thead><tbody>${
-    list.map(d=>`<tr class="click" data-doc="${d.id}"><td class="docname">${esc(d.name)}${d.edited?' <span class="tag ed">коригиран тук</span>':""}<small>${esc(d.orig)}</small></td>
+    list.map(d=>`<tr class="click" data-doc="${d.id}"><td class="docname">${esc(d.name)} <span class="tag ${d.kind==="pdf"?"pdf":""}" title="${d.kind==="pdf"?"Печата се точно като оригинала":"Word — оформлението може леко да се различава при печат"}">${d.kind==="pdf"?"PDF":"Word"}</span>${d.edited?' <span class="tag ed">коригиран тук</span>':""}<small>${esc(d.orig)}</small></td>
       <td class="num muted">${dt(d.created)}</td><td class="num muted">${dt(d.updated)}${d.by?` · ${esc(d.by)}`:""}</td><td class="money muted">${kb(d.size||0)}</td>
       <td class="acts"><button class="btn small" data-da="open">Отвори</button><button class="btn small dark" data-da="print">Печат</button>
-        <button class="btn small ghost ico" data-da="down" title="Изтегли оригиналния файл на Word">${svgI('<path d="M12 4v12M7 11l5 5 5-5M4 20h16"/>')}</button>
+        <button class="btn small ghost ico" data-da="down" title="Изтегли оригиналния файл">${svgI('<path d="M12 4v12M7 11l5 5 5-5M4 20h16"/>')}</button>
         <button class="btn small ghost ico" data-da="ren" title="Преименувай">${svgI('<path d="M4 20h4L19 9l-4-4L4 16z"/>')}</button>
         <button class="btn small ghost ico del" data-da="del" title="Изтрий">${ICO.del}</button></td></tr>`).join("")
-    ||`<tr><td colspan="5" class="empty">${all.length?"Няма документи с такова име.":"Още няма документи. Натиснете „Качи документи“ или пуснете .docx файлове в полето отгоре."}</td></tr>`}</tbody>`;
+    ||`<tr><td colspan="5" class="empty">${all.length?"Няма документи с такова име.":"Още няма документи. Натиснете „Качи документи“ или пуснете PDF / .docx файлове в полето отгоре."}</td></tr>`}</tbody>`;
   permLock();
 }
 $("#docSearch").oninput=renderDocs;
@@ -4539,7 +4543,17 @@ async function addDocFiles(files){
   let ok=0;const bad=[],old=[];
   for(const f of files){
     if(/\.doc$/i.test(f.name)){old.push(f.name);continue}
-    if(!/\.docx$/i.test(f.name)){bad.push(f.name+" (не е Word файл)");continue}
+    if(/\.pdf$/i.test(f.name)){ // PDF — пази се и се печата 1:1, както е направен във Word
+      try{if(f.size>15*1048576)throw new Error("по-голям от 15 MB");
+        const buf=await f.arrayBuffer();if(new TextDecoder().decode(new Uint8Array(buf,0,5))!=="%PDF-")throw new Error("файлът не е PDF");
+        const ex=(await DB.all("docs")).find(d=>d.orig===f.name);
+        if(ex&&!confirm(`Вече има документ „${ex.name}“ от файл ${f.name}.\n\nДа го заменя ли с новия файл?`))continue;
+        const now=new Date().toISOString(),d={id:ex?ex.id:uid(),name:ex?ex.name:f.name.replace(/\.pdf$/i,""),orig:f.name,size:f.size,kind:"pdf",file:new Blob([buf],{type:"application/pdf"}),
+          html:"",page:null,base:"",edited:false,created:ex?ex.created:now,updated:now,by:ME?ME.name:""};
+        await DB.put("docs",d);audit(ex?"Заменен документ":"Качен документ",d.name+" ("+f.name+", "+kb(f.size)+")");ok++}
+      catch(e){bad.push(f.name+" ("+e.message+")")}
+      continue}
+    if(!/\.docx$/i.test(f.name)){bad.push(f.name+" (не е PDF или Word файл)");continue}
     try{const buf=await f.arrayBuffer(),r=await docxToHtml(buf),ex=(await DB.all("docs")).find(d=>d.orig===f.name);
       if(ex&&!confirm(`Вече има документ „${ex.name}“ от файл ${f.name}.\n\nДа го заменя ли с новия файл?${ex.edited?"\n(Корекциите, направени в програмата, ще се загубят.)":""}`))continue;
       const now=new Date().toISOString(),d={id:ex?ex.id:uid(),name:ex?ex.name:f.name.replace(/\.docx$/i,""),orig:f.name,size:f.size,file:new Blob([buf],{type:DOCX_MIME}),
@@ -4560,18 +4574,22 @@ $("#docTable").addEventListener("click",async e=>{const tr=e.target.closest("tr[
   else if(a==="ren"){if(!can("files","edit"))return;const n=prompt("Ново име на документа:",d.name);if(n&&n.trim()&&n.trim()!==d.name){const o=d.name;d.name=n.trim();d.updated=new Date().toISOString();await DB.put("docs",d);audit("Преименуван документ",o+" → "+d.name);renderDocs()}}
   else if(a==="del"){if(!can("files","edit"))return;if(!confirm(`Да изтрия ли документа „${d.name}“?\n\nТой ще изчезне от програмата. Оригиналният файл в папката на компютъра (ако още го имате) не се засяга.`))return;
     await DB.del("docs",id);audit("Изтрит документ",d.name);renderDocs();toast("Документът е изтрит.")}});
-function downloadDoc(d){const a=document.createElement("a");a.href=URL.createObjectURL(d.file);a.download=d.orig||d.name+".docx";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),3000)}
+function downloadDoc(d){if(!d.file){toast("Файлът не е наличен.",true);return}const a=document.createElement("a");a.href=URL.createObjectURL(d.file);a.download=d.orig||d.name+(d.kind==="pdf"?".pdf":".docx");document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),3000)}
 function paperStyle(d){const p=d.page||{w:210,h:297,t:25,r:25,b:25,l:25};return `width:${p.w}mm;min-height:${p.h}mm;padding:${p.t}mm ${p.r}mm ${p.b}mm ${p.l}mm;${d.base||""}`}
 async function openDoc(id){
   DOCV=await DB.get("docs",id);if(!DOCV)return;
   $("#docListView").classList.add("hidden");$("#docView").classList.remove("hidden");
-  const P=$("#docPaper");P.setAttribute("style",paperStyle(DOCV));P.innerHTML=DOCV.html;
+  const pdf=DOCV.kind==="pdf",P=$("#docPaper"),F=$("#docPdf");
+  if(F.dataset.url){URL.revokeObjectURL(F.dataset.url);delete F.dataset.url}
+  P.classList.toggle("hidden",pdf);F.classList.toggle("hidden",!pdf);$("#docPdfAlt").classList.toggle("hidden",!pdf);$("#dvEdit").classList.toggle("hidden",pdf);
+  if(pdf){P.innerHTML="";if(DOCV.file){F.dataset.url=URL.createObjectURL(DOCV.file);F.src=F.dataset.url+"#view=FitH"}else F.removeAttribute("src")}
+  else{F.removeAttribute("src");P.setAttribute("style",paperStyle(DOCV));P.innerHTML=DOCV.html}
   $("#dvTitle").textContent=DOCV.name;docEditMode(false);window.scrollTo(0,0);
 }
 function docEditMode(on){
   DOC_EDIT=on;const P=$("#docPaper");P.contentEditable=on?"true":"false";
   $("#dvRead").classList.toggle("hidden",on);$("#dvEditBar").classList.toggle("hidden",!on);
-  const s=$("#dvState");s.textContent=on?"Редакция":DOCV&&DOCV.edited?"Коригиран тук":"Както е във Word";s.classList.toggle("dirty",on);
+  const s=$("#dvState");s.textContent=on?"Редакция":DOCV&&DOCV.kind==="pdf"?"PDF — печата се точно като оригинала":DOCV&&DOCV.edited?"Коригиран тук":"Както е във Word";s.classList.toggle("dirty",on);
   if(on){try{document.execCommand("styleWithCSS",false,true)}catch(e){}P.focus()}
   permLock();
 }
@@ -4586,11 +4604,33 @@ $("#dvRevert").onclick=async()=>{if(!confirm("Да върна ли докуме�
     await DB.put("docs",DOCV);audit("Върнат оригинал на документ",DOCV.name);openDoc(DOCV.id);toast("Документът е върнат към оригинала.")}catch(e){alert("Грешка: "+e.message)}};
 $("#dvDown").onclick=()=>DOCV&&downloadDoc(DOCV);
 $("#dvPrint").onclick=()=>DOCV&&printDoc(DOCV);
+/* PDF: печат 1:1 през прегледа на браузъра (скрита рамка); Safari / телефон — PDF-ът се отваря и се печата оттам */
+function printPdf(d){
+  if(!d.file){toast("Файлът не е наличен — опитайте пак след малко.",true);return}
+  audit("Печат на документ",d.name);
+  const url=URL.createObjectURL(d.file),apple=/iPhone|iPad|iPod/.test(navigator.userAgent)||(/Safari/.test(navigator.userAgent)&&!/Chrome|Chromium|Edg|Firefox/.test(navigator.userAgent));
+  const openTab=()=>{const w=window.open(url,"_blank");if(!w){const a=document.createElement("a");a.href=url;a.target="_blank";document.body.appendChild(a);a.click();a.remove()}
+    toast("PDF-ът е отворен — натиснете „Печат“ (или „Сподели“ → „Печат“ на телефон).")};
+  if(apple||matchMedia("(max-width:760px)").matches){openTab();setTimeout(()=>URL.revokeObjectURL(url),120e3);return}
+  $$("#pdfPrintFrame").forEach(x=>x.remove());
+  const f=document.createElement("iframe");f.id="pdfPrintFrame";f.style.cssText="position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0";
+  f.onload=()=>setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print()}catch(e){openTab()}},300);
+  f.src=url;document.body.appendChild(f);
+  setTimeout(()=>{f.remove();URL.revokeObjectURL(url)},10*60e3);
+}
+$("#docPdfOpen").onclick=e=>{e.preventDefault();const u=$("#docPdf").dataset.url;if(u)window.open(u,"_blank")};
 function printDoc(d){
+  if(d.kind==="pdf")return printPdf(d);
   const p=d.page||{w:210,h:297,t:25,r:25,b:25,l:25},st=document.createElement("style");st.id="docPageCss";
-  st.textContent=`@media print{@page{size:${p.w}mm ${p.h}mm;margin:${p.t}mm ${p.r}mm ${p.b}mm ${p.l}mm}}`;
+  // ако текстът е до една страница (или малко над нея) — смалява се да се събере на 1 лист и печатът е без полета на браузъра,
+  // така браузърът не добавя адрес/дата горе и долу. По-дългите документи се печатат както досега, на няколко листа.
+  const m=document.createElement("div");m.className="dochtml";m.style.cssText=`position:absolute;left:-9999px;top:0;width:${p.w-p.l-p.r}mm;${d.base||""}`;m.innerHTML=d.html;document.body.appendChild(m);
+  const mm=96/25.4,H=m.scrollHeight,avail=(p.h-p.t-p.b)*mm-2;m.remove();
+  const one=H<=avail*1.3,z=one?Math.min(1,avail/H):1;
+  st.textContent=one?`@media print{@page{size:${p.w}mm ${p.h}mm;margin:0}}`:`@media print{@page{size:${p.w}mm ${p.h}mm;margin:${p.t}mm ${p.r}mm ${p.b}mm ${p.l}mm}}`;
   const o=$("#docPageCss");if(o)o.remove();document.head.appendChild(st);
-  $("#printArea").innerHTML=`<div class="dochtml" style="${d.base||""}">${d.html}</div>`;audit("Печат на документ",d.name);
+  $("#printArea").innerHTML=one?`<div style="width:${p.w}mm;height:${p.h}mm;padding:${p.t}mm ${p.r}mm ${p.b}mm ${p.l}mm;box-sizing:border-box;overflow:hidden"><div class="dochtml" style="${d.base||""};zoom:${z.toFixed(3)}">${d.html}</div></div>`
+    :`<div class="dochtml" style="${d.base||""}">${d.html}</div>`;audit("Печат на документ",d.name);
   const old=document.title;document.title=d.name;
   printNow(()=>{document.title=old;st.remove()});
 }
@@ -5057,10 +5097,14 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="1.5",APP_DATE="12.11.2026";
+const APP_VERSION="1.6",APP_DATE="12.11.2026";
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
+  {v:"1.6",d:"12.11.2026",items:[
+    "„Документи“ приема и PDF файлове — те се печатат точно като във Word. Във Word: „Запиши като“ → PDF и качете файла.",
+    "Бланките от Word вече се печатат с правилните разстояния между редовете, както във Word.",
+    "Бланка, която е малко над една страница, се събира на един лист, без адрес и дата на браузъра по краищата."]},
   {v:"1.5",d:"12.11.2026",items:[
     "Версиите вече са с кратък номер и дата на обновяване (долу в менюто).",
     "След всяко обновяване се показва какво е новото. Цялата история — с натискане на версията долу в менюто."]},
