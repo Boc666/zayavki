@@ -287,6 +287,43 @@ table.list td.money,table.list td.num{white-space:nowrap}
 @media(max-width:900px){body{grid-template-columns:1fr}aside.side{position:static;height:auto}nav.tabs{flex-direction:row;flex-wrap:wrap}nav.tabs .nsec{display:none}main{padding:18px}.toolbar{margin:-18px -18px 14px;padding:12px 18px}}
 /* ---- телефон: менюто става горна лента с бутон ☰; бланките A4 се местят настрани с пръст ---- */
 .side-burger{display:none}
+.mf-switch{display:inline-flex;margin:0 0 12px;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden}
+.mf-switch button{background:transparent;border:0;color:var(--text2);font:500 14px var(--ui);padding:9px 16px;min-height:40px;cursor:pointer}
+.mf-switch button.on{background:var(--bronze);color:var(--bg)}
+.mf-switch button:focus-visible{outline:2px solid var(--bronze-hi,var(--bronze));outline-offset:-2px}
+.mf{background:var(--panel);border:1px solid var(--border-soft);border-radius:var(--r);padding:14px 14px 18px;display:flex;flex-direction:column;gap:12px;max-width:720px}
+.mf-sec{font:600 13px var(--ui);letter-spacing:.06em;text-transform:uppercase;color:var(--text2);margin:10px 0 0;border-top:1px solid var(--border-soft);padding-top:14px}
+.mf-sec:first-child{border-top:0;padding-top:0;margin-top:0}
+.mf-row{display:flex;flex-direction:column;gap:10px}
+.mf-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mf-f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.mf-f>span{font:13px var(--ui);color:var(--text2)}
+.mf .in,.mf select.in,.mf textarea.in,.mf .cb{width:100%!important;max-width:none!important;min-height:44px;font:16px var(--ui)!important;color:var(--text);background:var(--field,var(--bg));border:1px solid var(--border)!important;border-radius:var(--r-sm);padding:8px 10px;box-sizing:border-box}
+.mf .cb{display:flex;padding:0;border:0!important;min-height:0}.mf .cb .in{flex:1;border-radius:var(--r-sm) 0 0 var(--r-sm)}.mf .cb .cbb{min-width:44px;border:1px solid var(--border);border-left:0;border-radius:0 var(--r-sm) var(--r-sm) 0;background:var(--panel2)}
+@media(max-width:900px){#toast{left:50%;width:max-content;max-width:calc(100vw - 32px)}} /* на телефон менюто е горе — известието в средата, а не изместено надясно */
+.mf .cb .cbb{position:static;width:auto}.mf .cb .cbb::after{content:"▾";font-size:16px;color:var(--text2)}
+.mf .mf-ck label,.mf .mf-ck{display:flex;align-items:center;gap:10px;min-height:44px;font:15px var(--ui);color:var(--text)}
+.mf .mf-ck input{width:22px;height:22px}
+.mf-notes{min-height:110px}
+.mf-svcs{display:flex;flex-direction:column;gap:8px}
+.mf-svc{border:1px solid var(--border-soft);border-radius:var(--r-sm);padding:10px;display:flex;flex-direction:column;gap:8px}
+.mf-svc.used{border-color:var(--bronze);background:var(--bronze-soft)}
+.mf-svc-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.mf-svc-h b{flex:1;min-width:0;font:500 15px var(--ui);color:var(--text)}
+.mf-svc-h small{flex-basis:100%;order:3;color:var(--text2);font-size:13px}
+.mf .ib{min-height:40px;padding:6px 12px;font:14px var(--ui);border-radius:var(--r-sm);border:1px solid var(--border);background:var(--panel2);color:var(--text);cursor:pointer}
+.mf-acts{display:flex;gap:8px;flex-wrap:wrap}
+.mf-sum{font:600 16px var(--ui);min-height:44px;display:flex;align-items:center;font-variant-numeric:tabular-nums}
+.mf-tot{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--border-soft);padding-top:12px}
+.mf-tot>div{display:flex;justify-content:space-between;gap:12px;font:15px var(--ui);color:var(--text2)}.mf-tot b{color:var(--text);font-variant-numeric:tabular-nums}
+.mf-tot .big{font-size:18px}.mf-tot .big b{color:var(--bronze-hi,var(--bronze))}
+#sheets.mf-on{overflow:visible}
+.tb-acts{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:flex-end}
+.tb-grp{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.tb-gl{font:600 11px var(--ui);letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-right:2px}
+.tb-grp+.tb-grp{padding-left:14px;border-left:1px solid var(--border-soft)}
+.tb-main{gap:8px}
+@media(max-width:760px){.tb-acts{justify-content:flex-start;width:100%}.tb-gl{display:none}.tb-grp+.tb-grp{padding-left:0;border-left:0}
+  .tb-main{width:100%}.tb-main .btn.primary{flex:1;min-height:44px}}
 .te{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
 @media(max-width:1000px){.te{grid-template-columns:minmax(0,1fr)}.te-prev{display:none}}
 .te-list{display:flex;flex-direction:column;gap:8px;max-height:62vh;overflow-y:auto;padding-right:4px}
@@ -677,7 +714,7 @@ table.list td.money,table.list td.num,.kpi b,.chip b{font-variant-numeric:tabula
   /* повърхности — топъл въглен, всяко ниво малко по-светло */
   --bg:#121110; --side:#161412; --panel:#1C1A17; --panel2:#24211D; --panel3:#2B2722; --field:#141210;
   /* текст — слонова кост, не бяло */
-  --text:#EDE7DD; --text2:#A69E92; --text3:#7B746A;
+  --text:#EDE7DD; --text2:#A69E92; --text3:#968E82; /* text3 ≥ 4,5:1 върху фона и панелите (WCAG AA) */
   /* бронз на Тангра */
   --bronze:#BC955C; --bronze-hi:#D2B07A; --bronze-soft:rgba(188,149,92,.13); --bronze-line:rgba(188,149,92,.42);
   /* тънки линии — полупрозрачна слонова кост вместо сиви плътни */
@@ -1191,16 +1228,21 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
         <span class="chip paid hidden" id="chipPaid">✔ Платена изцяло</span><span class="chip np" id="chipRO" style="color:var(--caution)">Само за преглед</span></div>
     </div>
     <span class="spacer"></span>
-    <button class="btn hidden" id="btnIssue" title="Потвърди продажбата на складовите артикули и обнови наличностите">Изпиши от склада</button>
-    <button class="btn ghost" id="btnWs">Работен лист</button>
-    <button class="btn ghost" id="btnInv">Фактура</button>
-    <button class="btn ghost" id="btnOffer" title="Ценово предложение за клиента — не е документ за плащане">Оферта</button>
-    <button class="btn ghost" id="btnLink" title="Оферта по линк или молба за отзив — клиентът отваря линка на телефона си">Линк към клиента</button>
-    <span class="tsep"></span>
-    <button class="btn" id="btnPaid">Плащания</button>
-    <button class="btn" id="btnPreview">Преглед</button>
-    <button class="btn dark" id="btnPrint"><svg viewBox="0 0 24 24"><path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="1"/><path d="M7 14h10v7H7z"/></svg>Печат / PDF</button>
-    <button class="btn primary" id="btnSave"><svg viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg>Запази</button>
+    <!-- действията са групирани: документи · клиент и пари · запис (едно основно действие) -->
+    <div class="tb-acts">
+      <div class="tb-grp" role="group" aria-label="Документи"><span class="tb-gl">Документи</span>
+        <button class="btn ghost" id="btnWs">Работен лист</button>
+        <button class="btn ghost" id="btnInv">Фактура</button>
+        <button class="btn ghost" id="btnOffer" title="Ценово предложение за клиента — не е документ за плащане">Оферта</button>
+        <button class="btn ghost" id="btnPreview">Преглед</button>
+        <button class="btn ghost" id="btnPrint"><svg viewBox="0 0 24 24"><path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="1"/><path d="M7 14h10v7H7z"/></svg>Печат / PDF</button></div>
+      <div class="tb-grp" role="group" aria-label="Клиент и плащания"><span class="tb-gl">Клиент</span>
+        <button class="btn ghost" id="btnPaid">Плащания</button>
+        <button class="btn ghost" id="btnLink" title="Оферта по линк или молба за отзив — клиентът отваря линка на телефона си">Линк към клиента</button></div>
+      <div class="tb-grp tb-main">
+        <button class="btn hidden" id="btnIssue" title="Потвърди продажбата на складовите артикули и обнови наличностите">Изпиши от склада</button>
+        <button class="btn primary" id="btnSave"><svg viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg>Запази</button></div>
+    </div>
   </div>
   <div id="caseBar" class="card casebar"></div>
   <div id="sheets"></div>
@@ -1980,9 +2022,61 @@ const buildPrint=r=>page1(r,"print")+page2(r,"print");
 /* =====================================================================
    РЕДАКЦИЯ — свързване на полетата с данните
    ===================================================================== */
+/* Телефон: бланката A4 е 794 px и полетата са дребни — на тесен екран заявката се показва като форма
+   (едно поле на ред, големи полета). Полетата и логиката са същите (data-k / data-line) — записът е един и същ.
+   Изборът „Форма / Бланка“ се помни на устройството. */
+const MF_KEY="zayavki-view";
+const mfWanted=()=>{let v=null;try{v=localStorage.getItem(MF_KEY)}catch(e){}return v?v==="form":matchMedia("(max-width:760px)").matches};
+function mfSwitch(form){return `<div class="mf-switch" role="group" aria-label="Изглед на заявката" data-ro-ok><button type="button" data-mfv="form" class="${form?"on":""}" aria-pressed="${form}">Форма</button><button type="button" data-mfv="sheet" class="${form?"":"on"}" aria-pressed="${!form}">Бланка</button></div>`}
+function mfField(r,f){
+  if(!f.k)return "";
+  if(f.type==="check")return `<div class="mf-f mf-ck">${ck(r,"edit",f.k,esc(f.l||""))}</div>`;
+  const o={};if(f.type&&f.type!=="text")o.type=f.type;if(f.list)o.list=f.list;
+  if(f.type==="select")o.opts=Array.isArray(f.opts)?f.opts.map(x=>Array.isArray(x)?x:[x,x||"—"]):(P1_OPTS[f.opts||f.k]||[["",""]]);
+  return `<label class="mf-f"><span>${esc(f.l||fieldLabel(f.k))}</span>${fld(r,"edit",f.k,o)}</label>`}
+function mobileForm(r){
+  const P=(k,o)=>fld(r,"edit",k,o),O=P1_OPTS,c=calc(r),cremation=r.kind==="кремация",dbl=r.doubleGrave&&!cremation;
+  const L=(l,inner)=>`<label class="mf-f"><span>${l}</span>${inner}</label>`;
+  let n=0;
+  const blocks=TEMPLATE.p1.map(b=>{
+    if(b.t==="sec")return `<h3 class="mf-sec">${++n}. ${esc(b.text)}</h3>`;
+    if(b.t==="row")return `<div class="mf-row">${b.f.map(f=>mfField(r,f)).join("")}</div>`;
+    if(b.t==="burial")return `<div class="mf-row">${L("Да заяви",P("kind",{type:"select",opts:O.kind}))}${L("Ритуал",P("ritual",{type:"select",opts:O.ritual}))}
+      ${cremation?L("Място на ритуала",P("ritualPlace",LISTS.ritualPlace&&LISTS.ritualPlace.length?{list:"ritualPlace"}:{}))+`<div class="mf-f mf-ck">${ck(r,"edit","atHome","в дома")}</div>`
+        :L("Гроб",P("grave",{type:"select",opts:O.grave}))+L("Гробища",P("cemetery",LISTS.cemetery&&LISTS.cemetery.length?{list:"cemetery"}:{}))
+          +`<div class="mf-3">${L("Парцел",P("cemParcel"))}${L("Ред",P("cemRow"))}${L("Гроб №",P("cemGrave"))}</div>`
+          +`<div class="mf-f mf-ck">${ck(r,"edit","doubleGrave","Двоен гроб")}</div>`+(dbl?L("Копае се",P("digSide",{type:"select",opts:O.digSide})):"")}</div>`;
+    if(b.t==="bottom")return `<h3 class="mf-sec">Забележки</h3><textarea class="in mf-notes" data-k="notes" rows="4">${esc(r.notes||"")}</textarea>`;
+    return ""}).join("");
+  const svc=CATALOG.items.map((it,i)=>{const l=r.lines[i];
+    return `<div class="mf-svc${l.used?" used":""}" data-row="${i}">
+      <div class="mf-svc-h"><b>${it.no}. ${esc(it.name)}</b>${l.note?`<small>${esc(l.note)}</small>`:""}
+        ${l.used?`<button class="ib" type="button" data-act="clear" data-i="${i}" aria-label="Махни ${esc(it.name)}">Махни</button>`:`<button class="ib" type="button" data-act="add" data-i="${i}" aria-label="Добави ${esc(it.name)}">＋ Добави</button>`}</div>
+      ${l.used?`<div class="mf-3">${L("К-во"+(it.unit?" ("+esc(it.unit)+")":""),`<input class="in" data-line="${i}" data-f="qty" value="${numIn(l.qty)}" placeholder="1" inputmode="decimal">`)}
+        ${L("Ед. цена €",`<input class="in" data-line="${i}" data-f="price" value="${numIn(l.price)}" placeholder="${it.price!=null?numIn(it.price):""}" inputmode="decimal">`)}
+        <div class="mf-f"><span>Сума €</span><b class="mf-sum" data-sum="${i}">${fmt(lineAmount(l))}</b></div></div>
+        <div class="mf-acts"><button class="ib" type="button" data-act="note" data-i="${i}">ℹ Бележка</button><button class="ib" type="button" data-act="rec" data-i="${i}">★ Препоръчителна цена</button></div>`:""}
+    </div>`}).join("");
+  return `<div class="mf">
+    <h3 class="mf-sec">Заявка</h3>
+    <div class="mf-3">${L("№",P("number"))}${L("Дата",P("reqDate",{type:"date"}))}${L("гр.",P("reqCity"))}</div>
+    ${blocks}
+    <h3 class="mf-sec">Цени и услуги</h3>
+    <div class="mf-row">${L("Цена за организация €",P("orgFee"))}<div class="mf-f mf-ck">${ck(r,"edit","doctorOn","Лекарско присъствие")}</div>${r.doctorOn?L("Лекарско присъствие €",P("doctorFee")):""}</div>
+    <div class="mf-svcs">${svc}</div>
+    <div class="mf-tot">
+      <div><span>Сума преди отстъпка</span><b data-t="sub">${fmt(c.sub)}</b></div>
+      ${L("Отстъпка %",P("discountPct",{list:"discount"}))}
+      <div><span>Отстъпка</span><b data-t="disc">${c.discount?"− "+fmt(c.discount):"–"}</b></div>
+      <div class="big"><span>Общо €</span><b data-t="total">${fmt(c.total)}</b></div>
+      <div><span>Остатък €</span><b data-t="rest">${fmt(c.rest)}</b></div>
+      <p class="muted" style="margin:6px 0 0;font-size:13px">Плащанията — от бутона „Плащания“ горе. Склад, некролози и извозване с такса — в изгледа „Бланка“.</p>
+    </div></div>`}
 function renderSheets(){
   const y=window.scrollY,a=document.activeElement,ak=a&&(a.dataset.k||(a.dataset.line?a.dataset.line+"/"+a.dataset.f:""));
-  $("#sheets").innerHTML=page1(CURRENT,"edit")+page2(CURRENT,"edit");
+  const form=mfWanted();
+  $("#sheets").innerHTML=mfSwitch(form)+(form?mobileForm(CURRENT):page1(CURRENT,"edit")+page2(CURRENT,"edit"));
+  $("#sheets").classList.toggle("mf-on",form);
   refresh(); window.scrollTo(0,y);permLock();
   if(ak){const el=ak.includes("/")?$(`[data-line="${ak.split("/")[0]}"][data-f="${ak.split("/")[1]}"]`):$(`#sheets [data-k="${ak}"]`);el&&el.focus()}
 }
@@ -2071,6 +2165,7 @@ sheets.addEventListener("change",e=>{const el=e.target;if(!CURRENT)return;
   else setField(el.dataset.k,MONEY.has(el.dataset.k)?num(el.value):el.value);
   refresh();setDirty(true)});
 sheets.addEventListener("click",e=>{
+  const sw=e.target.closest("[data-mfv]");if(sw){try{localStorage.setItem(MF_KEY,sw.dataset.mfv)}catch(x){}renderSheets();return}
   const cb=e.target.closest("[data-combo]");
   if(cb){e.preventDefault();const k=cb.dataset.for,inp=$(`#sheets [data-k="${k}"]`);
     openMenu(cb.parentElement,{items:LISTS[cb.dataset.combo],current:CURRENT[k],onPick:v=>{inp.value=v;setField(k,v);if(k==="discountPct")inp.value=numIn(CURRENT.discountPct);refresh();setDirty(true)},custom:false});return}
@@ -4957,7 +5052,7 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="2026-11-12.9"; // сменя се при всяко публикуване
+const APP_VERSION="2026-11-12.10"; // сменя се при всяко публикуване
 /* ---------- инсталиране като приложение (иконка на телефона / компютъра) ---------- */
 let PWA_EV=null;
 const PWA_STANDALONE=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
