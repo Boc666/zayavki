@@ -16,6 +16,8 @@ nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--lin
 nav .in{max-width:820px;margin:0 auto;padding:10px 16px;display:flex;gap:6px;flex-wrap:wrap;font:14px/1.3 system-ui,-apple-system,sans-serif}
 nav a{color:var(--ink);text-decoration:none;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--paper)}
 nav a:hover{border-color:var(--acc)}
+nav a.back{background:var(--acc);border-color:var(--acc);color:var(--bg);font-weight:600;margin-right:auto}
+@media (max-width:560px){nav a.back{flex-basis:100%;text-align:center}section{scroll-margin-top:140px}}
 .draft{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:12px 14px;font:14px/1.5 system-ui,-apple-system,sans-serif;margin:8px 0 24px}
 section{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:24px 22px;margin:0 0 24px;scroll-margin-top:64px}
 h1{font-size:26px;line-height:1.25;margin:0 0 6px}
@@ -32,7 +34,7 @@ th{background:var(--bg)}
 </style>
 </head>
 <body>
-<nav><div class="in"><a href="#usloviya">Общи условия</a><a href="#poveritelnost">Поверителност</a><a href="#dogovor">Договор за обработване</a></div></nav>
+<nav><div class="in"><a href="./" class="back" id="back">← Към програмата</a><a href="#usloviya">Общи условия</a><a href="#poveritelnost">Поверителност</a><a href="#dogovor">Договор за обработване</a></div></nav>
 <div class="wrap">
 
 <!-- =========================================================== -->
@@ -172,5 +174,13 @@ th{background:var(--bg)}
 <p>7.1. Договорът важи, докато Администраторът ползва Системата, и до връщането или изтриването на данните след това.</p>
 </section>
 </div>
+<script>
+/* Страницата се отваря в нов прозорец/раздел — „Към програмата“ го затваря; ако не може (напр. инсталираното приложение), отваря програмата. */
+document.getElementById("back").addEventListener("click",function(e){
+  e.preventDefault();
+  try{window.close()}catch(x){}
+  setTimeout(function(){ location.href="./"; },250);
+});
+</script>
 </body>
 </html>

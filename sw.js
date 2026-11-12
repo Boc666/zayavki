@@ -1,7 +1,7 @@
 // Service worker — за инсталиране като приложение и за показване на последната версия без интернет.
 // Винаги първо от мрежата (новите версии идват веднага); кешът е само резерва, ако няма връзка.
 // Заявките към базата (supabase.co) не минават оттук — те са към друг адрес.
-const CACHE = "zayavki-shell-v1";
+const CACHE = "zayavki-shell-v2";
 const SHELL = ["./", "./index.html", "./manifest.json", "./icon.png", "./pravila.html"];
 
 self.addEventListener("install", e => {
@@ -19,9 +19,9 @@ self.addEventListener("fetch", e => {
   e.respondWith(
     fetch(req).then(res => {
       if (res.ok && (req.mode === "navigate" || SHELL.some(p => url.pathname.endsWith(p.replace("./", "/"))))) {
-        const copy = res.clone(); caches.open(CACHE).then(c => c.put(req.mode === "navigate" ? "./index.html" : req, copy));
+        const copy = res.clone(); caches.open(CACHE).then(c => c.put(url.origin + url.pathname, copy)); // всяка страница под собствения си адрес (без #/?)
       }
       return res;
-    }).catch(() => caches.match(req.mode === "navigate" ? "./index.html" : req).then(r => r || caches.match("./index.html")))
+    }).catch(() => caches.match(url.origin + url.pathname).then(r => r || caches.match(req, { ignoreSearch: true })).then(r => r || caches.match("./index.html")))
   );
 });
