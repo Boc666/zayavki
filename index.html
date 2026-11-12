@@ -145,6 +145,8 @@ td.acts{text-align:right;white-space:nowrap;width:1%}
 .dochtml table.bd td{border:.5pt solid #000}
 .dochtml img{max-width:100%;vertical-align:bottom}
 .dochtml .li{display:inline-block;min-width:.63cm;text-indent:0}
+.dochtml .wtab{display:inline-block;overflow:hidden;white-space:nowrap;vertical-align:bottom;text-indent:0;text-align:left;letter-spacing:0;text-decoration:none}
+.dochtml tr{page-break-inside:avoid}
 .dochtml .pgbr{break-after:page;page-break-after:always;height:0}
 #docPaper .pgbr{border-top:1px dashed #b9b9b9;margin:14px 0;position:relative}
 #docPaper .pgbr::after{content:"нова страница";position:absolute;right:0;top:-9px;font:10px var(--ui);color:#999;background:#fff;padding:0 4px}
@@ -4415,7 +4417,7 @@ async function docxToHtml(buf){
   function rP(el){const o={};if(!el)return o;for(const c of el.children){const v=V(c);switch(c.localName){
     case"b":o.b=wb(c);break;case"i":o.i=wb(c);break;case"u":o.u=!!v&&v!=="none";break;case"strike":case"dstrike":o.s=wb(c);break;
     case"sz":if(v)o.sz=+v/2;break;case"color":if(v&&v!=="auto")o.color="#"+v;break;case"vertAlign":o.va=v;break;case"highlight":if(v&&v!=="none")o.hl=v;break;
-    case"caps":o.caps=wb(c);break;case"vanish":o.hide=wb(c);break;case"rStyle":o.rStyle=v;break;
+    case"caps":o.caps=wb(c);break;case"spacing":if(v&&+v)o.ls=+v/20;break;case"vanish":o.hide=wb(c);break;case"rStyle":o.rStyle=v;break;
     case"rFonts":{const f=c.getAttribute("w:ascii")||c.getAttribute("w:hAnsi")||c.getAttribute("w:cs");if(f)o.font=f;break}
     case"shd":{const f=c.getAttribute("w:fill");if(f&&f!=="auto")o.bg="#"+f;break}}}return o}
   function pP(el){const o={};if(!el)return o;for(const c of el.children){const v=V(c);switch(c.localName){
@@ -4424,7 +4426,8 @@ async function docxToHtml(buf){
     case"ind":{const g=n=>c.getAttribute("w:"+n);const l=g("left")??g("start"),r=g("right")??g("end");if(l!=null)o.indL=tw(l);if(r!=null)o.indR=tw(r);
       if(g("firstLine")!=null)o.first=tw(g("firstLine"));if(g("hanging")!=null)o.first=-tw(g("hanging"));break}
     case"numPr":{const id=V(K1(c,"numId")),lv=V(K1(c,"ilvl"));if(id!=null)o.numId=id;if(lv!=null)o.ilvl=+lv;break}
-    case"shd":{const f=c.getAttribute("w:fill");if(f&&f!=="auto")o.bg="#"+f;break}}}return o}
+    case"shd":{const f=c.getAttribute("w:fill");if(f&&f!=="auto")o.bg="#"+f;break}
+    case"tabs":o.tabs=[...c.children].filter(t=>t.localName==="tab"&&V(t)!=="clear").map(t=>({pos:tw(t.getAttribute("w:pos")),al:V(t)||"left",ld:t.getAttribute("w:leader")||"none"}));break}}return o}
   // стилове
   const S={};let defR={},defP={},normal=null;
   if(sty){const dd=K1(sty.documentElement,"docDefaults");defR=rP(K1(K1(dd,"rPrDefault"),"rPr"));defP=pP(K1(K1(dd,"pPrDefault"),"pPr"));
@@ -4456,7 +4459,7 @@ async function docxToHtml(buf){
   const rCss=o=>[o.b?"font-weight:bold":"",o.i?"font-style:italic":"",(o.u||o.s)?`text-decoration:${[o.u?"underline":"",o.s?"line-through":""].join(" ").trim()}`:"",
     o.sz&&!o.va?`font-size:${o.sz}pt`:"",o.color?`color:${o.color}`:"",o.font?`font-family:'${o.font.replace(/'/g,"")}'`:"",
     o.va==="superscript"?"vertical-align:super;font-size:smaller":o.va==="subscript"?"vertical-align:sub;font-size:smaller":"",
-    o.hl?`background:${HL[o.hl]||o.hl}`:o.bg?`background:${o.bg}`:"",o.caps?"text-transform:uppercase":""].filter(Boolean).join(";");
+    o.hl?`background:${HL[o.hl]||o.hl}`:o.bg?`background:${o.bg}`:"",o.caps?"text-transform:uppercase":"",o.ls?`letter-spacing:${o.ls}pt`:""].filter(Boolean).join(";");
   let pageBreakNext=false;
   async function runs(el,pr,out,extra){ // обхожда съдържанието на абзац
     for(const c of el.children){const n=c.localName;
@@ -4482,7 +4485,10 @@ async function docxToHtml(buf){
       o.line?(o.lineRule==="auto"?`line-height:${(o.line/240).toFixed(2)}`:`line-height:${o.line/20}pt`):"",o.indL?`margin-left:${o.indL}pt`:"",o.indR?`margin-right:${o.indR}pt`:"",
       o.first?`text-indent:${o.first}pt`:"",o.bg?`background:${o.bg}`:"",rr.sz?`font-size:${rr.sz}pt`:"",rr.b?"font-weight:bold":"",rr.i?"font-style:italic":"",rr.color?`color:${rr.color}`:"",rr.font&&rr.font!==defR.font?`font-family:'${rr.font.replace(/'/g,"")}'`:""].filter(Boolean).join(";");
     const pb=pageBreakNext,lb=lab&&lab.t?`<span class="li">${esc(lab.t)}</span>`:"";
-    let h=`<p${css?` style="${css}"`:""}>${lb}${out.join("")||"<br>"}</p>`+extra.join("");
+    let inner=out.join("");const hasTab=inner.includes("\t");
+    if(hasTab)inner=inner.replace(/\t/g,'<span class="wtab"></span>');
+    const tabs=hasTab&&o.tabs&&o.tabs.length?` data-tabs="${o.tabs.map(t=>t.pos+":"+(t.ld==="dot"||t.ld==="middleDot"?"dot":t.ld==="hyphen"?"hyphen":t.ld==="underscore"?"under":"none")+":"+t.al).join(",")}"`:"";
+    let h=`<p${css?` style="${css}"`:""}${tabs}>${lb}${inner||"<br>"}</p>`+extra.join("");
     if(o.pbb||pb==="before")h=`<div class="pgbr"></div>`+h;if(pb==="after"||o.sect)h+=`<div class="pgbr"></div>`;
     return h}
   async function table(t){
@@ -4491,8 +4497,11 @@ async function docxToHtml(buf){
     const jc=V(K1(tp,"jc")),rows=K(t,"tr").map(tr=>K(tr,"tc").map(tc=>{const pr=K1(tc,"tcPr"),vm=K1(pr,"vMerge");
       return{tc,span:+(V(K1(pr,"gridSpan"))||1),vm:vm?(V(vm)==="restart"?"r":"c"):null,w:K1(pr,"tcW"),va:V(K1(pr,"vAlign")),bg:(K1(pr,"shd")||{getAttribute:()=>null}).getAttribute("w:fill")}}));
     rows.forEach(r=>{let c=0;r.forEach(x=>{x.col=c;c+=x.span})});
-    let h=`<table class="${bd?"bd":""}" style="${jc==="center"?"margin-left:auto;margin-right:auto;":""}"><tbody>`;
-    for(let i=0;i<rows.length;i++){h+="<tr>";for(const x of rows[i]){if(x.vm==="c")continue;let rs=1;
+    const tW=K1(tp,"tblW"),gcols=K(K1(t,"tblGrid"),"gridCol").map(g=>+g.getAttribute("w:w")/20);
+    const tw_=tW&&V(tW,"w:type")==="dxa"&&+V(tW,"w:w")?+V(tW,"w:w")/20:gcols.length?gcols.reduce((a,b)=>a+b,0):0;
+    let h=`<table class="${bd?"bd":""}" style="${jc==="center"?"margin-left:auto;margin-right:auto;":""}${tw_?`width:${tw_}pt;table-layout:fixed;`:""}">${gcols.length?`<colgroup>${gcols.map(w=>`<col style="width:${w}pt">`).join("")}</colgroup>`:""}<tbody>`;
+    const trs=K(t,"tr");
+    for(let i=0;i<rows.length;i++){const th=K1(K1(trs[i],"trPr"),"trHeight"),hv=th?+th.getAttribute("w:val")/20:0;h+=hv?`<tr style="height:${hv}pt">`:"<tr>";for(const x of rows[i]){if(x.vm==="c")continue;let rs=1;
       if(x.vm==="r")for(let j=i+1;j<rows.length;j++){const y=rows[j].find(q=>q.col===x.col);if(y&&y.vm==="c")rs++;else break}
       const w=x.w&&V(x.w,"w:type")==="dxa"?`width:${+V(x.w,"w:w")/20}pt;`:"";
       h+=`<td${x.span>1?` colspan="${x.span}"`:""}${rs>1?` rowspan="${rs}"`:""} style="${w}${x.va?`vertical-align:${x.va==="center"?"middle":x.va};`:""}${x.bg&&x.bg!=="auto"?`background:#${x.bg};`:""}">${await body(x.tc)}</td>`}
@@ -4508,6 +4517,23 @@ async function docxToHtml(buf){
   const base=`font-family:'${(defR.font||"Calibri").replace(/'/g,"")}',Calibri,Arial,sans-serif;font-size:${defR.sz||11}pt`;
   return{html,page,base};
 }
+/* Табулации от Word: всеки маркер .wtab се разтяга до следващата позиция (както във Word), а ако има запълване —
+   се пълни с точки. Позициите са от левия край на текста (полето), в pt; без зададени — през 35,4 pt. */
+function layoutTabs(root){
+  if(!root)return;const PT=96/72;
+  root.querySelectorAll("p").forEach(p=>{const ms=p.querySelectorAll(".wtab");if(!ms.length)return;
+    const stops=(p.dataset.tabs||"").split(",").filter(Boolean).map(x=>{const[a,b,c]=x.split(":");return{pos:+a,ld:b,al:c}}).filter(t=>t.al!=="bar").sort((a,b)=>a.pos-b.pos);
+    const host=p.closest(".dochtml")||p.parentElement,hc=getComputedStyle(host),hr=host.getBoundingClientRect(),sc=host.offsetWidth?hr.width/host.offsetWidth:1;
+    const left=hr.left+(parseFloat(hc.paddingLeft)||0)*sc+(parseFloat(hc.borderLeftWidth)||0)*sc;
+    ms.forEach(m=>{m.textContent="";m.style.width="0px";m.className="wtab"});
+    ms.forEach(m=>{const x=(m.getBoundingClientRect().left-left)/sc/PT; // pt от полето
+      let st=stops.find(t=>t.pos>x+0.5),to=st?st.pos:(Math.floor(x/35.4)+1)*35.4;
+      if(st&&st.al==="right"){ // текстът след табулацията завършва на позицията
+        let n=m.nextSibling,w=0;const r=document.createRange();while(n&&!(n.nodeType===1&&n.classList&&n.classList.contains("wtab"))){r.selectNode(n);w+=r.getBoundingClientRect().width/sc/PT;n=n.nextSibling}
+        to=Math.max(x,st.pos-w)}
+      m.style.width=Math.max(0,to-x)+"pt";
+      if(st&&st.ld!=="none"){m.classList.add("ld-"+st.ld);m.textContent=(st.ld==="under"?"_":st.ld==="hyphen"?"-":".").repeat(Math.ceil((to-x)/2)+2)}})})}
+function withShown(el,fn){const s=el.getAttribute("style");el.style.cssText+=";display:block!important;position:absolute;left:-10000px;top:0;visibility:hidden";try{return fn()}finally{s==null?el.removeAttribute("style"):el.setAttribute("style",s)}}
 /* почистване на HTML преди запис (при редакция/поставяне) — без скриптове и опасни атрибути */
 function cleanHtml(h){const d=document.createElement("div");d.innerHTML=h;
   d.querySelectorAll("script,iframe,object,embed,link,meta,style,form,input,button").forEach(e=>e.remove());
@@ -4583,7 +4609,7 @@ async function openDoc(id){
   if(F.dataset.url){URL.revokeObjectURL(F.dataset.url);delete F.dataset.url}
   P.classList.toggle("hidden",pdf);F.classList.toggle("hidden",!pdf);$("#docPdfAlt").classList.toggle("hidden",!pdf);$("#dvEdit").classList.toggle("hidden",pdf);
   if(pdf){P.innerHTML="";if(DOCV.file){F.dataset.url=URL.createObjectURL(DOCV.file);F.src=F.dataset.url+"#view=FitH"}else F.removeAttribute("src")}
-  else{F.removeAttribute("src");P.setAttribute("style",paperStyle(DOCV));P.innerHTML=DOCV.html}
+  else{F.removeAttribute("src");P.setAttribute("style",paperStyle(DOCV));P.innerHTML=DOCV.html;requestAnimationFrame(()=>layoutTabs(P))}
   $("#dvTitle").textContent=DOCV.name;docEditMode(false);window.scrollTo(0,0);
 }
 function docEditMode(on){
@@ -4624,13 +4650,14 @@ function printDoc(d){
   const p=d.page||{w:210,h:297,t:25,r:25,b:25,l:25},st=document.createElement("style");st.id="docPageCss";
   // ако текстът е до една страница (или малко над нея) — смалява се да се събере на 1 лист и печатът е без полета на браузъра,
   // така браузърът не добавя адрес/дата горе и долу. По-дългите документи се печатат както досега, на няколко листа.
-  const m=document.createElement("div");m.className="dochtml";m.style.cssText=`position:absolute;left:-9999px;top:0;width:${p.w-p.l-p.r}mm;${d.base||""}`;m.innerHTML=d.html;document.body.appendChild(m);
+  const m=document.createElement("div");m.className="dochtml";m.style.cssText=`position:absolute;left:-9999px;top:0;width:${p.w-p.l-p.r}mm;${d.base||""}`;m.innerHTML=d.html;document.body.appendChild(m);layoutTabs(m);
   const mm=96/25.4,H=m.scrollHeight,avail=(p.h-p.t-p.b)*mm-2;m.remove();
   const one=H<=avail*1.3,z=one?Math.min(1,avail/H):1;
   st.textContent=one?`@media print{@page{size:${p.w}mm ${p.h}mm;margin:0}}`:`@media print{@page{size:${p.w}mm ${p.h}mm;margin:${p.t}mm ${p.r}mm ${p.b}mm ${p.l}mm}}`;
   const o=$("#docPageCss");if(o)o.remove();document.head.appendChild(st);
   $("#printArea").innerHTML=one?`<div style="width:${p.w}mm;height:${p.h}mm;padding:${p.t}mm ${p.r}mm ${p.b}mm ${p.l}mm;box-sizing:border-box;overflow:hidden"><div class="dochtml" style="${d.base||""};zoom:${z.toFixed(3)}">${d.html}</div></div>`
     :`<div class="dochtml" style="${d.base||""}">${d.html}</div>`;audit("Печат на документ",d.name);
+  const pa=$("#printArea");withShown(pa,()=>layoutTabs(pa.querySelector(".dochtml")));
   const old=document.title;document.title=d.name;
   printNow(()=>{document.title=old;st.remove()});
 }
@@ -5097,10 +5124,12 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="1.6",APP_DATE="12.11.2026";
+const APP_VERSION="1.6.1",APP_DATE="12.11.2026";
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
+  {v:"1.6.1",d:"12.11.2026",items:[
+    "Бланките от Word вече показват линиите с точки за попълване, разредените заглавия и височината на редовете в таблиците — както във Word."]},
   {v:"1.6",d:"12.11.2026",items:[
     "„Документи“ приема и PDF файлове — те се печатат точно като във Word. Във Word: „Запиши като“ → PDF и качете файла.",
     "Бланките от Word вече се печатат с правилните разстояния между редовете, както във Word.",
