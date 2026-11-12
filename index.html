@@ -927,6 +927,11 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
 
 .appver{font-size:10.5px;color:var(--text3);letter-spacing:.04em}
 .auth-ver{text-align:center;margin-top:14px}
+button.appver{background:none;border:0;padding:2px 0;cursor:pointer;text-align:left;font-family:inherit;text-decoration:underline dotted;text-underline-offset:3px}
+button.appver:hover{color:var(--text2)}
+.wn{display:flex;flex-direction:column;gap:16px}
+.wn-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:4px}.wn-h b{color:var(--text)}.wn-h span{font-size:12px;color:var(--text3)}
+.wn ul{margin:0;padding-left:20px;color:var(--text2);line-height:1.5}.wn li{margin:3px 0}
 .updbar{position:sticky;top:8px;z-index:25}
 
 /* ---------- случай: статус, отговорник, задачи; плащания; клиенти; календар; настройване ---------- */
@@ -1034,7 +1039,7 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
     <button class="btn ghost small ico" id="suPw" title="Смени паролата си"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg></button>
     <button class="btn ghost small ico" id="suOut" title="Изход"><svg viewBox="0 0 24 24"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 16l-4-4 4-4M6 12h11"/></svg></button>
   </div>
-  <div class="side-foot"><span id="sideWhere">Данните са само на този компютър</span><br><b id="sideBackup">—</b><br><span class="appver" id="appVer"></span><br><button class="side-install hidden" id="pwaBtn" type="button">Инсталирай като приложение</button></div>
+  <div class="side-foot"><span id="sideWhere">Данните са само на този компютър</span><br><b id="sideBackup">—</b><br><button type="button" class="appver" id="appVer" title="Какво ново — история на версиите"></button><br><button class="side-install hidden" id="pwaBtn" type="button">Инсталирай като приложение</button></div>
 </aside>
 
 <div id="app">
@@ -5052,7 +5057,51 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="2026-11-12.10"; // сменя се при всяко публикуване
+const APP_VERSION="1.5",APP_DATE="12.11.2026";
+/* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
+   Пише се на езика на служителите (какво виждат/правят), не технически. */
+const CHANGELOG=[
+  {v:"1.5",d:"12.11.2026",items:[
+    "Версиите вече са с кратък номер и дата на обновяване (долу в менюто).",
+    "След всяко обновяване се показва какво е новото. Цялата история — с натискане на версията долу в менюто."]},
+  {v:"1.4.1",d:"12.11.2026",items:[
+    "Общите условия имат бутон „← Към програмата“ — вече не оставате „заключени“ в тях.",
+    "Поправка: при работа без интернет програмата се отваря правилно."]},
+  {v:"1.4",d:"12.11.2026",items:[
+    "На телефон заявката се попълва като форма с големи полета. Горе има превключвател „Форма / Бланка“.",
+    "Бутоните над заявката са подредени в групи: Документи, Клиент и „Запази“.",
+    "Дребният сив текст е по-светъл и се чете по-лесно."]},
+  {v:"1.3",d:"12.11.2026",items:[
+    "Преди всяко обновяване програмата се проверява автоматично (сметки, фактури, печат).",
+    "Телефони като „02/…“ се разпознават правилно при търсене.",
+    "Дълъг текст при печат се смалява, за да се събере; ако пак не се събира — излиза предупреждение."]},
+  {v:"1.2",d:"12.11.2026",items:[
+    "Всеки служител вижда само разделите, за които има право. Историята на действията — само администраторите.",
+    "Линкът към клиента спира да показва данни, след като изтече.",
+    "Историята на действията се отваря по страници — по-бързо."]},
+  {v:"1.1",d:"12.11.2026",items:[
+    "Номерата на заявките и фактурите никога не се повтарят, дори двама да създават едновременно.",
+    "Ако двама променят едно и също едновременно, промените се сливат или излиза предупреждение — нищо не се губи.",
+    "По-добра защита при забравена парола."]},
+  {v:"1.0",d:"11.11.2026",items:[
+    "Календар с ръчни събития и помени с напомняния; календарът може да се вижда и в телефона.",
+    "Клиенти, партньори с телефони и търсене навсякъде.",
+    "Плащания по заявката (капаро, доплащане) и справка за счетоводителя.",
+    "Линк към клиента: оферта в телефона му и отзив.",
+    "Програмата се инсталира като приложение и се отваря по-бързо.",
+    "Ново оформление."]}];
+const WN_KEY="zayavki-seen-ver";
+function whatsNewHtml(list){return list.map(e=>`<div class="wn-v"><div class="wn-h"><b>Версия ${esc(e.v)}</b><span>${esc(e.d)}</span></div><ul>${e.items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`).join("")}
+function showWhatsNew(all){
+  let seen=null;try{seen=localStorage.getItem(WN_KEY)}catch(e){}
+  let list=CHANGELOG;
+  if(!all){const i=CHANGELOG.findIndex(e=>e.v===seen);list=CHANGELOG.slice(0,i>0?i:1)}
+  openModal({title:all?"История на версиите":"Какво ново",body:`<div class="wn">${whatsNewHtml(list)}</div>`+(all?"":`<p class="muted" style="margin:12px 0 0;font-size:13px">Цялата история — с натискане на версията долу в менюто.</p>`),actions:[{label:"Разбрах",cls:"primary"}]});
+  try{localStorage.setItem(WN_KEY,APP_VERSION)}catch(e){}}
+function whatsNewOnLogin(){let seen=null;try{seen=localStorage.getItem(WN_KEY)}catch(e){}
+  if(seen===APP_VERSION)return;
+  if($("#modalWrap")||!$("#auth").classList.contains("hidden")){try{localStorage.setItem(WN_KEY,APP_VERSION)}catch(e){}return}
+  showWhatsNew(false)} // сменя се при всяко публикуване: 1-ва цифра — голяма промяна, 2-ра — нова възможност/етап, 3-та — дребна поправка
 /* ---------- инсталиране като приложение (иконка на телефона / компютъра) ---------- */
 let PWA_EV=null;
 const PWA_STANDALONE=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
@@ -5067,8 +5116,8 @@ $("#pwaBtn").onclick=async()=>{
       <li>Отворете програмата в <b>Safari</b>.</li><li>Натиснете бутона <b>„Сподели“</b> (квадрат със стрелка нагоре).</li>
       <li>Изберете <b>„Добави към началния екран“</b> и после <b>„Добави“</b>.</li></ol>
       <p class="muted" style="margin:12px 0 0">Иконката „Заявки“ се появява на телефона и програмата се отваря на цял екран. Входът и данните са същите.</p>`,actions:[{label:"Разбрах"}]})};
-function showVersion(){const v=$("#appVer");if(v)v.textContent="Версия "+APP_VERSION;
-  const a=$("#auth .auth-box");if(a&&!a.querySelector(".appver")){const e=document.createElement("div");e.className="appver auth-ver";e.textContent="Версия "+APP_VERSION;a.appendChild(e)}}
+function showVersion(){const v=$("#appVer");if(v){v.textContent="Версия "+APP_VERSION+" · обновена "+APP_DATE;v.onclick=()=>showWhatsNew(true)}
+  const a=$("#auth .auth-box");if(a&&!a.querySelector(".appver")){const e=document.createElement("div");e.className="appver auth-ver";e.textContent="Версия "+APP_VERSION+" · обновена "+APP_DATE;a.appendChild(e)}}
 let NEWER=null;
 async function checkUpdate(){
   if(NEWER||!/^https?:$/.test(location.protocol))return;
@@ -5107,6 +5156,7 @@ async function loginAs(u,why){
   $("#auth").classList.add("hidden");lastAct=Date.now();
   playIntro();applyUser();showTab(firstTab());agencyBars();
   if(needsOnboarding()&&!sessionStorage.getItem("zayavki-ob-later"))setTimeout(()=>openOnboarding(0),500);
+  else setTimeout(whatsNewOnLogin,1200);
 }
 function applyUser(){
   $("#sideUser").classList.remove("hidden");$("#suName").textContent=ME.name;$("#suRole").textContent=isAdmin()?"Администратор":"Служител";
