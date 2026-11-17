@@ -1213,7 +1213,7 @@ button.appver:hover{color:var(--text2)}
 
 <!-- ================= ФИНАНСИ ================= -->
 <section id="tab-fin" class="hidden">
-  <div class="seg subnav"><button data-sub="fin">Финанси</button><button data-sub="stats">Статистика</button></div>
+  <div class="seg subnav"><button data-sub="fin">Финанси</button><button data-sub="stats">Статистика</button><button data-sub="costs">Разходи</button></div>
   <div class="ph"><div><h2>Финанси</h2><p id="finRange"></p></div><span class="spacer"></span>
     <div class="filters">
       <div class="seg" id="finSeg"><button data-p="month">Този месец</button><button data-p="prev">Миналия месец</button><button data-p="year">Тази година</button><button data-p="all">Всичко</button><button data-p="custom">Период</button></div>
@@ -1322,7 +1322,7 @@ button.appver:hover{color:var(--text2)}
 
 <!-- ================= СТАТИСТИКА ================= -->
 <section id="tab-stats" class="hidden">
-  <div class="seg subnav"><button data-sub="fin">Финанси</button><button data-sub="stats">Статистика</button></div>
+  <div class="seg subnav"><button data-sub="fin">Финанси</button><button data-sub="stats">Статистика</button><button data-sub="costs">Разходи</button></div>
   <div class="ph"><div><h2>Статистика</h2><p>Чиста печалба по месеци — приход по заявките минус разходите от работните листове</p></div><span class="spacer"></span>
     <label class="muted">Година <select id="stYear" class="ui-in" style="width:auto;display:inline-block;margin-left:6px"></select></label>
     <label class="muted" style="margin-left:10px"><input type="checkbox" id="stSamples"> включи примерните заявки</label>
@@ -1334,6 +1334,38 @@ button.appver:hover{color:var(--text2)}
     <table class="list" id="stTable"></table>
     <p class="muted" id="stNote" style="margin-top:10px"></p>
   </div>
+</section>
+
+<!-- ================= РАЗХОДИ НА АГЕНЦИЯТА ================= -->
+<section id="tab-costs" class="hidden">
+  <div class="seg subnav"><button data-sub="fin">Финанси</button><button data-sub="stats">Статистика</button><button data-sub="costs">Разходи</button></div>
+  <div class="ph"><div><h2>Разходи на агенцията</h2><p id="coRange"></p></div><span class="spacer"></span>
+    <div class="filters">
+      <div class="seg" id="coSeg"><button data-p="month">Този месец</button><button data-p="prev">Миналия месец</button><button data-p="year">Тази година</button><button data-p="all">Всичко</button><button data-p="custom">Период…</button></div>
+      <span id="coCustom" class="row hidden"><input type="date" id="coFrom" class="ui-in" style="width:150px"><span class="muted">—</span><input type="date" id="coTo" class="ui-in" style="width:150px"></span>
+    </div>
+  </div>
+  <div class="kpis" id="coKpis"></div>
+  <div class="card">
+    <div class="row" style="margin-bottom:8px"><h2 style="margin:0">Разходи за периода</h2><span class="spacer"></span>
+      <select id="coCat" class="ui-in" style="width:auto"></select><select id="coCar" class="ui-in" style="width:auto"></select>
+      <button class="btn primary" id="coAdd" type="button">＋ Нов разход</button></div>
+    <div id="coList"></div>
+    <p class="muted" style="margin:10px 0 0;font-size:12.5px">Тук се пишат разходите на фирмата, които не са по конкретна заявка: заплати, наем, ток, гориво, стока на склад и др. Разходите по заявка (ковчег, цветя, гробари) остават в работния лист. Стоката, която се изписва от склада в заявка, вече влиза там като разход — не я пишете втори път.</p>
+  </div>
+  <div class="grid g2" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px">
+    <div class="card">
+      <div class="row" style="margin-bottom:8px"><h2 style="margin:0">Планови разходи</h2><span class="spacer"></span><button class="btn" id="coPlanAdd" type="button">＋ Планов разход</button></div>
+      <p class="muted" style="margin:0 0 8px;font-size:12.5px">Повтарящи се разходи — наем, заплати, лизинг, застраховки. Влизат в отчетите сами всеки месец (или тримесечие / година). С „Платено“ записвате реалната сума и датата.</p>
+      <div id="coPlans"></div>
+    </div>
+    <div class="card">
+      <div class="row" style="margin-bottom:8px"><h2 style="margin:0">Автомобили</h2><span class="spacer"></span><button class="btn" id="coCarAdd" type="button">＋ Автомобил</button></div>
+      <p class="muted" style="margin:0 0 8px;font-size:12.5px">Разходите по всеки автомобил за избрания период — гориво, ремонти, застраховки, данъци, прегледи.</p>
+      <div id="coCars"></div>
+    </div>
+  </div>
+  <div class="card"><h2>По вид разход</h2><div id="coByCat"></div></div>
 </section>
 
 <!-- ================= НЕКРОЛОЗИ ================= -->
@@ -1743,14 +1775,14 @@ async function srvRefresh(force){if(!(SRV||CLOUD)||!DB.db||!ME)return;
     // всичко наведнъж (успоредно), а не едно след друго
     const [c,metaRows,nums,us]=await Promise.all([
       CLOUD&&AG&&!AG.owner?rpc("my_context"):null, // срокът може да изтече, докато програмата е отворена
-      CLOUD?sb("/rest/v1/records?select=key,value,version&store=eq.meta&key=in.(settings,catalog,template,necro,inventory)"):null,
+      CLOUD?sb("/rest/v1/records?select=key,value,version&store=eq.meta&key=in.(settings,catalog,template,necro,inventory,costs)"):null,
       CLOUD&&HAS_NUMS!==false?rpc("peek_numbers").catch(e=>{if(/peek_numbers|PGRST202/.test(e.message))HAS_NUMS=false;return null}):null,
       CLOUD?sbProfiles():getMeta("users",[])]);
     if(c&&c.kind==="agency"&&(c.expired||!c.agency_active||!c.active)){sbSave(null);DB.db=null;ME=null;authShow("login",{msg:c.active?noAccessMsg(c.support_phone):"Този потребител е спрян. Обърнете се към администратора."});return}
     const M={};if(metaRows)for(const r of metaRows){M[r.key]=r.value?r.value.value:undefined;metaSeen(r.key,r.version,M[r.key])}
     const gm=async k=>CLOUD?(M[k]??null):getMeta(k,null);
     SETTINGS=migrateSettings(await gm("settings"));CATALOG=migrateCatalog(await gm("catalog"));TEMPLATE=migrateTemplate(await gm("template"));applyTemplate();
-    NECRO=migrateNecro(await gm("necro"));if(!INV_BUSY)INVD=migrateInvd(await gm("inventory"));
+    NECRO=migrateNecro(await gm("necro"));COSTS=migrateCosts(await gm("costs"));if(!INV_BUSY)INVD=migrateInvd(await gm("inventory"));
     if(us&&us.length){USERS=us;if(ME){const m=us.find(x=>x.id===ME.id);if(m&&m.active)ME=m}}
     if(nums){HAS_NUMS=true;SETTINGS.nextNo=nums.request;SETTINGS.invNext=nums.invoice}
     SRV_LAST=Date.now()}catch(e){}finally{SRV_P=null}})();
@@ -2447,15 +2479,15 @@ function showTab(name){
   closeMenu();$("aside.side").classList.remove("open");
   if(ME&&!canTab(name)){toast("Нямате достъп до този раздел.",true);name=firstTab()}
   if(name==="edit"&&!CURRENT&&!can("req","edit"))name="list";
-  const navOf={edit:"list",inv:"list",ws:"wsl",stats:"fin"};
+  const navOf={edit:"list",inv:"list",ws:"wsl",stats:"fin",costs:"fin"};
   $$("[data-sub]").forEach(b=>b.classList.toggle("on",b.dataset.sub===name)); // вътрешните екрани светят като своя раздел в менюто
   $$("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===(navOf[name]||name)));
   if(name!=="ws")wsFlush();if(name!=="inv")invFlush();
   closeModal();
-  ["dash","list","wsl","clients","partners","fin","edit","catalog","stock","stats","settings","ws","inv","necro","users","files","days40","cal"].forEach(t=>$("#tab-"+t).classList.toggle("hidden",t!==name));
+  ["dash","list","wsl","clients","partners","fin","edit","catalog","stock","stats","costs","settings","ws","inv","necro","users","files","days40","cal"].forEach(t=>$("#tab-"+t).classList.toggle("hidden",t!==name));
   if(name==="files")renderDocs();if(name==="days40"){renderDays40();renderPomeni()}if(name==="cal")renderCal();if(name==="partners")renderPartners();
   if(name==="stock")renderStock();if(name==="users")renderUsers();
-  if(name==="stats")renderStats();if(name==="necro")renderNecro();
+  if(name==="stats")renderStats();if(name==="costs")renderCosts();if(name==="necro")renderNecro();
   if(name==="dash")renderDash();if(name==="wsl")renderWsl();if(name==="clients")renderClients();if(name==="fin")renderFin();
   if(name==="list")renderList();if(name==="catalog")renderCatalog();if(name==="settings")renderSettings();
   if(name==="edit"&&!CURRENT)openRequest(newRequest(),true);
@@ -3158,8 +3190,9 @@ function renderWs(){
       <div class="sumrow"><span>Приход по заявката <small class="muted">(обща сума${calc(r).discount?" след отстъпка":""})</small></span><b data-s="income">${eur(c.income)}</b></div>
       <div class="sumrow main"><span>ЧИСТА ПЕЧАЛБА</span><b data-s="profit" class="${c.profit<0?"neg":"pos"}">${eur(c.profit)}</b></div>
     </div><div>
-      ${wRow("<b>Дадени на служителя</b>",wM("given",w.given))}
-      <div class="wchoice"><label><input type="checkbox" data-w="givenIsCost" ${w.givenIsCost?"checked":""}> Включи сумата в разходите (напр. възнаграждение)</label></div>
+      ${wRow("<b>Аванс на служителя</b>",wM("given",w.given))}
+      <div class="muted" style="font-size:12.5px;margin:-2px 0 4px">Парите, дадени на служителя, за да плати разходите. Остатъкът се връща в касата.</div>
+      ${w.givenIsCost?`<div class="wchoice"><label><input type="checkbox" data-w="givenIsCost" checked> В този стар работен лист сумата е отчетена като разход. Махнете отметката, за да стане аванс.</label></div>`:""}
       <div class="muted" data-s="givenInfo">${givenInfo(c,w)}</div>
       <div class="wr" style="margin-top:8px"><span class="wl">Бележки</span></div>
       <textarea class="ui-in" data-w="note" rows="2" placeholder="Вътрешни бележки по работния лист">${esc(w.note)}</textarea>
@@ -3172,7 +3205,7 @@ function givenInfo(c,w){
   if(!c.given)return"";
   if(w.givenIsCost)return"Сумата е включена в разходите.";
   const d=r2(c.given-c.expenses);
-  return d>=0?`Служителят трябва да върне <b>${eur(d)}</b> (дадени − разходи).`:`Разходите надвишават дадените с <b>${eur(-d)}</b>.`;
+  return d>=0?`Служителят връща <b>${eur(d)}</b> (аванс ${eur(c.given)} − разходи ${eur(c.expenses)}).`:`Разходите надвишават аванса с <b>${eur(-d)}</b> — агенцията дължи тази сума на служителя.`;
 }
 function updateWs(){
   const c=wsCalc(WS),S=k=>$(`#wsBody [data-s="${k}"]`);
@@ -3237,7 +3270,7 @@ function buildWsPrint(r){
       ${rows||`<tr class="i"><td>Няма въведени разходи с цена.</td><td class="m"></td></tr>`}
       <tr class="tot"><td>ОБЩО РАЗХОДИ</td><td class="m">${fmt(c.expenses)} €</td></tr>
     </table>
-    ${c.given?`<p style="margin-top:4mm">Дадени на служителя: <b>${fmt(c.given)} €</b>${w.givenIsCost?" (включени в разходите)":""}</p>`:""}
+    ${c.given?`<p style="margin-top:4mm">Аванс на служителя: <b>${fmt(c.given)} €</b>${w.givenIsCost?" (отчетен като разход)":` · за връщане: <b>${fmt(Math.max(0,r2(c.given-c.expenses)))} €</b>`}</p>`:""}
     ${w.note?`<p><i>Бележки:</i> ${esc(w.note)}</p>`:""}
     <div class="wsp-foot"><span>Служител:<span class="sl"></span></span><span>Подпис:<span class="sl"></span></span></div>
   </div>`;
@@ -3503,15 +3536,18 @@ async function renderStats(){
   const m=MONTHS.map(()=>({n:0,income:0,expenses:0,profit:0,noWs:0}));
   all.filter(r=>yearOf(r)===Y).forEach(r=>{const mi=+(r.reqDate||r.created).slice(5,7)-1,w=wsCalc(r),x=m[mi];
     x.n++;x.income=r2(x.income+w.income);x.expenses=r2(x.expenses+w.expenses);x.profit=r2(x.profit+w.profit);if(!w.has)x.noWs++});
-  const T=m.reduce((a,x)=>({n:a.n+x.n,income:r2(a.income+x.income),expenses:r2(a.expenses+x.expenses),profit:r2(a.profit+x.profit),noWs:a.noWs+x.noWs}),{n:0,income:0,expenses:0,profit:0,noWs:0});
-  $("#stTiles").innerHTML=[["Заявки през "+Y,T.n],["Приходи",eur(T.income)],["Разходи",eur(T.expenses)],["Чиста печалба",`<span class="${T.profit<0?"neg":"pos"}">${eur(T.profit)}</span>`],
+  m.forEach((x,i)=>{const ym=Y+"-"+String(i+1).padStart(2,"0"),last=new Date(+Y,i+1,0).getDate();x.oh=costsTotal([ym+"-01",ym+"-"+last]);x.net=r2(x.profit-x.oh)});
+  const T=m.reduce((a,x)=>({n:a.n+x.n,income:r2(a.income+x.income),expenses:r2(a.expenses+x.expenses),profit:r2(a.profit+x.profit),noWs:a.noWs+x.noWs,oh:r2(a.oh+x.oh),net:r2(a.net+x.net)}),{n:0,income:0,expenses:0,profit:0,noWs:0,oh:0,net:0});
+  $("#stTiles").innerHTML=[["Заявки през "+Y,T.n],["Приходи",eur(T.income)],["Разходи по заявки",eur(T.expenses)],["Печалба от заявките",`<span class="${T.profit<0?"neg":"pos"}">${eur(T.profit)}</span>`],
+    ["Общи разходи",eur(T.oh)],["Чиста печалба",`<span class="${T.net<0?"neg":"pos"}">${eur(T.net)}</span>`],
     ["Средна печалба на заявка",T.n?eur(r2(T.profit/T.n)):"—"]].map(([k,v])=>`<div class="tile"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
   renderChart(m);
-  $("#stTable").innerHTML=`<thead><tr><th>Месец</th><th class="money">Заявки</th><th class="money">Приходи</th><th class="money">Разходи</th><th class="money">Чиста печалба</th><th class="money">Без работен лист</th></tr></thead>
-    <tbody>${m.map((x,i)=>`<tr><td>${MONTHS[i]}</td><td class="money">${x.n||"–"}</td><td class="money">${x.n?eur(x.income):"–"}</td><td class="money">${x.n?eur(x.expenses):"–"}</td>
-      <td class="money ${x.profit<0?"neg":x.n?"pos":""}" style="font-weight:600">${x.n?eur(x.profit):"–"}</td><td class="money ${x.noWs?"neg":"muted"}">${x.noWs||"–"}</td></tr>`).join("")}</tbody>
-    <tfoot><tr><td>Общо ${Y}</td><td class="money">${T.n}</td><td class="money">${eur(T.income)}</td><td class="money">${eur(T.expenses)}</td><td class="money ${T.profit<0?"neg":"pos"}">${eur(T.profit)}</td><td class="money">${T.noWs||"–"}</td></tr></tfoot>`;
-  $("#stNote").innerHTML=`Месецът се определя по <b>датата на заявката</b>. Приход = обща сума по заявката (след отстъпка). Разходи = от работния лист.`+
+  $("#stTable").innerHTML=`<thead><tr><th>Месец</th><th class="money">Заявки</th><th class="money">Приходи</th><th class="money">Разходи по заявки</th><th class="money">Печалба от заявките</th><th class="money">Общи разходи</th><th class="money">Чиста печалба</th><th class="money">Без работен лист</th></tr></thead>
+    <tbody>${m.map((x,i)=>{const any=x.n||x.oh;return `<tr><td>${MONTHS[i]}</td><td class="money">${x.n||"–"}</td><td class="money">${x.n?eur(x.income):"–"}</td><td class="money">${x.n?eur(x.expenses):"–"}</td>
+      <td class="money ${x.profit<0?"neg":x.n?"pos":""}">${x.n?eur(x.profit):"–"}</td><td class="money">${x.oh?eur(x.oh):"–"}</td>
+      <td class="money ${x.net<0?"neg":any?"pos":""}" style="font-weight:600">${any?eur(x.net):"–"}</td><td class="money ${x.noWs?"neg":"muted"}">${x.noWs||"–"}</td></tr>`}).join("")}</tbody>
+    <tfoot><tr><td>Общо ${Y}</td><td class="money">${T.n}</td><td class="money">${eur(T.income)}</td><td class="money">${eur(T.expenses)}</td><td class="money ${T.profit<0?"neg":"pos"}">${eur(T.profit)}</td><td class="money">${eur(T.oh)}</td><td class="money ${T.net<0?"neg":"pos"}">${eur(T.net)}</td><td class="money">${T.noWs||"–"}</td></tr></tfoot>`;
+  $("#stNote").innerHTML=`Месецът се определя по <b>датата на заявката</b>. Приход = обща сума по заявката (след отстъпка). Разходи по заявки = от работния лист. Общи разходи = от „Разходи“ (заплати, наем, автомобили…). Чиста печалба = печалбата от заявките − общите разходи.`+
     (T.noWs?` <span class="neg">⚠ ${T.noWs} заявки нямат попълнен работен лист — разходите им се броят за 0 и печалбата им е завишена.</span>`:"")+
     (inclS?"":" Примерните заявки не са включени.");
 }
@@ -4105,6 +4141,128 @@ async function renderClients(){
 $("#clSearch").oninput=renderClients;
 $("#clTable").addEventListener("click",e=>{const b=e.target.closest("[data-cl]");if(!b)return;$("#search").value=b.dataset.cl;showTab("list")});
 
+/* ---- разходи на агенцията (meta „costs“: еднократни разходи, планови разходи, автомобили) ---- */
+let COSTS={items:[],plans:[],cars:[]},COP="month";
+const CO_CATS=[["pay","Заплата / възнаграждение"],["goods","Стока / материали"],["car","Автомобил"],["rent","Наем"],["util","Ток, вода, телефон, интернет"],["tax","Данъци и такси"],["acct","Счетоводство"],["ads","Реклама"],["other","Друго"]];
+const CO_CAR_KINDS=[["fuel","Гориво"],["repair","Ремонт / сервиз"],["ins","Застраховка"],["tax","Данък / винетка"],["check","Технически преглед"],["wash","Измиване"],["other","Друго"]];
+const CO_FREQ=[["month","Всеки месец"],["quarter","На 3 месеца"],["year","Всяка година"]];
+const coLbl=(L,k)=>(L.find(x=>x[0]===k)||[k,k||"—"])[1];
+function migrateCosts(c){c=c||{};for(const k of["items","plans","cars"])if(!Array.isArray(c[k]))c[k]=[];return c}
+const coCar=id=>COSTS.cars.find(x=>x.id===id);
+const coCarName=id=>{const c=coCar(id);return c?c.name+(c.plate?" ("+c.plate+")":""):""};
+const ymOf=d=>String(d||"").slice(0,7);
+const ymAdd=(ym,n)=>{const[y,m]=ym.split("-").map(Number),d=new Date(y,m-1+n,1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")};
+const ymDay=(ym,day)=>{const[y,m]=ym.split("-").map(Number),last=new Date(y,m,0).getDate();return ym+"-"+String(Math.min(Math.max(1,+day||1),last)).padStart(2,"0")};
+/* планов разход → падежи между from и to (включително), най-много до края на текущия месец */
+function planDue(p,from,to){
+  if(!p.start||p.active===false)return[];
+  const step=p.freq==="year"?12:p.freq==="quarter"?3:1,out=[];
+  const lastYm=[p.end||"9999-12",ymOf(to||todayISO()),ymOf(todayISO())].sort()[0]; // бъдещите месеци не се броят предварително
+  for(let ym=p.start,i=0;ym<=lastYm&&i<600;ym=ymAdd(ym,step),i++){const d=ymDay(ym,p.day);if((!from||d>=from)&&(!to||d<=to))out.push({plan:p,period:ym,date:d})}
+  return out}
+/* всички разходи за периода: записаните + неплатените падежи на плановите */
+function costsInRange(rg){
+  const from=rg?rg[0]:null,to=rg?rg[1]:todayISO(),inR=d=>(!from||d>=from)&&(!to||d<=to);
+  const rows=COSTS.items.filter(x=>inR(x.date)).map(x=>({...x,kind:x.planId?"plan-paid":"one"}));
+  for(const p of COSTS.plans)for(const due of planDue(p,from,to)){
+    if(COSTS.items.some(x=>x.planId===p.id&&x.period===due.period))continue;
+    rows.push({id:"due-"+p.id+"-"+due.period,kind:"plan-due",planId:p.id,period:due.period,date:due.date,cat:p.cat,carKind:p.carKind,car:p.car,desc:p.desc,payee:p.payee,amount:+p.amount||0})}
+  return rows.sort((a,b)=>b.date.localeCompare(a.date))}
+const costsTotal=rg=>sumBy(costsInRange(rg),x=>+x.amount||0);
+async function saveCosts(what){await setMeta("costs",COSTS);if(what)audit("Разходи",what)}
+function coRange(){const keep=FINP;FINP=COP;try{if(COP==="custom")return[$("#coFrom").value||"0000-01-01",$("#coTo").value||"9999-12-31"];return finRange()}finally{FINP=keep}}
+function renderCosts(){
+  const adm=isAdmin(),rg=coRange();
+  $$("#coSeg button").forEach(b=>b.classList.toggle("on",b.dataset.p===COP));$("#coCustom").classList.toggle("hidden",COP!=="custom");
+  $("#coRange").textContent=rg?`Период ${bgDate(rg[0])||"…"} – ${bgDate(rg[1])||"…"}`:"Всички записи (плановите — до днес)";
+  $$("#coAdd,#coPlanAdd,#coCarAdd").forEach(b=>b.classList.toggle("hidden",!adm));
+  const catSel=$("#coCat"),carSel=$("#coCar"),pc=catSel.value,pv=carSel.value;
+  catSel.innerHTML=`<option value="">Всички видове</option>`+CO_CATS.map(([v,l])=>`<option value="${v}">${l}</option>`).join("");catSel.value=pc;
+  carSel.innerHTML=`<option value="">Всички автомобили</option>`+COSTS.cars.map(c=>`<option value="${esc(c.id)}">${esc(coCarName(c.id))}</option>`).join("");carSel.value=COSTS.cars.some(c=>c.id===pv)?pv:"";
+  carSel.classList.toggle("hidden",!COSTS.cars.length);
+  const all=costsInRange(rg),list=all.filter(x=>(!catSel.value||x.cat===catSel.value)&&(!carSel.value||x.car===carSel.value));
+  const tot=sumBy(all,x=>+x.amount||0),plan=sumBy(all.filter(x=>x.kind!=="one"),x=>+x.amount||0),due=all.filter(x=>x.kind==="plan-due");
+  $("#coKpis").innerHTML=kpi("Общо разходи",eur(tot),`${all.length} ${all.length===1?"запис":"записа"}`,"lead")+kpi("Планови",eur(plan),"наем, заплати и др.")
+    +kpi("Еднократни",eur(r2(tot-plan)),"")+kpi("Неотбелязани планови",`<span style="color:${due.length?"var(--caution)":"inherit"}">${due.length}</span>`,due.length?"натиснете „Платено“":"всичко е отбелязано");
+  $("#coList").innerHTML=list.length?`<table class="list"><thead><tr><th>Дата</th><th>Вид</th><th>За какво</th><th>На кого / за кого</th><th class="money">Сума</th><th></th></tr></thead><tbody>${
+    list.map(x=>`<tr${x.kind==="plan-due"?' style="opacity:.75"':""}><td class="num">${bgDate(x.date)}</td>
+      <td>${esc(coLbl(CO_CATS,x.cat))}${x.cat==="car"&&x.carKind?`<br><small class="muted">${esc(coLbl(CO_CAR_KINDS,x.carKind))}</small>`:""}</td>
+      <td>${esc(x.desc||"")||'<span class="muted">—</span>'}${x.car?`<br><small class="muted">🚗 ${esc(coCarName(x.car))}</small>`:""}${x.kind!=="one"?` <span class="tag">планов</span>`:""}${x.note?`<br><small class="muted">${esc(x.note)}</small>`:""}</td>
+      <td>${esc(x.payee||"")||'<span class="muted">—</span>'}</td><td class="money" style="font-weight:600">${eur(+x.amount||0)}</td>
+      <td style="text-align:right;white-space:nowrap">${adm?(x.kind==="plan-due"?`<button class="btn small" data-copay="${esc(x.planId)}|${esc(x.period)}" type="button">Платено</button>`:`<button class="btn small ghost" data-coed="${esc(x.id)}" type="button">Промени</button>`):""}</td></tr>`).join("")}</tbody>
+    <tfoot><tr><td colspan="4">Общо${catSel.value||carSel.value?" (филтрирани)":""}</td><td class="money">${eur(sumBy(list,x=>+x.amount||0))}</td><td></td></tr></tfoot></table>`
+    :`<div class="empty">Няма разходи за този период.${adm?" Натиснете „＋ Нов разход“.":""}</div>`;
+  $$("#coList [data-coed]").forEach(b=>b.onclick=()=>openCost(COSTS.items.find(x=>x.id===b.dataset.coed)));
+  $$("#coList [data-copay]").forEach(b=>b.onclick=()=>{const[pid,per]=b.dataset.copay.split("|"),p=COSTS.plans.find(x=>x.id===pid);if(!p)return;
+    openCost(null,{planId:p.id,period:per,date:ymDay(per,p.day),cat:p.cat,carKind:p.carKind||"",car:p.car||"",desc:p.desc,payee:p.payee,amount:p.amount})});
+  // планови
+  $("#coPlans").innerHTML=COSTS.plans.length?`<table class="list"><thead><tr><th>За какво</th><th>Колко често</th><th class="money">Сума</th><th></th></tr></thead><tbody>${
+    COSTS.plans.map(p=>`<tr${p.active===false?' style="opacity:.55"':""}><td>${esc(p.desc||coLbl(CO_CATS,p.cat))}<br><small class="muted">${esc(coLbl(CO_CATS,p.cat))}${p.payee?" · "+esc(p.payee):""}${p.car?" · 🚗 "+esc(coCarName(p.car)):""}</small></td>
+      <td>${esc(coLbl(CO_FREQ,p.freq))}<br><small class="muted">на ${+p.day||1}-о число · от ${bgDate(p.start+"-01").slice(3)}${p.end?" до "+bgDate(p.end+"-01").slice(3):""}${p.active===false?" · спрян":""}</small></td>
+      <td class="money">${eur(+p.amount||0)}</td><td style="text-align:right">${adm?`<button class="btn small ghost" data-copl="${esc(p.id)}" type="button">Промени</button>`:""}</td></tr>`).join("")}</tbody></table>`
+    :`<div class="empty">Няма планови разходи.</div>`;
+  $$("#coPlans [data-copl]").forEach(b=>b.onclick=()=>openPlan(COSTS.plans.find(x=>x.id===b.dataset.copl)));
+  // автомобили
+  $("#coCars").innerHTML=COSTS.cars.length?`<table class="list"><thead><tr><th>Автомобил</th><th class="money">Разходи за периода</th><th></th></tr></thead><tbody>${
+    COSTS.cars.map(c=>{const cs=all.filter(x=>x.car===c.id),by=CO_CAR_KINDS.map(([k,l])=>[l,sumBy(cs.filter(x=>(x.carKind||"other")===k),x=>+x.amount||0)]).filter(x=>x[1]);
+      return `<tr><td><b>${esc(c.name)}</b>${c.plate?` <span class="muted">${esc(c.plate)}</span>`:""}${by.length?`<br><small class="muted">${by.map(([l,v])=>esc(l)+" "+eur(v)).join(" · ")}</small>`:""}</td>
+      <td class="money" style="font-weight:600">${eur(sumBy(cs,x=>+x.amount||0))}</td><td style="text-align:right">${adm?`<button class="btn small ghost" data-cocar="${esc(c.id)}" type="button">Промени</button>`:""}</td></tr>`}).join("")}</tbody></table>`
+    :`<div class="empty">Няма добавени автомобили.</div>`;
+  $$("#coCars [data-cocar]").forEach(b=>b.onclick=()=>openCar(coCar(b.dataset.cocar)));
+  // по вид
+  const byCat=CO_CATS.map(([k,l])=>[l,sumBy(all.filter(x=>x.cat===k),x=>+x.amount||0)]).filter(x=>x[1]);
+  $("#coByCat").innerHTML=byCat.length?`<table class="list"><tbody>${byCat.sort((a,b)=>b[1]-a[1]).map(([l,v])=>`<tr><td>${esc(l)}</td><td class="money">${eur(v)}</td><td class="money muted">${tot?Math.round(v/tot*100)+" %":""}</td></tr>`).join("")}</tbody>
+    <tfoot><tr><td>Общо</td><td class="money">${eur(tot)}</td><td></td></tr></tfoot></table>`:`<div class="empty">Няма данни.</div>`;
+}
+function coPayees(){return[...new Set([...(SETTINGS.staff||[]),...(USERS||[]).map(u=>u.name),...PARTNERS.map(x=>x.name)].filter(Boolean))]}
+function coFields(x){
+  return `<label class="f">Вид разход<select class="ui-in" id="coC">${CO_CATS.map(([v,l])=>`<option value="${v}" ${x.cat===v?"selected":""}>${l}</option>`).join("")}</select></label>
+    <label class="f" id="coKW">Какво по колата<select class="ui-in" id="coK">${CO_CAR_KINDS.map(([v,l])=>`<option value="${v}" ${x.carKind===v?"selected":""}>${l}</option>`).join("")}</select></label>
+    <label class="f" style="grid-column:1/-1">За какво<input class="ui-in" id="coD" value="${esc(x.desc||"")}" placeholder="напр. заплата за ноември, наем на офиса, 40 л дизел"></label>
+    <label class="f">На кого / за кого<input class="ui-in" id="coP" value="${esc(x.payee||"")}" list="coPList" placeholder="служител, фирма, доставчик"><datalist id="coPList">${coPayees().map(n=>`<option value="${esc(n)}">`).join("")}</datalist></label>
+    <label class="f">Автомобил<select class="ui-in" id="coV"><option value="">—</option>${COSTS.cars.map(c=>`<option value="${esc(c.id)}" ${x.car===c.id?"selected":""}>${esc(coCarName(c.id))}</option>`).join("")}</select></label>
+    <label class="f">Сума (€)<input class="ui-in money" id="coA" value="${numIn(x.amount)}" inputmode="decimal"></label>`}
+function coBind(m){const sync=()=>{const car=m.q("#coC").value==="car";m.q("#coKW").classList.toggle("hidden",!car)};m.q("#coC").onchange=sync;sync()}
+function coRead(m){const a=num(m.q("#coA").value);if(!a||a<=0)throw new Error("Въведете сума.");const cat=m.q("#coC").value;
+  return{cat,carKind:cat==="car"?m.q("#coK").value:"",desc:m.q("#coD").value.trim(),payee:m.q("#coP").value.trim(),car:m.q("#coV").value,amount:r2(a)}}
+function openCost(x,pre){if(!isAdmin())return;const isNew=!x;x=x?structuredClone(x):{id:uid(),date:todayISO(),cat:"pay",carKind:"",desc:"",payee:"",car:"",amount:null,note:"",...(pre||{})};
+  const m=openModal({title:x.planId?(isNew?"Плащане на планов разход":"Планов разход — плащане"):(isNew?"Нов разход":"Разход"),body:`<div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
+      <label class="f">Дата<input type="date" class="ui-in" id="coT" value="${esc(x.date)}"></label>${coFields(x)}
+      <label class="f" style="grid-column:1/-1">Бележка<input class="ui-in" id="coN" value="${esc(x.note||"")}" placeholder="по желание — № на фактура, начин на плащане"></label></div>`,
+    actions:[{label:"Отказ"},...(isNew?[]:[{label:"Изтрий",cls:"danger",act:async()=>{if(!confirm("Да изтрия ли този разход?"))return false;
+      COSTS.items=COSTS.items.filter(y=>y.id!==x.id);await saveCosts("Изтрит разход · "+(x.desc||coLbl(CO_CATS,x.cat))+" · "+eur(x.amount));toast("Изтрито");renderCosts()}}]),
+      {label:isNew?"Добави":"Запази",cls:"primary",act:async m=>{const v=coRead(m),d=m.q("#coT").value;if(!d)throw new Error("Изберете дата.");
+        Object.assign(x,v,{date:d,note:m.q("#coN").value.trim(),updated:new Date().toISOString(),updatedBy:ME?ME.name:""});
+        if(isNew)COSTS.items.push(x);else COSTS.items=COSTS.items.map(y=>y.id===x.id?x:y);
+        await saveCosts((isNew?"Нов разход":"Променен разход")+" · "+(x.desc||coLbl(CO_CATS,x.cat))+" · "+eur(x.amount));toast(isNew?"Разходът е добавен ✔":"Запазено ✔");renderCosts()}}]});coBind(m)}
+function openPlan(p){if(!isAdmin())return;const isNew=!p;p=p?structuredClone(p):{id:uid(),cat:"rent",carKind:"",desc:"",payee:"",car:"",amount:null,freq:"month",day:1,start:ymOf(todayISO()),end:"",active:true};
+  const m=openModal({title:isNew?"Нов планов разход":"Планов разход",body:`<div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">${coFields(p)}
+      <label class="f">Колко често<select class="ui-in" id="coF">${CO_FREQ.map(([v,l])=>`<option value="${v}" ${p.freq===v?"selected":""}>${l}</option>`).join("")}</select></label>
+      <label class="f">На кое число<input class="ui-in" id="coY" value="${+p.day||1}" inputmode="numeric"></label>
+      <label class="f">От месец<input type="month" class="ui-in" id="coS" value="${esc(p.start)}"></label>
+      <label class="f">До месец <small class="muted">(празно = без край)</small><input type="month" class="ui-in" id="coE" value="${esc(p.end||"")}"></label>
+      <label class="f" style="grid-column:1/-1"><span><input type="checkbox" id="coO" ${p.active!==false?"checked":""}> Активен (влиза в отчетите)</span></label></div>`,
+    actions:[{label:"Отказ"},...(isNew?[]:[{label:"Изтрий",cls:"danger",act:async()=>{if(!confirm("Да изтрия ли плановия разход?\nВече отбелязаните плащания остават.")) return false;
+      COSTS.plans=COSTS.plans.filter(y=>y.id!==p.id);await saveCosts("Изтрит планов разход · "+(p.desc||coLbl(CO_CATS,p.cat)));toast("Изтрито");renderCosts()}}]),
+      {label:isNew?"Добави":"Запази",cls:"primary",act:async m=>{const v=coRead(m),st=m.q("#coS").value,en=m.q("#coE").value;if(!st)throw new Error("Изберете от кой месец.");if(en&&en<st)throw new Error("Крайният месец е преди началния.");
+        Object.assign(p,v,{freq:m.q("#coF").value,day:Math.min(31,Math.max(1,parseInt(m.q("#coY").value,10)||1)),start:st,end:en,active:m.q("#coO").checked,updated:new Date().toISOString(),updatedBy:ME?ME.name:""});
+        if(isNew)COSTS.plans.push(p);else COSTS.plans=COSTS.plans.map(y=>y.id===p.id?p:y);
+        await saveCosts((isNew?"Нов планов разход":"Променен планов разход")+" · "+(p.desc||coLbl(CO_CATS,p.cat))+" · "+eur(p.amount));toast("Запазено ✔");renderCosts()}}]});coBind(m)}
+function openCar(c){if(!isAdmin())return;const isNew=!c;c=c?structuredClone(c):{id:uid(),name:"",plate:"",note:""};
+  openModal({title:isNew?"Нов автомобил":"Автомобил",body:`<div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
+      <label class="f">Марка и модел<input class="ui-in" id="caN" value="${esc(c.name)}" placeholder="напр. Mercedes Vito"></label>
+      <label class="f">Рег. номер<input class="ui-in" id="caP" value="${esc(c.plate||"")}" placeholder="напр. СА 1234 АВ"></label>
+      <label class="f" style="grid-column:1/-1">Бележка<input class="ui-in" id="caO" value="${esc(c.note||"")}" placeholder="напр. катафалка, бус за кетъринг"></label></div>`,
+    actions:[{label:"Отказ"},...(isNew?[]:[{label:"Изтрий",cls:"danger",act:async()=>{if(!confirm(`Да изтрия ли „${c.name}“?\nРазходите по него остават, но без автомобил.`))return false;
+      COSTS.cars=COSTS.cars.filter(y=>y.id!==c.id);await saveCosts("Изтрит автомобил · "+c.name);toast("Изтрито");renderCosts()}}]),
+      {label:isNew?"Добави":"Запази",cls:"primary",act:async m=>{const n=m.q("#caN").value.trim();if(!n)throw new Error("Напишете марка и модел.");
+        Object.assign(c,{name:n,plate:m.q("#caP").value.trim().toUpperCase(),note:m.q("#caO").value.trim()});
+        if(isNew)COSTS.cars.push(c);else COSTS.cars=COSTS.cars.map(y=>y.id===c.id?c:y);
+        await saveCosts((isNew?"Нов автомобил":"Променен автомобил")+" · "+n);toast("Запазено ✔");renderCosts()}}]})}
+$$("#coSeg button").forEach(b=>b.onclick=()=>{COP=b.dataset.p;renderCosts()});
+$("#coFrom").onchange=$("#coTo").onchange=$("#coCat").onchange=$("#coCar").onchange=renderCosts;
+$("#coAdd").onclick=()=>openCost(null);$("#coPlanAdd").onclick=()=>openPlan(null);$("#coCarAdd").onclick=()=>openCar(null);
+
 /* ---- финанси ---- */
 let FINP="month";
 function finRange(){
@@ -4122,7 +4280,8 @@ async function renderFin(){
   $("#finRange").textContent=rg?(FINP==="custom"&&!$("#finFrom").value&&!$("#finTo").value?"Изберете начална и крайна дата":`Период ${bgDate(rg[0])||"…"} – ${bgDate(rg[1])||"…"} · по дата на заявката`):"Всички записи";
   const inc=sumBy(list,r=>calc(r).total),exp=sumBy(list,r=>wsCalc(r).expenses),pr=r2(inc-exp),un=list.filter(r=>!r.paid&&calc(r).rest>0),noWs=list.filter(r=>!wsCalc(r).has).length;
   $("#finKpis").innerHTML=kpi("Оборот",eur(inc),`${list.length} ${list.length===1?"заявка":"заявки"}`,"lead")+kpi("Разходи",eur(exp),noWs?`<span style="color:var(--caution)">${noWs} без работен лист</span>`:"от работните листове")
-    +kpi("Печалба",`<span class="${pr<0?"neg":"pos"}">${eur(pr)}</span>`,inc?`марж ${Math.round(pr/inc*100)} %`:"")+kpi("Неплатено за периода",`<span style="color:${un.length?"var(--caution)":"inherit"}">${eur(sumBy(un,r=>calc(r).rest))}</span>`,`${un.length} ${un.length===1?"заявка":"заявки"}`);
+    +kpi("Печалба от заявките",`<span class="${pr<0?"neg":"pos"}">${eur(pr)}</span>`,inc?`марж ${Math.round(pr/inc*100)} %`:"")
+    +(()=>{const oh=costsTotal(rg),net=r2(pr-oh);return kpi("Общи разходи",eur(oh),`<a href="#" data-gocosts>от „Разходи“</a>`)+kpi("Чиста печалба",`<span class="${net<0?"neg":"pos"}">${eur(net)}</span>`,"след общите разходи")})()+kpi("Неплатено за периода",`<span style="color:${un.length?"var(--caution)":"inherit"}">${eur(sumBy(un,r=>calc(r).rest))}</span>`,`${un.length} ${un.length===1?"заявка":"заявки"}`);
   const allUn=all.filter(r=>!r.paid&&calc(r).rest>0).sort((a,b)=>(a.ritDate||reqDay(a)).localeCompare(b.ritDate||reqDay(b)));
   $("#finUnpaid").innerHTML=allUn.length?`<table class="list"><thead><tr><th>№</th><th>Заявител</th><th>Телефон</th><th>Ритуал</th><th class="money">Общо</th><th class="money">Аванс</th><th class="money">Остатък</th></tr></thead><tbody>${
     allUn.map(r=>{const c=calc(r);return `<tr class="click" data-id="${r.id}"><td><b>${esc(r.number)}</b>${sampleTag(r)}</td><td>${esc(r.appName)||"—"}</td><td class="num muted">${esc(r.appPhone)||""}</td><td class="num">${bgDate(r.ritDate)||"—"}</td>
@@ -4134,6 +4293,7 @@ async function renderFin(){
     <tfoot><tr><td colspan="4">Общо</td><td class="money">${eur(inc)}</td><td class="money">${eur(exp)}</td><td class="money ${pr<0?"neg":"pos"}">${eur(pr)}</td></tr></tfoot></table>`:`<div class="empty">Няма заявки за избрания период.</div>`;
 }
 $$("#finSeg button").forEach(b=>b.onclick=()=>{FINP=b.dataset.p;renderFin()});
+$("#finKpis").addEventListener("click",e=>{if(e.target.closest("[data-gocosts]")){e.preventDefault();COP=FINP;if(FINP==="custom"){$("#coFrom").value=$("#finFrom").value;$("#coTo").value=$("#finTo").value}showTab("costs")}});
 // справка за счетоводителя: CSV с „;“ и BOM — Excel на български го отваря направо
 function downloadCsv(name,head,rows){
   const cell=v=>{if(typeof v==="string"&&/^0\d+$|^\d{10,}$/.test(v.trim()))return '="'+v.trim()+'"'; // номера и ЕГН с водеща нула — като текст
@@ -4265,7 +4425,7 @@ $("#logoFile").onchange=e=>{const f=e.target.files[0];if(!f)return;if(f.size>3e6
 const blobToDataUrl=b=>new Promise((res,rej)=>{if(!b){res(null);return}const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsDataURL(b)});
 $("#btnExport").onclick=async()=>{
   // потребителите (само отпечатъци на паролите) и историята също влизат в архива — за преместване на друг компютър или флашка
-  const data={app:"pogrebalni-zayavki",version:3,exported:new Date().toISOString(),settings:SETTINGS,catalog:CATALOG,necro:NECRO,inventory:INVD,
+  const data={app:"pogrebalni-zayavki",version:3,exported:new Date().toISOString(),settings:SETTINGS,catalog:CATALOG,necro:NECRO,costs:COSTS,inventory:INVD,
     users:USERS,auth:CLOUD?null:await getMeta("auth",null),audit:await DB.all("audit"),requests:await DB.all("requests"),
     template:TEMPLATE,clients:await DB.all("clients").catch(()=>[]),events:await DB.all("events").catch(()=>[]),
     docs:await Promise.all((await DB.all("docs")).map(async d=>({...d,file:await blobToDataUrl(d.file||(await DB.get("docs",d.id)).file)})))};
@@ -4279,6 +4439,7 @@ $("#importFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;e.tar
     else for(const r of d.requests)await DB.put("requests",r);
     if(d.catalog){CATALOG=migrateCatalog(d.catalog);await setMeta("catalog",CATALOG)}
     if(d.necro){NECRO=migrateNecro(d.necro);await setMeta("necro",NECRO)}
+    if(d.costs){COSTS=migrateCosts(d.costs);await setMeta("costs",COSTS)}
     if(d.inventory){INVD=migrateInvd(d.inventory);await setMeta("inventory",INVD)}
     if(d.settings){const lb=SETTINGS.lastBackup;SETTINGS=migrateSettings(d.settings);SETTINGS.lastBackup=lb;await setMeta("settings",SETTINGS)}
     if(Array.isArray(d.audit)){if(CLOUD){for(let i=0;i<d.audit.length;i+=300)await DB.putAtomic(d.audit.slice(i,i+300).map(v=>({store:"audit",value:v})))}else for(const x of d.audit)await DB.put("audit",x)}
@@ -4713,7 +4874,7 @@ const AREAS=[ // раздел: [етикет, възможни нива]
 const FLAGS=[["reqdel","Може да изтрива заявки"],["stockadj","Може да прави складови корекции"]];
 const LVL={none:"Няма достъп",view:"Вижда",edit:"Редактира"};
 const DEFAULT_PERMS={dash:"view",req:"edit",ws:"edit",docs:"edit",clients:"view",necro:"edit",stock:"view",files:"view",catalog:"view",fin:"none",reqdel:false,stockadj:false};
-const TAB_AREA={partners:"req",cal:"req",dash:"dash",list:"req",edit:"req",wsl:"ws",ws:"ws",inv:"docs",clients:"clients",necro:"necro",stock:"stock",files:"files",catalog:"catalog",fin:"fin",stats:"fin",settings:"admin",users:"admin"};
+const TAB_AREA={partners:"req",cal:"req",dash:"dash",list:"req",edit:"req",wsl:"ws",ws:"ws",inv:"docs",clients:"clients",necro:"necro",stock:"stock",files:"files",catalog:"catalog",fin:"fin",stats:"fin",costs:"fin",settings:"admin",users:"admin"};
 const isAdmin=()=>!!ME&&ME.role==="admin";
 function can(area,lvl="view"){
   if(!ME)return false;if(ME.role==="admin")return true;
@@ -5158,10 +5319,16 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="1.6.4",APP_DATE="17.11.2026";
+const APP_VERSION="1.7",APP_DATE="17.11.2026";
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
+  {v:"1.7",d:"17.11.2026",items:[
+    "Нов раздел Отчети → „Разходи“: заплати, наем, стока, ток, автомобили и др. — с описание, на кого е платено и сума.",
+    "Планови разходи (наем, заплати, лизинг) — въвеждат се веднъж и влизат в отчетите сами всеки месец. С „Платено“ се записва реалната сума.",
+    "Автомобили: разходите по всяка кола — гориво, ремонти, застраховки, данъци, прегледи.",
+    "„Финанси“ и „Статистика“ показват и „Чиста печалба“ — след общите разходи.",
+    "В работния лист „Дадени на служителя“ стана „Аванс на служителя“ — само аванс; програмата казва колко трябва да върне служителят."]},
   {v:"1.6.4",d:"17.11.2026",items:[
     "В Настройки логото на документите (заявка, фактура, оферта) и логото горе вляво в програмата вече се избират поотделно. Ако махнете логото от менюто, то остава на заявката — и обратно."]},
   {v:"1.6.3",d:"17.11.2026",items:[
@@ -5425,6 +5592,7 @@ async function loadShared(){ // настройки, каталог, некрол
   await loadNums();
   TEMPLATE=migrateTemplate(await gm("template",null));applyTemplate();
   NECRO=migrateNecro(await gm("necro",null));
+  COSTS=migrateCosts(await gm("costs",null));
   INVD=migrateInvd(await gm("inventory",null));
   // записваме само ако липсват (първо пускане) — не при всеки вход; базата проверява правата
   if(!raw.settings)await setMeta("settings",SETTINGS).catch(()=>{});

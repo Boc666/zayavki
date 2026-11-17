@@ -97,6 +97,14 @@ function run(){
   T("отделно изображение за програмата",()=>{const v=E(`(()=>{const S=migrateSettings({logoMode:"custom",logo:"data:doc",sideLogoMode:"custom",sideLogo:"data:side"});return [docLogoSrc(S),sideLogoSrc(S).src]})()`);return eq(v,["data:doc","data:side"])});
   T("стари настройки с лого: програмата показва същото лого",()=>{const v=E(`(()=>{const S=migrateSettings({logoMode:"custom",logo:"data:x"});return [S.sideLogoMode,sideLogoSrc(S).src]})()`);return eq(v,["doc","data:x"])});
   T("„Същото като на документите“ без лого → логото на програмата",()=>{const v=E(`(()=>{const S=migrateSettings({logoMode:"none",sideLogoMode:"doc"});const r=sideLogoSrc(S);return [r.app,r.src===APP_LOGO]})()`);return eq(v,[true,true])});
+  G("Разходи на агенцията");
+  const CO=(c,rg)=>E(`(()=>{COSTS=migrateCosts(${JSON.stringify(c)});return costsInRange(${JSON.stringify(rg)}).map(x=>[x.date,x.kind,x.amount])})()`);
+  T("еднократен разход в периода се брои, извън периода — не",()=>eq(CO({items:[{id:"a",date:"2026-11-05",cat:"pay",amount:800},{id:"b",date:"2026-10-30",cat:"rent",amount:500}]},["2026-11-01","2026-11-30"]),[["2026-11-05","one",800]]));
+  T("планов наем всеки месец на 5-о число",()=>eq(CO({plans:[{id:"p",cat:"rent",amount:500,freq:"month",day:5,start:"2026-09"}]},["2026-09-01","2026-11-30"]).map(x=>x[0]),["2026-11-05","2026-10-05","2026-09-05"]));
+  T("платеният падеж заменя плановата сума (без двойно броене)",()=>eq(CO({plans:[{id:"p",cat:"rent",amount:500,freq:"month",day:5,start:"2026-11"}],items:[{id:"x",planId:"p",period:"2026-11",date:"2026-11-06",cat:"rent",amount:520}]},["2026-11-01","2026-11-30"]),[["2026-11-06","plan-paid",520]]));
+  T("на 3 месеца и до краен месец",()=>eq(CO({plans:[{id:"q",cat:"tax",amount:90,freq:"quarter",day:31,start:"2026-01",end:"2026-08"}]},["2026-01-01","2026-12-31"]).map(x=>x[0]),["2026-07-31","2026-04-30","2026-01-31"]));
+  T("спрян планов разход не се брои",()=>eq(CO({plans:[{id:"p",cat:"rent",amount:500,freq:"month",day:1,start:"2026-01",active:false}]},["2026-01-01","2026-12-31"]),[]));
+  T("аванс на служителя не влиза в разходите",()=>{const c=E(`(()=>{const r=ensureWs(newRequest());r.ws.given=200;r.ws.other.cost=170;return wsCalc(r)})()`);return eq([c.expenses,c.given],[170,200])});
   G("Срок за пазене на лични данни");
   T("стара заявка с ЕГН → за изтриване",()=>eq(E(`retDue(Object.assign(newRequest(),{ritDate:"2018-01-10",decEgn:"4203124519"}),5)`),true));
   T("нова заявка → не",()=>eq(E(`retDue(Object.assign(newRequest(),{ritDate:new Date().toISOString().slice(0,10),decEgn:"4203124519"}),5)`),false));
