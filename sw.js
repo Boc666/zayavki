@@ -1,8 +1,8 @@
 // Service worker — за инсталиране като приложение и за показване на последната версия без интернет.
 // Винаги първо от мрежата (новите версии идват веднага); кешът е само резерва, ако няма връзка.
 // Заявките към базата (supabase.co) не минават оттук — те са към друг адрес.
-const CACHE = "zayavki-shell-v2";
-const SHELL = ["./", "./index.html", "./manifest.json", "./icon.png", "./pravila.html"];
+const CACHE = "zayavki-shell-v3";
+const SHELL = ["./", "./index.html", "./manifest.json", "./icon.png", "./icon-192.png", "./apple-touch-icon.png", "./favicon.png", "./pravila.html"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).catch(() => {}));
