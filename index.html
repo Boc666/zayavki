@@ -3605,14 +3605,20 @@ nkExpEl.addEventListener("click",e=>{const b=e.target.closest("[data-edel]");if(
   if(!confirm("Да изтрия ли този разход?"))return;NECRO.expenses=NECRO.expenses.filter(x=>x.id!==id);renderNkExp();nkSaveSoon()});
 
 /* ---- статистика ---- */
-/* всички поръчки на некролози: от заявките (ред 18) + отделните */
+/* всички поръчки на некролози: от заявките (ред 18) + отделните.
+   Некролозите от заявка влизат в статистиката чак когато заявката е „Приключена“
+   (за стари заявки без статус — изчисленият статус). Останалите се връщат в items.pending. */
+function necroReqItem(r){const l=lineOf(r,CATALOG.lamNo);if(!l||!l.used)return null;
+  return{src:"req",no:r.number,name:r.appName||r.decName||"",date:r.reqDate||(r.created||"").slice(0,10),type:l.necType||"",qty:qtyOf(l),lam:l.lam||0,income:lineAmount(l),done:statusOf(r).v==="done"}}
 async function necroItems(inclS){
   const reqs=(await DB.all("requests")).map(x=>normalizeRequest(structuredClone(x))).filter(r=>inclS||!r.sample);
-  const items=[];
-  reqs.forEach(r=>{const l=lineOf(r,CATALOG.lamNo);if(l&&l.used)items.push({src:"req",no:r.number,name:r.appName||r.decName||"",date:r.reqDate||(r.created||"").slice(0,10),type:l.necType||"",qty:qtyOf(l),lam:l.lam||0,income:lineAmount(l)})});
+  const items=[],pending={n:0,qty:0};
+  reqs.forEach(r=>{const it=necroReqItem(r);if(!it)return;if(it.done)items.push(it);else{pending.n++;pending.qty+=it.qty}});
   NECRO.orders.forEach(o=>items.push({src:"own",name:o.name||"",date:o.date||"",type:o.type||"",qty:o.qty||0,lam:o.lam||0,income:necOrderAmount(o)}));
+  items.pending=pending;
   return items;
 }
+const nkPendingTxt=p=>p.n?` <span class="muted">Още ${p.qty} бр. в ${p.n} ${p.n===1?"незавършена заявка":"незавършени заявки"} ще влязат, когато заявката стане „Приключена“.</span>`:"";
 const nkYr=d=>String(d).slice(0,4);
 function nkYearSelect(sel,dates){
   const years=[...new Set(dates.map(nkYr).filter(Boolean))].sort().reverse();
@@ -3625,7 +3631,7 @@ async function renderNecroCount(){
   const m=MONTHS.map(()=>({n:0,req:0,own:0,qty:0}));
   list.forEach(x=>{const a=m[+x.date.slice(5,7)-1];a.n++;a[x.src]++;a.qty+=x.qty});
   const T=m.reduce((t,a)=>({n:t.n+a.n,req:t.req+a.req,own:t.own+a.own,qty:t.qty+a.qty}),{n:0,req:0,own:0,qty:0});
-  $("#nkcTiles").innerHTML=[["Поръчки през "+Y,T.n],["От заявки",T.req],["Отделни поръчки",T.own],["Некролози общо",T.qty+" бр."],["Средно на поръчка",T.n?numIn(r2(T.qty/T.n))+" бр.":"—"]]
+  $("#nkcTiles").innerHTML=[["Поръчки през "+Y,T.n],["От заявки",T.req],["Отделни поръчки",T.own],["Некролози общо",T.qty+" бр."],["Средно на поръчка",T.n?numIn(r2(T.qty/T.n))+" бр.":"—"],...(items.pending.n?[["Чакат приключване",items.pending.qty+" бр. в "+items.pending.n+(items.pending.n===1?" заявка":" заявки")]]:[])]
     .map(([k,v])=>`<div class="tile"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
   const c=v=>v||"–";
   $("#nkcTable").innerHTML=`<thead><tr><th>Месец</th><th class="money">Поръчки</th><th class="money">От заявки</th><th class="money">Отделни</th><th class="money">Некролози (бр.)</th></tr></thead>
@@ -3654,7 +3660,7 @@ async function renderNecroStats(){
     <tbody>${m.map((a,i)=>{const any=a.n||a.expenses;return `<tr><td>${MONTHS[i]}</td><td class="money">${c(a.n)}</td><td class="money">${c(a.color)}</td><td class="money">${c(a.bw)}</td><td class="money">${c(a.none)}</td><td class="money">${c(a.lam)}</td>
       <td class="money">${any?eur(a.income):"–"}</td><td class="money">${any?eur(a.expenses):"–"}</td><td class="money ${a.profit<0?"neg":any?"pos":""}" style="font-weight:600">${any?eur(a.profit):"–"}</td></tr>`}).join("")}</tbody>
     <tfoot><tr><td>Общо ${Y}</td><td class="money">${T.n}</td><td class="money">${T.color}</td><td class="money">${T.bw}</td><td class="money">${T.none}</td><td class="money">${T.lam}</td><td class="money">${eur(T.income)}</td><td class="money">${eur(T.expenses)}</td><td class="money ${T.profit<0?"neg":"pos"}">${eur(T.profit)}</td></tr></tfoot>`;
-  $("#nkNote").innerHTML=`Броят се некролозите от заявките (ред 18, по дата на заявката) и отделните поръчки. Приход = сумата на реда (некролози + ламиниране, преди отстъпката на заявката). Разходи = от „💸 Разходи“.`+
+  $("#nkNote").innerHTML=`Броят се некролозите от <b>приключените</b> заявки (ред 18, по дата на заявката) и отделните поръчки.${nkPendingTxt(items.pending)} Приход = сумата на реда (некролози + ламиниране, преди отстъпката на заявката). Разходи = от „💸 Разходи“.`+
     (T.unk?` <span class="neg">⚠ ${T.unk} бр. са без посочен вид (цветна / ч/б / без снимка) — изберете вида на ред 18 в заявката.</span>`:"")+(inclS?"":" Примерните заявки не са включени.");
 }
 $("#nkYear").onchange=renderNecroStats;$("#nkSamples").onchange=renderNecroStats;
@@ -5124,10 +5130,12 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="1.6.1",APP_DATE="12.11.2026";
+const APP_VERSION="1.6.2",APP_DATE="17.11.2026";
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
+  {v:"1.6.2",d:"17.11.2026",items:[
+    "Некролозите от заявка влизат в статистиката на „Некролози“ чак когато заявката е със статус „Приключена“. Докато не е, се виждат отделно като „Чакат приключване“."]},
   {v:"1.6.1",d:"12.11.2026",items:[
     "Бланките от Word вече показват линиите с точки за попълване, разредените заглавия и височината на редовете в таблиците — както във Word."]},
   {v:"1.6",d:"12.11.2026",items:[

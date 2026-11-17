@@ -84,6 +84,12 @@ function run(){
   T("изтрито поле се изтрива и при тях",()=>eq(E(`(()=>{const base={a:1,b:2};const mine={a:1};const theirs={a:3,b:2,c:4};return applyPaths(structuredClone(theirs),diffPaths(base,mine))})()`),{a:3,c:4}));
   T("без промени → нищо за прилагане",()=>eq(E(`diffPaths({a:[1,2],b:{c:1}},{a:[1,2],b:{c:1}}).length`),0));
 
+  G("Некролози в статистиката");
+  const nk=st=>E(`(()=>{const r=newRequest();r.reqDate="2026-11-03";if(${JSON.stringify(st)})r.status=${JSON.stringify(st)};const l=lineOf(r,CATALOG.lamNo);Object.assign(l,{used:true,qty:15,necType:"color"});return necroReqItem(r)})()`);
+  T("приключена заявка: 15 некролога се броят",()=>{const it=nk("done");return it&&it.done===true&&it.qty===15?true:{info:JSON.stringify(it)}});
+  T("незавършена заявка: некролозите чакат",()=>{const it=nk("confirmed");return it&&it.done===false?true:{info:JSON.stringify(it)}});
+  T("нова заявка без статус и без плащане не се брои",()=>{const it=nk("");return it&&it.done===false?true:{info:JSON.stringify(it)}});
+  T("заявка без некролози → нищо",()=>eq(E(`necroReqItem(newRequest())`),null));
   G("Срок за пазене на лични данни");
   T("стара заявка с ЕГН → за изтриване",()=>eq(E(`retDue(Object.assign(newRequest(),{ritDate:"2018-01-10",decEgn:"4203124519"}),5)`),true));
   T("нова заявка → не",()=>eq(E(`retDue(Object.assign(newRequest(),{ritDate:new Date().toISOString().slice(0,10),decEgn:"4203124519"}),5)`),false));
