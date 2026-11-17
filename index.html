@@ -274,7 +274,7 @@ table.list td.money,table.list td.num{white-space:nowrap}
 .kpi .k{font-size:11px;font-weight:600;letter-spacing:.9px;text-transform:uppercase;color:var(--text3)}
 .kpi .v{font:600 26px/1.15 var(--ui);margin-top:8px;font-variant-numeric:tabular-nums;letter-spacing:-.4px;white-space:nowrap}
 .kpi .s{font-size:12px;color:var(--text2);margin-top:5px}
-.kpi.lead .v{color:var(--bronze-hi);font-size:30px}
+.kpi.lead .v{color:var(--bronze-hi)}
 .cols2{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;align-items:start}
 @media(max-width:1100px){.cols2{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.kpi:nth-child(2){border-right:0}.kpi:nth-child(-n+2){border-bottom:1px solid var(--border-soft)}}
 .empty{color:var(--text3);font-size:13px;padding:14px 2px}
@@ -784,7 +784,7 @@ main{padding:32px 40px 56px}
 .kpi{padding:20px 24px;border-right-color:var(--border-soft)}
 .kpi .k,.tile .k{font-size:10.5px;letter-spacing:.12em;color:var(--text3);font-weight:600}
 .kpi .v{font:600 27px/1.1 var(--ui);letter-spacing:-.02em;margin-top:10px}
-.kpi.lead .v{font-family:var(--display);font-size:31px;letter-spacing:-.015em;color:var(--bronze-hi)}
+.kpi.lead .v{color:var(--bronze-hi)} /* същият шрифт и размер като другите числа, само в златисто */
 .kpi .s{color:var(--text2);margin-top:6px}
 .tile{background:var(--panel2);border-radius:var(--r-sm)}
 .tile .v{font-size:20px;letter-spacing:-.015em}
@@ -915,7 +915,6 @@ body.intro #tab-dash .card:nth-of-type(n+3){animation-delay:110ms}
   .card{padding:16px;border-radius:12px}
   .kpi{padding:16px 18px}
   .kpi .v{font-size:min(26px,5.2vw)}
-  .kpi.lead .v{font-size:min(28px,5.6vw)}
   /* предстоящи ритуали: гробищата под името, не в трета колона */
   #dashRit table.list,#dashRit table.list tbody{display:block;overflow:visible}
   #dashRit table.list tr{display:grid;grid-template-columns:96px minmax(0,1fr);column-gap:12px;padding:12px 0;border-bottom:1px solid var(--border-soft)}
@@ -5319,10 +5318,12 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="1.7",APP_DATE="17.11.2026";
+const APP_VERSION="1.7.1",APP_DATE="17.11.2026";
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
+  {v:"1.7.1",d:"17.11.2026",items:[
+    "Числото „Оборот“ в таблото и отчетите вече е със същия шрифт като останалите — само в златист цвят."]},
   {v:"1.7",d:"17.11.2026",items:[
     "Нов раздел Отчети → „Разходи“: заплати, наем, стока, ток, автомобили и др. — с описание, на кого е платено и сума.",
     "Планови разходи (наем, заплати, лизинг) — въвеждат се веднъж и влизат в отчетите сами всеки месец. С „Платено“ се записва реалната сума.",
