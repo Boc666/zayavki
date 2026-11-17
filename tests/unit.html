@@ -90,6 +90,13 @@ function run(){
   T("незавършена заявка: некролозите чакат",()=>{const it=nk("confirmed");return it&&it.done===false?true:{info:JSON.stringify(it)}});
   T("нова заявка без статус и без плащане не се брои",()=>{const it=nk("");return it&&it.done===false?true:{info:JSON.stringify(it)}});
   T("заявка без некролози → нищо",()=>eq(E(`necroReqItem(newRequest())`),null));
+  const APP_LOGO_TEST=()=>E("APP_LOGO");
+  G("Лого: документи и програма поотделно");
+  T("„Без лого“ в програмата не маха логото от документите",()=>{const v=E(`(()=>{const S=migrateSettings({logoMode:"custom",logo:"data:x",sideLogoMode:"none"});return [docLogoSrc(S),sideLogoSrc(S).src]})()`);return eq(v,["data:x",""])});
+  T("„Без лого“ на документите не маха логото от програмата",()=>{const v=E(`(()=>{const S=migrateSettings({logoMode:"none",logo:"data:x",sideLogoMode:"app"});return [docLogoSrc(S),sideLogoSrc(S).src]})()`);return eq(v,["",APP_LOGO_TEST()])});
+  T("отделно изображение за програмата",()=>{const v=E(`(()=>{const S=migrateSettings({logoMode:"custom",logo:"data:doc",sideLogoMode:"custom",sideLogo:"data:side"});return [docLogoSrc(S),sideLogoSrc(S).src]})()`);return eq(v,["data:doc","data:side"])});
+  T("стари настройки с лого: програмата показва същото лого",()=>{const v=E(`(()=>{const S=migrateSettings({logoMode:"custom",logo:"data:x"});return [S.sideLogoMode,sideLogoSrc(S).src]})()`);return eq(v,["doc","data:x"])});
+  T("„Същото като на документите“ без лого → логото на програмата",()=>{const v=E(`(()=>{const S=migrateSettings({logoMode:"none",sideLogoMode:"doc"});const r=sideLogoSrc(S);return [r.app,r.src===APP_LOGO]})()`);return eq(v,[true,true])});
   G("Срок за пазене на лични данни");
   T("стара заявка с ЕГН → за изтриване",()=>eq(E(`retDue(Object.assign(newRequest(),{ritDate:"2018-01-10",decEgn:"4203124519"}),5)`),true));
   T("нова заявка → не",()=>eq(E(`retDue(Object.assign(newRequest(),{ritDate:new Date().toISOString().slice(0,10),decEgn:"4203124519"}),5)`),false));
