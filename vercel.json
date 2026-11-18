@@ -1,8 +1,9 @@
 {
-  "rewrites": [
-    { "source": "/", "has": [{ "type": "host", "value": "memoriox.eu" }], "destination": "/landing/index.html" },
-    { "source": "/", "has": [{ "type": "host", "value": "www.memoriox.eu" }], "destination": "/landing/index.html" },
-    { "source": "/:path+", "has": [{ "type": "host", "value": "memoriox.eu" }], "destination": "/landing/:path+" },
-    { "source": "/:path+", "has": [{ "type": "host", "value": "www.memoriox.eu" }], "destination": "/landing/:path+" }
+  "routes": [
+    { "src": "/", "has": [{ "type": "host", "value": "memoriox.eu" }], "dest": "/landing/index.html" },
+    { "src": "/", "has": [{ "type": "host", "value": "www.memoriox.eu" }], "dest": "/landing/index.html" },
+    { "src": "/(.*)", "has": [{ "type": "host", "value": "memoriox.eu" }], "dest": "/landing/$1" },
+    { "src": "/(.*)", "has": [{ "type": "host", "value": "www.memoriox.eu" }], "dest": "/landing/$1" },
+    { "handle": "filesystem" }
   ]
 }
