@@ -1008,7 +1008,7 @@ button.appver:hover{color:var(--text2)}
 <div id="boot"><div class="spin"></div></div>
 <div id="srvBar" class="hidden" role="alert"><span id="srvBarWhere">Няма връзка с компютъра в офиса</span> — последната промяна <b>не е записана</b>. Проверете връзката и опитайте пак.</div>
 <div id="auth" class="hidden"><div class="auth-box">
-  <div class="auth-brand"><div class="plate" id="authLogo"><img alt=""></div><div><h1 id="authTitle">Погребална агенция</h1><small id="authSub">Вход в програмата</small></div></div>
+  <div class="auth-brand"><div class="plate" id="authLogo"><img alt=""></div><div><h1 id="authTitle">Memoriox</h1><small id="authSub">Вход в програмата</small></div></div>
   <div id="authBody"></div>
 </div></div>
 
@@ -5016,7 +5016,7 @@ let FAILS=0,LOCK_UNTIL=0;
 function authShow(mode,opt={}){
   const S=SETTINGS||migrateSettings(null),sl=sideLogoSrc(S);
   const pl=$("#authLogo");pl.querySelector("img").src=sl.src;pl.querySelector("img").classList.toggle("app-logo",sl.app);pl.classList.toggle("hidden",!sl.src);
-  $("#authTitle").textContent=S.short?`Агенция „${S.short}“`:"Погребална агенция";
+  $("#authTitle").textContent=S.short?`Агенция „${S.short}“`:"Memoriox";
   const box=$("#auth .auth-box");box.classList.toggle("wide",mode==="setup"||mode==="trial");
   const B=$("#authBody");$("#auth").classList.remove("hidden");
   if(mode==="pair"){$("#authSub").textContent="Свързване на телефона";
@@ -5070,7 +5070,7 @@ function authShow(mode,opt={}){
     const lockedAg=opt.locked&&AG?AG.code:null; // при заключване — същата агенция
     const adm=CLOUD&&!!opt.admin&&!lockedAg;   // вход за администратор на платформата — без код на агенция
     $("#authSub").textContent=opt.locked?"Заключено поради бездействие":adm?"Вход за администратор на платформата":"Вход в програмата";
-    if(CLOUD&&!opt.locked)$("#authTitle").textContent=adm?"Платформа „Memoriox“":"Погребална агенция";
+    if(CLOUD&&!opt.locked)$("#authTitle").textContent=adm?"Платформа „Memoriox“":"Memoriox";
     B.innerHTML=`<form class="auth-form" id="fLogin">
       ${CLOUD&&!adm?`<label class="f">Код на агенцията<input class="ui-in" id="liA" autocomplete="organization" autocapitalize="none" spellcheck="false" placeholder="напр. tangra" value="${esc(lockedAg??lastAgency())}" ${lockedAg?"readonly":""}></label>`:""}
       <label class="f">Потребителско име<input class="ui-in" id="liU" autocomplete="username" value="${esc(opt.user||"")}"></label>
@@ -5430,10 +5430,12 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="1.9",APP_DATE="19.11.2026";
+const APP_VERSION="1.9.1",APP_DATE="19.11.2026";
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
+  {v:"1.9.1",d:"19.11.2026",items:[
+    "Екранът за вход вече показва „Memoriox“."]},
   {v:"1.9",d:"19.11.2026",items:[
     "Нова агенция може да се регистрира сама от сайта и да получи веднага 14 дни безплатен достъп.",
     "Кратко обучение „как се работи с програмата“ при първата регистрация.",
