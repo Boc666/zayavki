@@ -1772,7 +1772,7 @@ async function cloudStart(){
       if(u.platform){platformShow(u);return}
       ME=u;await loadShared();lastAct=Date.now();applyUser();showTab(firstTab());agencyBars();return}catch(e){if(e.net)throw e;startMsg=e.message}
       sbSave(null);DB.db=null}
-    authShow((await rpc("needs_setup"))?"setup":"login",{msg:startMsg,admin:new URLSearchParams(location.search).has("admin")});
+    authShow(new URLSearchParams(location.search).has("trial")?"trial":((await rpc("needs_setup"))?"setup":"login"),{msg:startMsg,admin:new URLSearchParams(location.search).has("admin")});
   }catch(e){authShow("offline")}
 }
 
@@ -2919,6 +2919,25 @@ function openOnboarding(step=0){
   const ub=m.q("#obUsers");if(ub)ub.onclick=()=>{closeModal();showTab("users")};
 }
 
+/* транслитерация за код по подразбиране от името на агенцията (кирилица → латиница) */
+function translitCode(str){const M={"а":"a","б":"b","в":"v","г":"g","д":"d","е":"e","ж":"zh","з":"z","и":"i","й":"y","к":"k","л":"l","м":"m","н":"n","о":"o","п":"p","р":"r","с":"s","т":"t","у":"u","ф":"f","х":"h","ц":"ts","ч":"ch","ш":"sh","щ":"sht","ъ":"a","ь":"y","ю":"yu","я":"ya"};
+  return (str||"").toLowerCase().split("").map(c=>M[c]!==undefined?M[c]:c).join("").replace(/[^a-z0-9\s-]/g,"").trim().replace(/\s+/g,"-").replace(/-+/g,"-").replace(/^-+|-+$/g,"").slice(0,30)}
+/* кратко обучение при първа регистрация — как се работи с програмата */
+const TOUR_STEPS=[
+  {t:"Добре дошли в Memoriox 👋",h:"За по-малко от минута ще ви покажем откъде започвате. Можете да пропуснете по всяко време."},
+  {t:"Заявки",h:"От „Заявки“ → <b>Нова заявка</b> създавате случая: данни на починалия и заявителя, пера и цена. Сумата се смята сама."},
+  {t:"Документи и печат",h:"От самата заявка отваряте <b>работен лист, фактура и оферта</b> и ги печатате — с вашата бланка."},
+  {t:"Склад",h:"В „Инвентар“ водите ковчези, урни и венци. Изписват се сами от заявката, с покупна и продажна цена."},
+  {t:"Отчети",h:"В „Отчети“ виждате оборот, <b>чиста печалба</b> и разходите на агенцията — по заявка и по месец."},
+  {t:"И още",h:"Некролози, помени с напомняния, <b>хладилна камера</b>, клиенти и партньори — всичко е в менюто вляво."},
+  {t:"Да настроим агенцията",h:"Накрая попълнете данните на агенцията и качете бланката си. Сега ще ви преведем през тях.<br><br>Помощ по всяко време: <b>+359 893 008 182</b>."}
+];
+function startTour(onDone){let i=0;const done=()=>{try{localStorage.removeItem("memoriox-newtour")}catch(e){}if(onDone)setTimeout(onDone,60)};
+  const dots=()=>`<div style="display:flex;gap:6px;justify-content:center;margin:0 0 12px">${TOUR_STEPS.map((_,n)=>`<span style="width:7px;height:7px;border-radius:50%;background:${n===i?"var(--bronze-hi,#d2b07a)":"var(--border,#ccd)"}"></span>`).join("")}</div>`;
+  const step=()=>{const s=TOUR_STEPS[i],last=i===TOUR_STEPS.length-1;
+    openModal({title:s.t,body:`${dots()}<p style="font-size:15px;line-height:1.7;margin:4px 0 2px">${s.h}</p>`,
+      actions:[...(last?[]:[{label:"Пропусни",act:()=>{done()}}]),{label:last?"Да започнем":"Напред →",cls:"primary",act:()=>{if(last){done()}else{i++;setTimeout(step,30)}}}]})};
+  step()}
 /* версия на реда (миграция 3): DB.get за заявки взима и version; putChecked пише през save_record.
    Без миграцията — стария запис (приложението само разпознава липсата). */
 // Настройки, каталог, некролози, склад (store „meta“): помним версията и как изглеждаха при четене (MBASE).
@@ -4998,7 +5017,7 @@ function authShow(mode,opt={}){
   const S=SETTINGS||migrateSettings(null),sl=sideLogoSrc(S);
   const pl=$("#authLogo");pl.querySelector("img").src=sl.src;pl.querySelector("img").classList.toggle("app-logo",sl.app);pl.classList.toggle("hidden",!sl.src);
   $("#authTitle").textContent=S.short?`Агенция „${S.short}“`:"Погребална агенция";
-  const box=$("#auth .auth-box");box.classList.toggle("wide",mode==="setup");
+  const box=$("#auth .auth-box");box.classList.toggle("wide",mode==="setup"||mode==="trial");
   const B=$("#authBody");$("#auth").classList.remove("hidden");
   if(mode==="pair"){$("#authSub").textContent="Свързване на телефона";
     B.innerHTML=`<form class="auth-form" id="fPair" autocomplete="off">
@@ -5059,13 +5078,13 @@ function authShow(mode,opt={}){
       <div class="auth-err"></div><button class="btn primary" type="submit">Вход</button>
       ${CLOUD&&!adm?`<p class="auth-legal">С влизането приемате ${legalA("usloviya","Общите условия")} и ${legalA("poveritelnost","Политиката за поверителност")}.</p>`:""}
       <button type="button" class="auth-link" id="liRec">${adm?"Забравена парола":"Забравена парола на администратор"}</button>
-      ${CLOUD&&!opt.locked&&!adm?`<button type="button" class="auth-link" id="liSign">Нова агенция? Заявете достъп</button>`:""}
+      ${CLOUD&&!opt.locked&&!adm?`<button type="button" class="auth-link" id="liTrial" style="font-weight:700;color:var(--bronze-hi,#d2b07a)">✨ Нова агенция? Пробвайте 14 дни безплатно</button><button type="button" class="auth-link auth-small" id="liSign">или заявете достъп по телефон</button>`:""}
       ${CLOUD&&!opt.locked?`<button type="button" class="auth-link auth-small" id="liAdm">${adm?"← Вход за агенция":"Вход за администратор"}</button>`:""}</form>`;
     if(opt.msg)$("#fLogin .auth-err").textContent=opt.msg;
     setTimeout(()=>(opt.user?$("#liP"):CLOUD&&!adm&&!$("#liA").value?$("#liA"):$("#liU")).focus(),50);
     $("#liRec").onclick=()=>authShow("recover",{admin:adm});
     if($("#liAdm"))$("#liAdm").onclick=()=>authShow("login",{admin:!adm});
-    if($("#liSign"))$("#liSign").onclick=()=>authShow("signup");
+    if($("#liSign"))$("#liSign").onclick=()=>authShow("signup");if($("#liTrial"))$("#liTrial").onclick=()=>authShow("trial");
     $("#fLogin").onsubmit=async e=>{e.preventDefault();const er=$("#fLogin .auth-err");er.textContent="";
       if(Date.now()<LOCK_UNTIL){er.textContent=`Твърде много грешни опити. Опитайте след ${Math.ceil((LOCK_UNTIL-Date.now())/1000)} сек.`;return}
       const u=normUser($("#liU").value),p=$("#liP").value;let x=null;
@@ -5079,6 +5098,41 @@ function authShow(mode,opt={}){
       if(opt.locked&&ME&&x.id!==ME.id){if(DIRTY&&!confirm("Има незапазени промени от "+ME.name+". Те ще се загубят. Продължаване?"))return;
         sessionStorage.setItem("uid",x.id);setDirty(false);audit("Смяна на потребител",ME.name+" → "+x.name);reloadKeep();return}
       await loginAs(x,"Вход")};
+  }
+  else if(mode==="trial"){$("#authSub").textContent="14 дни безплатно";$("#authTitle").textContent="Нова агенция";
+    B.innerHTML=`<form class="auth-form" id="fTrial" autocomplete="on">
+      <p class="auth-note">Създайте акаунт за вашата агенция и влезте веднага — <b>14 дни безплатно, без банкова карта</b>.</p>
+      <label class="f">Име на агенцията<input class="ui-in" id="trN" autocomplete="organization" required placeholder="напр. Погребална агенция Мир"></label>
+      <label class="f">Код за вход<input class="ui-in" id="trC" autocapitalize="none" spellcheck="false" placeholder="напр. mir" required><span class="auth-note" style="display:block;font-size:12px;margin-top:4px">Малки латински букви, цифри и тире. Този код пишат служителите при вход.</span></label>
+      <label class="f">Вашето име и фамилия<input class="ui-in" id="trAN" autocomplete="name" required></label>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px"><label class="f">Потребителско име<input class="ui-in" id="trAU" autocomplete="username" value="admin"></label>
+        <label class="f">Телефон (по желание)<input class="ui-in" id="trT" type="tel" autocomplete="tel"></label></div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px"><label class="f">Парола (поне 6 знака)<input class="ui-in" type="password" id="trP" autocomplete="new-password" required></label>
+        <label class="f">Повтори паролата<input class="ui-in" type="password" id="trP2" autocomplete="new-password" required></label></div>
+      <input id="trW" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;width:1px;height:1px" aria-hidden="true">
+      <p class="auth-legal">С регистрацията приемате ${legalA("usloviya","Общите условия")} и ${legalA("poveritelnost","Политиката за поверителност")}.</p>
+      <div class="auth-err"></div><button class="btn primary" type="submit">Създай и влез — 14 дни безплатно</button>
+      <button type="button" class="auth-link" id="trBack">← Вече имам агенция? Вход</button></form>`;
+    $("#trBack").onclick=()=>authShow("login");
+    const trAuto={v:true};
+    $("#trN").oninput=()=>{if(trAuto.v)$("#trC").value=translitCode($("#trN").value)};
+    $("#trC").oninput=()=>{trAuto.v=false};
+    setTimeout(()=>$("#trN").focus(),50);
+    $("#fTrial").onsubmit=async e=>{e.preventDefault();const er=$("#fTrial .auth-err");er.textContent="";const b=$("#fTrial .btn.primary");
+      if($("#trW").value)return;
+      const nm=$("#trN").value.trim(),cd=normUser($("#trC").value),an=$("#trAN").value.trim(),au=normUser($("#trAU").value)||"admin",pw=$("#trP").value,ph=$("#trT").value.trim();
+      if(!nm){er.textContent="Попълнете името на агенцията.";return}
+      if(!/^[a-z0-9][a-z0-9-]{1,29}$/.test(cd)){er.textContent="Кодът е 2–30 знака: малки латински букви, цифри и тире.";$("#trC").focus();return}
+      if(!an){er.textContent="Попълнете вашето име и фамилия.";return}
+      if(pw.length<6){er.textContent="Паролата трябва да е поне 6 знака.";return}
+      if(pw!==$("#trP2").value){er.textContent="Паролите не съвпадат.";return}
+      b.disabled=true;
+      try{const rr=await rpc("self_signup",{p_agency_name:nm,p_code:cd,p_admin_name:an,p_admin_username:au,p_admin_password:pw,p_phone:ph});
+        try{localStorage.setItem("memoriox-newtour","1");localStorage.setItem(AG_KEY,rr.code)}catch(x){}
+        const xx=await cloudLogin(rr.code,rr.username,pw);
+        if(!xx||xx.platform)throw new Error("Акаунтът е създаден. Влезте с код „"+rr.code+"“ и вашата парола.");
+        await loginAs(xx,"Самостоятелна регистрация");
+      }catch(x){b.disabled=false;er.textContent=/Could not find the function|PGRST202|schema cache/.test(x.message)?"Регистрацията временно не е достъпна. Обадете се на +359 893 008 182.":x.message}};
   }
   else if(mode==="signup"){$("#authSub").textContent="Заявка за достъп";$("#authTitle").textContent="Програма „Заявки“";
     B.innerHTML=`<form class="auth-form" id="fSign" autocomplete="on">
@@ -5376,10 +5430,14 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="1.8.1",APP_DATE="18.11.2026";
+const APP_VERSION="1.9",APP_DATE="19.11.2026";
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
+  {v:"1.9",d:"19.11.2026",items:[
+    "Нова агенция може да се регистрира сама от сайта и да получи веднага 14 дни безплатен достъп.",
+    "Кратко обучение „как се работи с програмата“ при първата регистрация.",
+    "Телефон за помощ от екипа: +359 893 008 182."]},
   {v:"1.8.1",d:"18.11.2026",items:[
     "Приложението вече се казва Memoriox — виждате го в раздела на браузъра и при добавяне към екрана. Името на вашата агенция вътре в програмата не се променя."]},
   {v:"1.8",d:"18.11.2026",items:[
@@ -5498,7 +5556,9 @@ async function loginAs(u,why){
   if(why==="Вход")audit("Вход");
   $("#auth").classList.add("hidden");lastAct=Date.now();
   playIntro();applyUser();showTab(firstTab());agencyBars();
-  if(needsOnboarding()&&!sessionStorage.getItem("zayavki-ob-later"))setTimeout(()=>openOnboarding(0),500);
+  let _nt=null;try{_nt=localStorage.getItem("memoriox-newtour")}catch(e){}
+  if(_nt)setTimeout(()=>startTour(()=>{if(needsOnboarding())openOnboarding(0)}),500);
+  else if(needsOnboarding()&&!sessionStorage.getItem("zayavki-ob-later"))setTimeout(()=>openOnboarding(0),500);
   else setTimeout(whatsNewOnLogin,1200);
 }
 function applyUser(){

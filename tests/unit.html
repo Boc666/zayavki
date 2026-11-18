@@ -110,6 +110,9 @@ function run(){
   T("влязъл днес = 0 дни",()=>eq(E(`daysBetween(todayISO())`),0));
   T("в камерата сега = тези без дата на излизане",()=>{const v=E(`(()=>{FRIDGE=migrateFridge({entries:[{id:"a",name:"А",dateIn:"2026-11-10"},{id:"b",name:"Б",dateIn:"2026-11-05",dateOut:"2026-11-12"}]});return frInside().map(x=>x.id)})()`);return eq(v,["a"])});
   T("migrateFridge прави празен масив и число за клетки",()=>eq(E(`(()=>{const f=migrateFridge({cells:"8"});return [Array.isArray(f.entries),f.cells]})()`),[true,8]));
+  G("Самостоятелна регистрация");
+  T("транслитерация на код от име на агенция",()=>eq(E(`translitCode("Погребална агенция Мир")`),"pogrebalna-agentsiya-mir"));
+  T("кодът е само латиница, цифри и тире",()=>eq(E(`translitCode("  Тих Дом 2!! ")`),"tih-dom-2"));
   G("Срок за пазене на лични данни");
   T("стара заявка с ЕГН → за изтриване",()=>eq(E(`retDue(Object.assign(newRequest(),{ritDate:"2018-01-10",decEgn:"4203124519"}),5)`),true));
   T("нова заявка → не",()=>eq(E(`retDue(Object.assign(newRequest(),{ritDate:new Date().toISOString().slice(0,10),decEgn:"4203124519"}),5)`),false));
