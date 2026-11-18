@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Заявки">
 <meta name="theme-color" content="#111315"><meta name="format-detection" content="telephone=no">
 <link rel="icon" type="image/png" href="favicon.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.json">
-<title>Заявки за погребение или кремация</title>
+<title>Memoriox</title>
 <style>
 /* =====================================================================
    ДИЗАЙН-СИСТЕМА — тъмна тема на програмата
@@ -5051,7 +5051,7 @@ function authShow(mode,opt={}){
     const lockedAg=opt.locked&&AG?AG.code:null; // при заключване — същата агенция
     const adm=CLOUD&&!!opt.admin&&!lockedAg;   // вход за администратор на платформата — без код на агенция
     $("#authSub").textContent=opt.locked?"Заключено поради бездействие":adm?"Вход за администратор на платформата":"Вход в програмата";
-    if(CLOUD&&!opt.locked)$("#authTitle").textContent=adm?"Платформа „Заявки“":"Погребална агенция";
+    if(CLOUD&&!opt.locked)$("#authTitle").textContent=adm?"Платформа „Memoriox“":"Погребална агенция";
     B.innerHTML=`<form class="auth-form" id="fLogin">
       ${CLOUD&&!adm?`<label class="f">Код на агенцията<input class="ui-in" id="liA" autocomplete="organization" autocapitalize="none" spellcheck="false" placeholder="напр. tangra" value="${esc(lockedAg??lastAgency())}" ${lockedAg?"readonly":""}></label>`:""}
       <label class="f">Потребителско име<input class="ui-in" id="liU" autocomplete="username" value="${esc(opt.user||"")}"></label>
@@ -5376,10 +5376,12 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="1.8",APP_DATE="18.11.2026";
+const APP_VERSION="1.8.1",APP_DATE="18.11.2026";
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
+  {v:"1.8.1",d:"18.11.2026",items:[
+    "Приложението вече се казва Memoriox — виждате го в раздела на браузъра и при добавяне към екрана. Името на вашата агенция вътре в програмата не се променя."]},
   {v:"1.8",d:"18.11.2026",items:[
     "Нов раздел „Хладилна камера“ (в „Документи и склад“): регистър на телата в хладилната камера — име, клетка, дата на влизане и излизане. Показва колко тела са вътре сега, свободните клетки и дните престой на всяко. С бутона „Изведи“ отбелязвате излизането с днешна дата."]},
   {v:"1.7.1",d:"17.11.2026",items:[
