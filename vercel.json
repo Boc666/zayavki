@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/:path*", "has": [{ "type": "host", "value": "memoriox.eu" }], "destination": "/landing/:path*" },
+    { "source": "/:path*", "has": [{ "type": "host", "value": "www.memoriox.eu" }], "destination": "/landing/:path*" }
+  ]
+}
