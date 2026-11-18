@@ -1033,6 +1033,7 @@ button.appver:hover{color:var(--text2)}
     <div class="nsec">Документи и склад</div>
     <button data-tab="files"><svg viewBox="0 0 24 24"><path d="M3 6.5a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>Документи</button>
     <button data-tab="stock"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg>Инвентар</button>
+    <button data-tab="fridge"><svg viewBox="0 0 24 24"><path d="M12 3v18M5.1 7.5l13.8 9M18.9 7.5l-13.8 9"/></svg>Хладилна камера</button>
     <button data-tab="catalog"><svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/></svg>Услуги и цени</button>
     <div class="nsec">Отчети</div>
     <button data-tab="fin"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="1.5"/><path d="M3 10.5h18M15.5 15h2.5M6 6V4.5h11V6"/></svg>Отчети</button>
@@ -1365,6 +1366,17 @@ button.appver:hover{color:var(--text2)}
     </div>
   </div>
   <div class="card"><h2>По вид разход</h2><div id="coByCat"></div></div>
+</section>
+
+<!-- ================= ХЛАДИЛНА КАМЕРА ================= -->
+<section id="tab-fridge" class="hidden">
+  <div class="ph"><div><h2>Хладилна камера</h2><p>Регистър на телата — влизане, излизане и дни престой</p></div><span class="spacer"></span>
+    <button class="btn" id="frCap" type="button">Капацитет</button>
+    <button class="btn primary" id="frAdd" type="button">＋ Приеми тяло</button>
+  </div>
+  <div class="kpis" id="frKpis"></div>
+  <div class="card"><h2>В камерата сега</h2><div id="frIn"></div></div>
+  <div class="card"><div class="row" style="margin-bottom:8px"><h2 style="margin:0">История (изведени)</h2><span class="spacer"></span><input type="search" id="frSearch" class="ui-in" style="width:auto" placeholder="търси по име"></div><div id="frOut"></div></div>
 </section>
 
 <!-- ================= НЕКРОЛОЗИ ================= -->
@@ -1774,14 +1786,14 @@ async function srvRefresh(force){if(!(SRV||CLOUD)||!DB.db||!ME)return;
     // всичко наведнъж (успоредно), а не едно след друго
     const [c,metaRows,nums,us]=await Promise.all([
       CLOUD&&AG&&!AG.owner?rpc("my_context"):null, // срокът може да изтече, докато програмата е отворена
-      CLOUD?sb("/rest/v1/records?select=key,value,version&store=eq.meta&key=in.(settings,catalog,template,necro,inventory,costs)"):null,
+      CLOUD?sb("/rest/v1/records?select=key,value,version&store=eq.meta&key=in.(settings,catalog,template,necro,inventory,costs,fridge)"):null,
       CLOUD&&HAS_NUMS!==false?rpc("peek_numbers").catch(e=>{if(/peek_numbers|PGRST202/.test(e.message))HAS_NUMS=false;return null}):null,
       CLOUD?sbProfiles():getMeta("users",[])]);
     if(c&&c.kind==="agency"&&(c.expired||!c.agency_active||!c.active)){sbSave(null);DB.db=null;ME=null;authShow("login",{msg:c.active?noAccessMsg(c.support_phone):"Този потребител е спрян. Обърнете се към администратора."});return}
     const M={};if(metaRows)for(const r of metaRows){M[r.key]=r.value?r.value.value:undefined;metaSeen(r.key,r.version,M[r.key])}
     const gm=async k=>CLOUD?(M[k]??null):getMeta(k,null);
     SETTINGS=migrateSettings(await gm("settings"));CATALOG=migrateCatalog(await gm("catalog"));TEMPLATE=migrateTemplate(await gm("template"));applyTemplate();
-    NECRO=migrateNecro(await gm("necro"));COSTS=migrateCosts(await gm("costs"));if(!INV_BUSY)INVD=migrateInvd(await gm("inventory"));
+    NECRO=migrateNecro(await gm("necro"));COSTS=migrateCosts(await gm("costs"));FRIDGE=migrateFridge(await gm("fridge"));if(!INV_BUSY)INVD=migrateInvd(await gm("inventory"));
     if(us&&us.length){USERS=us;if(ME){const m=us.find(x=>x.id===ME.id);if(m&&m.active)ME=m}}
     if(nums){HAS_NUMS=true;SETTINGS.nextNo=nums.request;SETTINGS.invNext=nums.invoice}
     SRV_LAST=Date.now()}catch(e){}finally{SRV_P=null}})();
@@ -2483,10 +2495,10 @@ function showTab(name){
   $$("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===(navOf[name]||name)));
   if(name!=="ws")wsFlush();if(name!=="inv")invFlush();
   closeModal();
-  ["dash","list","wsl","clients","partners","fin","edit","catalog","stock","stats","costs","settings","ws","inv","necro","users","files","days40","cal"].forEach(t=>$("#tab-"+t).classList.toggle("hidden",t!==name));
+  ["dash","list","wsl","clients","partners","fin","edit","catalog","stock","stats","costs","fridge","settings","ws","inv","necro","users","files","days40","cal"].forEach(t=>$("#tab-"+t).classList.toggle("hidden",t!==name));
   if(name==="files")renderDocs();if(name==="days40"){renderDays40();renderPomeni()}if(name==="cal")renderCal();if(name==="partners")renderPartners();
   if(name==="stock")renderStock();if(name==="users")renderUsers();
-  if(name==="stats")renderStats();if(name==="costs")renderCosts();if(name==="necro")renderNecro();
+  if(name==="stats")renderStats();if(name==="costs")renderCosts();if(name==="fridge")renderFridge();if(name==="necro")renderNecro();
   if(name==="dash")renderDash();if(name==="wsl")renderWsl();if(name==="clients")renderClients();if(name==="fin")renderFin();
   if(name==="list")renderList();if(name==="catalog")renderCatalog();if(name==="settings")renderSettings();
   if(name==="edit"&&!CURRENT)openRequest(newRequest(),true);
@@ -4262,6 +4274,51 @@ $$("#coSeg button").forEach(b=>b.onclick=()=>{COP=b.dataset.p;renderCosts()});
 $("#coFrom").onchange=$("#coTo").onchange=$("#coCat").onchange=$("#coCar").onchange=renderCosts;
 $("#coAdd").onclick=()=>openCost(null);$("#coPlanAdd").onclick=()=>openPlan(null);$("#coCarAdd").onclick=()=>openCar(null);
 
+/* ---- хладилна камера (meta „fridge“: регистър на телата) ---- */
+let FRIDGE={cells:null,entries:[]};
+function migrateFridge(f){f=f||{};if(!Array.isArray(f.entries))f.entries=[];if(f.cells!=null)f.cells=+f.cells||null;return f}
+function daysBetween(a,b){if(!a)return 0;const d1=new Date(a+"T00:00:00"),d2=new Date((b||todayISO())+"T00:00:00");return Math.max(0,Math.round((d2-d1)/864e5))}
+async function saveFridge(what){await setMeta("fridge",FRIDGE);if(what)audit("Хладилна камера",what)}
+const frInside=()=>FRIDGE.entries.filter(x=>!x.dateOut);
+function renderFridge(){
+  const adm=isAdmin(),inside=frInside().sort((a,b)=>(a.dateIn||"").localeCompare(b.dateIn||""));
+  $("#frAdd").classList.toggle("hidden",!adm);$("#frCap").classList.toggle("hidden",!adm);
+  const cap=FRIDGE.cells,free=cap!=null?cap-inside.length:null;
+  $("#frKpis").innerHTML=kpi("В камерата сега",inside.length+" "+(inside.length===1?"тяло":"тела"),"","lead")
+    +(cap!=null?kpi("Капацитет",cap+" "+(cap===1?"клетка":"клетки"),""):"")
+    +(cap!=null?kpi("Свободни",`<span style="color:${free<=0?"var(--caution)":"inherit"}">${Math.max(0,free)}</span>`,free<0?"препълнена":""):"")
+    +kpi("Най-дълъг престой",inside.length?Math.max(...inside.map(x=>daysBetween(x.dateIn)))+" дни":"—","");
+  $("#frIn").innerHTML=inside.length?`<table class="list"><thead><tr><th>Клетка</th><th>Име</th><th>Влязъл</th><th class="money">Дни вътре</th><th></th></tr></thead><tbody>${
+    inside.map(x=>`<tr class="${adm?"click":""}" ${adm?`data-fr="${esc(x.id)}"`:""}><td>${esc(x.cell||"")||'<span class="muted">—</span>'}</td><td><b>${esc(x.name)}</b>${x.note?`<br><small class="muted">${esc(x.note)}</small>`:""}</td><td class="num">${bgDate(x.dateIn)}</td><td class="money" style="font-weight:600">${daysBetween(x.dateIn)}</td><td style="text-align:right">${adm?`<button class="btn small" data-frout="${esc(x.id)}" type="button">Изведи</button>`:""}</td></tr>`).join("")}</tbody></table>`
+    :`<div class="empty">Камерата е празна.${adm?" Натиснете „＋ Приеми тяло“.":""}</div>`;
+  const q=($("#frSearch").value||"").trim().toLowerCase();
+  const out=FRIDGE.entries.filter(x=>x.dateOut&&(!q||(x.name||"").toLowerCase().includes(q))).sort((a,b)=>(b.dateOut||"").localeCompare(a.dateOut||""));
+  $("#frOut").innerHTML=out.length?`<table class="list"><thead><tr><th>Име</th><th>Влязъл</th><th>Изведен</th><th class="money">Престой (дни)</th></tr></thead><tbody>${
+    out.map(x=>`<tr class="${adm?"click":""}" ${adm?`data-fr="${esc(x.id)}"`:""}><td><b>${esc(x.name)}</b>${x.note?`<br><small class="muted">${esc(x.note)}</small>`:""}</td><td class="num">${bgDate(x.dateIn)}</td><td class="num">${bgDate(x.dateOut)}</td><td class="money">${daysBetween(x.dateIn,x.dateOut)}</td></tr>`).join("")}</tbody></table>`
+    :`<div class="empty">Няма изведени тела${q?" за това търсене":""}.</div>`;
+  $$("#frIn [data-frout]").forEach(b=>b.onclick=e=>{e.stopPropagation();const x=FRIDGE.entries.find(y=>y.id===b.dataset.frout);if(!x)return;
+    if(!confirm(`Да изведа ли „${x.name}“ от камерата днес (${bgDate(todayISO())})?`))return;x.dateOut=todayISO();saveFridge("Изведен · "+x.name).then(()=>{toast("Изведен ✔");renderFridge()})});
+  $$("#frIn [data-fr],#frOut [data-fr]").forEach(b=>b.onclick=()=>openBody(FRIDGE.entries.find(x=>x.id===b.dataset.fr)));
+}
+function openBody(x){if(!isAdmin())return;const isNew=!x;x=x?structuredClone(x):{id:uid(),name:"",cell:"",dateIn:todayISO(),dateOut:"",note:""};
+  openModal({title:isNew?"Приеми тяло в камерата":"Тяло в камерата",body:`<div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
+      <label class="f" style="grid-column:1/-1">Име на починалия<input class="ui-in" id="frN" value="${esc(x.name)}" placeholder="напр. Иван Петров Иванов"></label>
+      <label class="f">Клетка / място <small class="muted">(по желание)</small><input class="ui-in" id="frC" value="${esc(x.cell||"")}" placeholder="напр. 3"></label>
+      <label class="f">Дата на влизане<input type="date" class="ui-in" id="frDi" value="${esc(x.dateIn)}"></label>
+      <label class="f">Дата на излизане <small class="muted">(празно = още вътре)</small><input type="date" class="ui-in" id="frDo" value="${esc(x.dateOut||"")}"></label>
+      <label class="f" style="grid-column:1/-1">Бележка<input class="ui-in" id="frO" value="${esc(x.note||"")}" placeholder="по желание"></label></div>`,
+    actions:[{label:"Отказ"},...(isNew?[]:[{label:"Изтрий",cls:"danger",act:async()=>{if(!confirm(`Да изтрия ли записа за „${x.name}“?`))return false;
+      FRIDGE.entries=FRIDGE.entries.filter(y=>y.id!==x.id);await saveFridge("Изтрит запис · "+x.name);toast("Изтрито");renderFridge()}}]),
+      {label:isNew?"Приеми":"Запази",cls:"primary",act:async m=>{const n=m.q("#frN").value.trim();if(!n)throw new Error("Напишете име.");const di=m.q("#frDi").value;if(!di)throw new Error("Изберете дата на влизане.");
+        const doo=m.q("#frDo").value;if(doo&&doo<di)throw new Error("Датата на излизане е преди влизането.");
+        Object.assign(x,{name:n,cell:m.q("#frC").value.trim(),dateIn:di,dateOut:doo,note:m.q("#frO").value.trim(),updated:new Date().toISOString(),updatedBy:ME?ME.name:""});
+        if(isNew)FRIDGE.entries.push(x);else FRIDGE.entries=FRIDGE.entries.map(y=>y.id===x.id?x:y);
+        await saveFridge((isNew?"Прието тяло":"Променен запис")+" · "+n);toast(isNew?"Приет ✔":"Запазено ✔");renderFridge()}}]})}
+function openFridgeCap(){if(!isAdmin())return;
+  openModal({title:"Капацитет на камерата",body:`<label class="f">Брой клетки <small class="muted">(празно = не се следи)</small><input class="ui-in" id="frCn" inputmode="numeric" value="${FRIDGE.cells??""}"></label>`,
+    actions:[{label:"Отказ"},{label:"Запази",cls:"primary",act:async m=>{const v=m.q("#frCn").value.trim();FRIDGE.cells=v?Math.max(0,parseInt(v,10)||0):null;await saveFridge("Капацитет на камерата: "+(FRIDGE.cells??"не се следи"));toast("Запазено ✔");renderFridge()}}]})}
+$("#frAdd").onclick=()=>openBody(null);$("#frCap").onclick=openFridgeCap;$("#frSearch").oninput=renderFridge;
+
 /* ---- финанси ---- */
 let FINP="month";
 function finRange(){
@@ -4424,7 +4481,7 @@ $("#logoFile").onchange=e=>{const f=e.target.files[0];if(!f)return;if(f.size>3e6
 const blobToDataUrl=b=>new Promise((res,rej)=>{if(!b){res(null);return}const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsDataURL(b)});
 $("#btnExport").onclick=async()=>{
   // потребителите (само отпечатъци на паролите) и историята също влизат в архива — за преместване на друг компютър или флашка
-  const data={app:"pogrebalni-zayavki",version:3,exported:new Date().toISOString(),settings:SETTINGS,catalog:CATALOG,necro:NECRO,costs:COSTS,inventory:INVD,
+  const data={app:"pogrebalni-zayavki",version:3,exported:new Date().toISOString(),settings:SETTINGS,catalog:CATALOG,necro:NECRO,costs:COSTS,fridge:FRIDGE,inventory:INVD,
     users:USERS,auth:CLOUD?null:await getMeta("auth",null),audit:await DB.all("audit"),requests:await DB.all("requests"),
     template:TEMPLATE,clients:await DB.all("clients").catch(()=>[]),events:await DB.all("events").catch(()=>[]),
     docs:await Promise.all((await DB.all("docs")).map(async d=>({...d,file:await blobToDataUrl(d.file||(await DB.get("docs",d.id)).file)})))};
@@ -4439,6 +4496,7 @@ $("#importFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;e.tar
     if(d.catalog){CATALOG=migrateCatalog(d.catalog);await setMeta("catalog",CATALOG)}
     if(d.necro){NECRO=migrateNecro(d.necro);await setMeta("necro",NECRO)}
     if(d.costs){COSTS=migrateCosts(d.costs);await setMeta("costs",COSTS)}
+    if(d.fridge){FRIDGE=migrateFridge(d.fridge);await setMeta("fridge",FRIDGE)}
     if(d.inventory){INVD=migrateInvd(d.inventory);await setMeta("inventory",INVD)}
     if(d.settings){const lb=SETTINGS.lastBackup;SETTINGS=migrateSettings(d.settings);SETTINGS.lastBackup=lb;await setMeta("settings",SETTINGS)}
     if(Array.isArray(d.audit)){if(CLOUD){for(let i=0;i<d.audit.length;i+=300)await DB.putAtomic(d.audit.slice(i,i+300).map(v=>({store:"audit",value:v})))}else for(const x of d.audit)await DB.put("audit",x)}
@@ -4873,7 +4931,7 @@ const AREAS=[ // раздел: [етикет, възможни нива]
 const FLAGS=[["reqdel","Може да изтрива заявки"],["stockadj","Може да прави складови корекции"]];
 const LVL={none:"Няма достъп",view:"Вижда",edit:"Редактира"};
 const DEFAULT_PERMS={dash:"view",req:"edit",ws:"edit",docs:"edit",clients:"view",necro:"edit",stock:"view",files:"view",catalog:"view",fin:"none",reqdel:false,stockadj:false};
-const TAB_AREA={partners:"req",cal:"req",dash:"dash",list:"req",edit:"req",wsl:"ws",ws:"ws",inv:"docs",clients:"clients",necro:"necro",stock:"stock",files:"files",catalog:"catalog",fin:"fin",stats:"fin",costs:"fin",settings:"admin",users:"admin"};
+const TAB_AREA={partners:"req",cal:"req",dash:"dash",list:"req",edit:"req",wsl:"ws",ws:"ws",inv:"docs",clients:"clients",necro:"necro",stock:"stock",files:"files",catalog:"catalog",fin:"fin",stats:"fin",costs:"fin",fridge:"req",settings:"admin",users:"admin"};
 const isAdmin=()=>!!ME&&ME.role==="admin";
 function can(area,lvl="view"){
   if(!ME)return false;if(ME.role==="admin")return true;
@@ -5318,10 +5376,12 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="1.7.1",APP_DATE="17.11.2026";
+const APP_VERSION="1.8",APP_DATE="18.11.2026";
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
+  {v:"1.8",d:"18.11.2026",items:[
+    "Нов раздел „Хладилна камера“ (в „Документи и склад“): регистър на телата в хладилната камера — име, клетка, дата на влизане и излизане. Показва колко тела са вътре сега, свободните клетки и дните престой на всяко. С бутона „Изведи“ отбелязвате излизането с днешна дата."]},
   {v:"1.7.1",d:"17.11.2026",items:[
     "Числото „Оборот“ в таблото и отчетите вече е със същия шрифт като останалите — само в златист цвят."]},
   {v:"1.7",d:"17.11.2026",items:[
@@ -5594,6 +5654,7 @@ async function loadShared(){ // настройки, каталог, некрол
   TEMPLATE=migrateTemplate(await gm("template",null));applyTemplate();
   NECRO=migrateNecro(await gm("necro",null));
   COSTS=migrateCosts(await gm("costs",null));
+  FRIDGE=migrateFridge(await gm("fridge",null));
   INVD=migrateInvd(await gm("inventory",null));
   // записваме само ако липсват (първо пускане) — не при всеки вход; базата проверява правата
   if(!raw.settings)await setMeta("settings",SETTINGS).catch(()=>{});

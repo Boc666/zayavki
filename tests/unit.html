@@ -105,6 +105,11 @@ function run(){
   T("на 3 месеца и до краен месец",()=>eq(CO({plans:[{id:"q",cat:"tax",amount:90,freq:"quarter",day:31,start:"2026-01",end:"2026-08"}]},["2026-01-01","2026-12-31"]).map(x=>x[0]),["2026-07-31","2026-04-30","2026-01-31"]));
   T("спрян планов разход не се брои",()=>eq(CO({plans:[{id:"p",cat:"rent",amount:500,freq:"month",day:1,start:"2026-01",active:false}]},["2026-01-01","2026-12-31"]),[]));
   T("аванс на служителя не влиза в разходите",()=>{const c=E(`(()=>{const r=ensureWs(newRequest());r.ws.given=200;r.ws.other.cost=170;return wsCalc(r)})()`);return eq([c.expenses,c.given],[170,200])});
+  G("Хладилна камера");
+  T("дни престой между две дати",()=>eq(E(`daysBetween("2026-11-10","2026-11-18")`),8));
+  T("влязъл днес = 0 дни",()=>eq(E(`daysBetween(todayISO())`),0));
+  T("в камерата сега = тези без дата на излизане",()=>{const v=E(`(()=>{FRIDGE=migrateFridge({entries:[{id:"a",name:"А",dateIn:"2026-11-10"},{id:"b",name:"Б",dateIn:"2026-11-05",dateOut:"2026-11-12"}]});return frInside().map(x=>x.id)})()`);return eq(v,["a"])});
+  T("migrateFridge прави празен масив и число за клетки",()=>eq(E(`(()=>{const f=migrateFridge({cells:"8"});return [Array.isArray(f.entries),f.cells]})()`),[true,8]));
   G("Срок за пазене на лични данни");
   T("стара заявка с ЕГН → за изтриване",()=>eq(E(`retDue(Object.assign(newRequest(),{ritDate:"2018-01-10",decEgn:"4203124519"}),5)`),true));
   T("нова заявка → не",()=>eq(E(`retDue(Object.assign(newRequest(),{ritDate:new Date().toISOString().slice(0,10),decEgn:"4203124519"}),5)`),false));
