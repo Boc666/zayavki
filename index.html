@@ -4589,12 +4589,15 @@ $("#btnResetCat").onclick=()=>{if(!confirm("Да върна ли оригина�
 /* ---------- абонамент: плащане с карта (Lemon Squeezy) ---------- */
 const bgD=d=>d?new Date(d).toLocaleDateString("bg-BG"):"";
 const eurP=v=>(Number(v)||0).toLocaleString("bg-BG",{maximumFractionDigits:2})+" €";
-function billCheckoutUrl(u,b){if(!u)return "";const q="checkout[custom][agency_id]="+encodeURIComponent(b.agency_id)+"&checkout[custom][agency_code]="+encodeURIComponent(b.code||"");return u+(u.includes("?")?"&":"?")+q}
+function billCheckoutUrl(u,b){if(!u)return "";
+  const q=/stripe\.com/.test(u)?"client_reference_id="+encodeURIComponent(b.agency_id) // Stripe Payment Link
+    :"checkout[custom][agency_id]="+encodeURIComponent(b.agency_id)+"&checkout[custom][agency_code]="+encodeURIComponent(b.code||""); // Lemon Squeezy
+  return u+(u.includes("?")?"&":"?")+q}
 function billPayButtons(b){const c=b&&b.checkout;if(!c||!c.on||!(c.monthly_url||c.yearly_url))return "";
   const m=c.monthly_url?`<a class="btn primary" target="_blank" rel="noopener" href="${esc(billCheckoutUrl(c.monthly_url,b))}">Плати с карта · ${eurP(c.monthly_price)} на месец</a>`:"";
   const y=c.yearly_url?`<a class="btn" target="_blank" rel="noopener" href="${esc(billCheckoutUrl(c.yearly_url,b))}">${eurP(c.yearly_price)} на година <span class="muted">(2 месеца подарък)</span></a>`:"";
   return `<div class="row" style="gap:10px;flex-wrap:wrap;margin-top:12px">${m}${y}</div>
-    <p class="muted" style="margin:10px 0 0;font-size:12.5px">Плащането е защитено и минава през Lemon Squeezy. Таксата се взима автоматично всеки месец (или година), а отказ има по всяко време. Достъпът се удължава сам до минута след плащането.</p>`}
+    <p class="muted" style="margin:10px 0 0;font-size:12.5px">Плащането е защитено и минава през ${c.provider==="lemonsqueezy"?"Lemon Squeezy":"Stripe"}. Таксата се взима автоматично всеки месец (или година), а отказ има по всяко време. Достъпът се удължава сам до минута след плащането.</p>`}
 function billStatusHtml(b){const sub=b.sub,until=b.until;let h="";
   if(sub&&(sub.status==="active"||sub.status==="on_trial"))
     h=`<p style="margin:0"><span class="tag ok">Абонамент с карта</span> ${esc(sub.plan||"")}</p><p class="muted" style="margin:8px 0 0">Следващо плащане: <b>${bgD(sub.renews_at)}</b>. Достъпът се подновява сам.</p>`
@@ -5587,14 +5590,16 @@ function platformShow(P){
       <label class="f">Пробен период за нова агенция (дни, 0 = без срок)<input class="ui-in" id="psTrial" inputmode="numeric" value="${S.trial_days}"></label>
       <label class="f">Предупреждение преди края (дни)<input class="ui-in" id="psWarn" inputmode="numeric" value="${S.warn_days}"></label></div>
       <div class="pd-btns" style="margin-top:10px"><button class="btn small primary" id="psSave">Запази</button></div>
-      <div class="pd-sec">Плащане с карта (Lemon Squeezy)</div>
+      <div class="pd-sec">Плащане с карта</div>
       <div class="grid" style="grid-template-columns:2fr 1fr;gap:12px;max-width:760px">
         <label class="f" style="grid-column:1/-1;flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="pbOn" ${(S.billing||{}).on?"checked":""}> Показвай бутона „Плати с карта“ на администраторите на агенциите</label>
-        <label class="f">Адрес за плащане — месечен абонамент<input class="ui-in" id="pbM" placeholder="https://….lemonsqueezy.com/buy/…" value="${esc((S.billing||{}).monthly_url||"")}"></label>
-        <label class="f">Цена на месец (€)<input class="ui-in" id="pbMP" inputmode="decimal" value="${esc(String((S.billing||{}).monthly_price??39))}"></label>
-        <label class="f">Адрес за плащане — годишен абонамент<input class="ui-in" id="pbY" placeholder="https://….lemonsqueezy.com/buy/…" value="${esc((S.billing||{}).yearly_url||"")}"></label>
-        <label class="f">Цена на година (€)<input class="ui-in" id="pbYP" inputmode="decimal" value="${esc(String((S.billing||{}).yearly_price??390))}"></label></div>
-      <p class="muted" style="max-width:760px;font-size:12.5px;margin:8px 0 0">Webhook в Lemon Squeezy (Settings → Webhooks): адрес <b style="user-select:all">${esc(SB.url)}/functions/v1/billing-webhook</b>, събития <b>subscription_created, subscription_updated, subscription_cancelled, subscription_resumed, subscription_expired, subscription_payment_success</b>. „Signing secret“ се записва и в Supabase като LEMON_WEBHOOK_SECRET. Цените тук са само за бутоните — истинската сума е тази в Lemon Squeezy.</p>
+        <label class="f">Доставчик<select class="ui-in" id="pbProv"><option value="stripe" ${(S.billing||{}).provider!=="lemonsqueezy"?"selected":""}>Stripe</option><option value="lemonsqueezy" ${(S.billing||{}).provider==="lemonsqueezy"?"selected":""}>Lemon Squeezy</option></select></label><span></span>
+        <label class="f">Линк за плащане — месечен абонамент<input class="ui-in" id="pbM" placeholder="https://buy.stripe.com/…" value="${esc((S.billing||{}).monthly_url||"")}"></label>
+        <label class="f">Цена на месец (€)<input class="ui-in" id="pbMP" inputmode="decimal" value="${esc(String((S.billing||{}).monthly_price??69.99))}"></label>
+        <label class="f">Линк за плащане — годишен абонамент<input class="ui-in" id="pbY" placeholder="https://buy.stripe.com/…" value="${esc((S.billing||{}).yearly_url||"")}"></label>
+        <label class="f">Цена на година (€)<input class="ui-in" id="pbYP" inputmode="decimal" value="${esc(String((S.billing||{}).yearly_price??690))}"></label>
+        <label class="f" style="grid-column:1/-1">Страница за клиенти (смяна на карта, фактури, отказ)<input class="ui-in" id="pbPortal" placeholder="https://billing.stripe.com/p/login/…" value="${esc((S.billing||{}).portal_url||"")}"></label></div>
+      <p class="muted" style="max-width:760px;font-size:12.5px;margin:8px 0 0"><b>Stripe</b> → Developers → Webhooks → Add destination: адрес <b style="user-select:all">${esc(SB.url)}/functions/v1/stripe-webhook</b>, събития <b>checkout.session.completed, invoice.paid, customer.subscription.created, customer.subscription.updated, customer.subscription.deleted</b>; „Signing secret“ (whsec_…) → Supabase → Edge Functions → Secrets като <b>STRIPE_WEBHOOK_SECRET</b>.<br><b>Lemon Squeezy</b>: адрес …/functions/v1/billing-webhook, тайна LEMON_WEBHOOK_SECRET. Цените тук са само за бутоните — истинската сума е тази при доставчика.</p>
       <div class="pd-btns" style="margin-top:10px"><button class="btn small primary" id="pbSave">Запази плащането с карта</button></div>
       ${S.seller_name!==undefined?`<div class="pd-sec">Фирма за фактурите към агенциите</div>
       <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px;max-width:760px">
@@ -5606,8 +5611,8 @@ function platformShow(P){
       <div class="pd-btns" style="margin-top:10px"><button class="btn small primary" id="slSave">Запази данните на фирмата</button></div>`:""}`;
     if($("#slSave"))$("#slSave").onclick=async()=>{try{await rpc("platform_seller_set",{p:{seller_name:$("#slName").value,seller_eik:$("#slEik").value,seller_address:$("#slAddr").value,seller_mol:$("#slMol").value,
       seller_vat:$("#slVat").value,seller_bank:$("#slBank").value,seller_iban:$("#slIban").value,invoice_next:$("#slNext").value.trim()}});toast("Данните на фирмата са запазени ✔")}catch(e){err(e.message)}};
-    $("#pbSave").onclick=async()=>{try{await rpc("platform_billing_set",{p:{on:$("#pbOn").checked,monthly_url:$("#pbM").value.trim(),yearly_url:$("#pbY").value.trim(),
-      monthly_price:parseFloat($("#pbMP").value.replace(",","."))||39,yearly_price:parseFloat($("#pbYP").value.replace(",","."))||390}});toast("Плащането с карта е запазено ✔")}catch(e){err(e.message)}};
+    $("#pbSave").onclick=async()=>{try{await rpc("platform_billing_set",{p:{on:$("#pbOn").checked,provider:$("#pbProv").value,monthly_url:$("#pbM").value.trim(),yearly_url:$("#pbY").value.trim(),portal_url:$("#pbPortal").value.trim(),
+      monthly_price:parseFloat($("#pbMP").value.replace(",","."))||69.99,yearly_price:parseFloat($("#pbYP").value.replace(",","."))||690}});toast("Плащането с карта е запазено ✔")}catch(e){err(e.message)}};
     $("#psSave").onclick=async()=>{try{await rpc("platform_settings_set",{p_phone:$("#psPhone").value,p_trial_days:parseInt($("#psTrial").value)||0,p_warn_days:parseInt($("#psWarn").value)||0});toast("Настройките са запазени ✔")}catch(e){err(e.message)}}}
   const show=t=>{TAB=t;$$("#plTabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));$("#plView").innerHTML=`<p class="auth-note">Зареждане…</p>`;
     ({dash:loadDash,ag:loadAgencies,inv:loadInvoices,sign:loadSignups,acc:loadAccess,log:loadLogins,msg:loadMsgs,con:loadConsents,set:loadSettings})[t]()};
@@ -5656,7 +5661,7 @@ const APP_BUILD="3"; // вътрешен номер на сборката: вд�
 const CHANGELOG=[
   {v:"1.0",d:"19.11.2026",items:[
     "Memoriox 1.0 — номерацията на версиите започва отначало.",
-    "Плащане на абонамента с карта: Настройки → „Абонамент“ (за администратора). Достъпът се удължава сам след плащането; при изтекъл срок бутонът е и на входа.",
+    "Плащане на абонамента с карта (Stripe): Настройки → „Абонамент“ (за администратора). Достъпът се удължава сам след плащането; при изтекъл срок бутонът е и на входа.",
     "Настройки → „Приложение на телефона“: стъпка по стъпка как да добавите Memoriox на началния екран на iPhone и на Android, с адреса app.memoriox.eu. Иконката вече се казва „Memoriox“.",
     "Светла тема по подразбиране. Тъмната се включва с „☾ Тъмна тема“ долу в менюто; изборът се помни на всяко устройство.",
     "Началното табло е „Днес“: ритуали днес, тела в хладилната камера, неплатени остатъци и помени за седмицата. Оборотът за месеца е отдолу.",
