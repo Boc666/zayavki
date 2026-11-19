@@ -1047,6 +1047,7 @@ html[data-theme="light"]{color-scheme:light}
 .today-row .g b{font-weight:600}
 .today-row .g .muted{font-size:12.5px}
 .kpi .v.attn{color:var(--caution)}
+a.btn,a.btn:hover{text-decoration:none}
 .inst-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .inst{background:var(--panel2);border:1px solid var(--border-soft);border-radius:var(--r-sm);padding:16px 18px;min-width:0}
 .inst h4{font:600 15px/1.3 var(--display);margin:0 0 10px;color:var(--text)}
@@ -1507,6 +1508,7 @@ html[data-theme="light"]{color-scheme:light}
 <!-- ================= НАСТРОЙКИ ================= -->
 <section id="tab-settings" class="hidden">
   <div class="ph"><div><h2>Настройки</h2><p>Данни на агенцията, фактури, лого и архив</p></div></div>
+  <div class="card hidden" id="billCard"><h2>Абонамент</h2><div id="billBody"></div></div>
   <div class="card">
     <h2>Данни на агенцията <span class="muted" style="font-weight:400">— горната част на документите</span></h2>
     <div class="grid">
@@ -1818,7 +1820,8 @@ async function cloudContext(){
     DB.db=true;USERS=await sbProfiles();
     return {id:SBS.uid,username:c.username,name:c.name+(/собственик/i.test(c.name)?"":" (собственик)"),role:"admin",perms:{},active:true,owner:true}}
   if(!c||!c.active){await sbLogout();DB.db=null;throw new Error("Този потребител е спрян. Обърнете се към администратора.")}
-  if(!c.agency_active||c.expired){await sbLogout();DB.db=null;throw new Error(noAccessMsg(c.support_phone))}
+  if(!c.agency_active||c.expired){let b=null;if(c.agency_active&&c.expired)try{b=await rpc("my_billing")}catch(e){}
+    await sbLogout();DB.db=null;const er=new Error(noAccessMsg(c.support_phone));if(b&&b.admin&&billPayButtons(b))er.billing=b;throw er}
   AG={id:c.agency_id,code:c.code,name:c.agency_name,until:c.access_until,warn:c.warn_days,phone:c.support_phone};
   DB.db=true;USERS=await sbProfiles();const x=USERS.find(z=>z.id===SBS.uid);
   if(!x||!x.active){await sbLogout();DB.db=null;throw new Error("Този потребител е спрян. Обърнете се към администратора.")}
@@ -4583,8 +4586,38 @@ $("#btnResetCat").onclick=()=>{if(!confirm("Да върна ли оригина�
   CATALOG.items.forEach((it,i)=>it.name=ORIGINAL_NAMES[i]);renderCatalog();toast("Натиснете „Запази каталога“, за да потвърдите.")};
 
 /* ---------------- настройки ---------------- */
+/* ---------- абонамент: плащане с карта (Lemon Squeezy) ---------- */
+const bgD=d=>d?new Date(d).toLocaleDateString("bg-BG"):"";
+const eurP=v=>(Number(v)||0).toLocaleString("bg-BG",{maximumFractionDigits:2})+" €";
+function billCheckoutUrl(u,b){if(!u)return "";const q="checkout[custom][agency_id]="+encodeURIComponent(b.agency_id)+"&checkout[custom][agency_code]="+encodeURIComponent(b.code||"");return u+(u.includes("?")?"&":"?")+q}
+function billPayButtons(b){const c=b&&b.checkout;if(!c||!c.on||!(c.monthly_url||c.yearly_url))return "";
+  const m=c.monthly_url?`<a class="btn primary" target="_blank" rel="noopener" href="${esc(billCheckoutUrl(c.monthly_url,b))}">Плати с карта · ${eurP(c.monthly_price)} на месец</a>`:"";
+  const y=c.yearly_url?`<a class="btn" target="_blank" rel="noopener" href="${esc(billCheckoutUrl(c.yearly_url,b))}">${eurP(c.yearly_price)} на година <span class="muted">(2 месеца подарък)</span></a>`:"";
+  return `<div class="row" style="gap:10px;flex-wrap:wrap;margin-top:12px">${m}${y}</div>
+    <p class="muted" style="margin:10px 0 0;font-size:12.5px">Плащането е защитено и минава през Lemon Squeezy. Таксата се взима автоматично всеки месец (или година), а отказ има по всяко време. Достъпът се удължава сам до минута след плащането.</p>`}
+function billStatusHtml(b){const sub=b.sub,until=b.until;let h="";
+  if(sub&&(sub.status==="active"||sub.status==="on_trial"))
+    h=`<p style="margin:0"><span class="tag ok">Абонамент с карта</span> ${esc(sub.plan||"")}</p><p class="muted" style="margin:8px 0 0">Следващо плащане: <b>${bgD(sub.renews_at)}</b>. Достъпът се подновява сам.</p>`
+     +(sub.portal_url?`<div class="row" style="margin-top:12px"><a class="btn" target="_blank" rel="noopener" href="${esc(sub.portal_url)}">Управление на абонамента (карта, фактури, отказ)</a></div>`:"");
+  else if(sub&&sub.status==="past_due")
+    h=`<p style="margin:0"><span class="tag warn">Плащането не мина</span></p><p class="muted" style="margin:8px 0 0">Последното плащане с карта не беше успешно. Обновете картата, за да не спре достъпът.</p>`
+     +(sub.portal_url?`<div class="row" style="margin-top:12px"><a class="btn primary" target="_blank" rel="noopener" href="${esc(sub.portal_url)}">Обнови картата</a></div>`:"");
+  else{
+    const d=until?Math.ceil((new Date(until)-Date.now())/864e5):null;
+    h=until?`<p style="margin:0">${b.expired?`<span class="tag warn">Достъпът е изтекъл</span> на <b>${bgD(until)}</b>.`:`Достъп до <b>${bgD(until)}</b> <span class="muted">(още ${d} ${d===1?"ден":"дни"})</span>.`}</p>`
+      :`<p style="margin:0">Достъпът ви е <b>без срок</b>.</p>`;
+    if(sub&&sub.status==="cancelled")h+=`<p class="muted" style="margin:8px 0 0">Абонаментът с карта е спрян. Платеното остава до <b>${bgD(sub.ends_at)}</b>. Можете да го подновите отново.</p>`;
+    if(until)h+=billPayButtons(b)||`<p class="muted" style="margin:8px 0 0">За удължаване: тел. <b>${esc(AG&&AG.phone||"+359 893 008 182")}</b>.</p>`}
+  return h}
+async function renderBilling(){const card=$("#billCard");if(!card)return;
+  if(!CLOUD||!AG||!isAdmin()){card.classList.add("hidden");return}
+  let b=null;try{b=await rpc("my_billing")}catch(e){}
+  if(!b||!b.admin){card.classList.add("hidden");return}
+  card.classList.remove("hidden");$("#billBody").innerHTML=billStatusHtml(b)}
+// връщане от страницата за плащане (в Lemon Squeezy: Confirmation → Button link = https://app.memoriox.eu/?paid=1)
+const PAID_RETURN=(()=>{try{const u=new URL(location.href);if(u.searchParams.get("paid")!=="1")return false;u.searchParams.delete("paid");history.replaceState(null,"",u.pathname+u.search+u.hash);return true}catch(e){return false}})();
 async function renderSettings(){
-  const S=SETTINGS;applyTitle();renderRetention();
+  const S=SETTINGS;applyTitle();renderRetention();renderBilling();
   $("#sAgency").value=S.agency;$("#sAddr").value=S.addr;$("#sGsm").value=S.gsm;$("#sShort").value=S.short;$("#sCity").value=S.city;$("#sRep").value=S.rep;$("#sStaff").value=(S.staff||[]).join("\n");
   $("#sNext").value=S.nextNo;$("#sDigits").value=S.digits;$("#sOfferDays").value=S.offerDays;$("#sStockPin").value=S.stockPin||"";$("#sLockMin").value=S.lockMin??30;$("#sLily").checked=!!S.showLily;$("#sTag").value=S.tagline||"";
   $$("input[name=logoMode]").forEach(x=>x.checked=x.value===S.logoMode);
@@ -5266,7 +5299,7 @@ function authShow(mode,opt={}){
       const code=adm?"":($("#liA")?$("#liA").value:"");
       if(CLOUD&&!adm&&!normUser(code)){er.textContent="Въведете кода на агенцията.";$("#liA").focus();return}
       try{if(CLOUD){x=await cloudLogin(code,u,p);if(x&&x.platform){if(opt.locked&&ME)reloadKeep();else platformShow(x);return}}else{x=USERS.find(z=>z.username===u&&z.active);if(x&&(await pwHash(p,x.salt))!==x.hash)x=null}}
-      catch(err){er.textContent=err.message;return}
+      catch(err){if(err.billing)er.innerHTML=`<b>Срокът на достъпа е изтекъл.</b> Платете с карта и влезте отново след минута.`+billPayButtons(err.billing)+`<p class="muted" style="margin:8px 0 0;font-size:12.5px">Или се обадете: ${esc(err.message.split("тел. ")[1]||"")}</p>`;else er.textContent=err.message;return}
       if(!x){FAILS++;if(FAILS>=5){LOCK_UNTIL=Date.now()+30e3;FAILS=0}audit("Неуспешен вход","потребител: "+u);er.textContent="Грешно потребителско име или парола.";$("#liP").value="";return}
       FAILS=0;
       if(opt.locked&&ME&&x.id===ME.id){$("#auth").classList.add("hidden");lastAct=Date.now();audit("Отключване");return}
@@ -5554,6 +5587,15 @@ function platformShow(P){
       <label class="f">Пробен период за нова агенция (дни, 0 = без срок)<input class="ui-in" id="psTrial" inputmode="numeric" value="${S.trial_days}"></label>
       <label class="f">Предупреждение преди края (дни)<input class="ui-in" id="psWarn" inputmode="numeric" value="${S.warn_days}"></label></div>
       <div class="pd-btns" style="margin-top:10px"><button class="btn small primary" id="psSave">Запази</button></div>
+      <div class="pd-sec">Плащане с карта (Lemon Squeezy)</div>
+      <div class="grid" style="grid-template-columns:2fr 1fr;gap:12px;max-width:760px">
+        <label class="f" style="grid-column:1/-1;flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="pbOn" ${(S.billing||{}).on?"checked":""}> Показвай бутона „Плати с карта“ на администраторите на агенциите</label>
+        <label class="f">Адрес за плащане — месечен абонамент<input class="ui-in" id="pbM" placeholder="https://….lemonsqueezy.com/buy/…" value="${esc((S.billing||{}).monthly_url||"")}"></label>
+        <label class="f">Цена на месец (€)<input class="ui-in" id="pbMP" inputmode="decimal" value="${esc(String((S.billing||{}).monthly_price??39))}"></label>
+        <label class="f">Адрес за плащане — годишен абонамент<input class="ui-in" id="pbY" placeholder="https://….lemonsqueezy.com/buy/…" value="${esc((S.billing||{}).yearly_url||"")}"></label>
+        <label class="f">Цена на година (€)<input class="ui-in" id="pbYP" inputmode="decimal" value="${esc(String((S.billing||{}).yearly_price??390))}"></label></div>
+      <p class="muted" style="max-width:760px;font-size:12.5px;margin:8px 0 0">Webhook в Lemon Squeezy (Settings → Webhooks): адрес <b style="user-select:all">${esc(SB.url)}/functions/v1/billing-webhook</b>, събития <b>subscription_created, subscription_updated, subscription_cancelled, subscription_resumed, subscription_expired, subscription_payment_success</b>. „Signing secret“ се записва и в Supabase като LEMON_WEBHOOK_SECRET. Цените тук са само за бутоните — истинската сума е тази в Lemon Squeezy.</p>
+      <div class="pd-btns" style="margin-top:10px"><button class="btn small primary" id="pbSave">Запази плащането с карта</button></div>
       ${S.seller_name!==undefined?`<div class="pd-sec">Фирма за фактурите към агенциите</div>
       <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px;max-width:760px">
         <label class="f">Фирма<input class="ui-in" id="slName" value="${esc(S.seller_name)}"></label><label class="f">ЕИК<input class="ui-in" id="slEik" value="${esc(S.seller_eik)}"></label>
@@ -5564,6 +5606,8 @@ function platformShow(P){
       <div class="pd-btns" style="margin-top:10px"><button class="btn small primary" id="slSave">Запази данните на фирмата</button></div>`:""}`;
     if($("#slSave"))$("#slSave").onclick=async()=>{try{await rpc("platform_seller_set",{p:{seller_name:$("#slName").value,seller_eik:$("#slEik").value,seller_address:$("#slAddr").value,seller_mol:$("#slMol").value,
       seller_vat:$("#slVat").value,seller_bank:$("#slBank").value,seller_iban:$("#slIban").value,invoice_next:$("#slNext").value.trim()}});toast("Данните на фирмата са запазени ✔")}catch(e){err(e.message)}};
+    $("#pbSave").onclick=async()=>{try{await rpc("platform_billing_set",{p:{on:$("#pbOn").checked,monthly_url:$("#pbM").value.trim(),yearly_url:$("#pbY").value.trim(),
+      monthly_price:parseFloat($("#pbMP").value.replace(",","."))||39,yearly_price:parseFloat($("#pbYP").value.replace(",","."))||390}});toast("Плащането с карта е запазено ✔")}catch(e){err(e.message)}};
     $("#psSave").onclick=async()=>{try{await rpc("platform_settings_set",{p_phone:$("#psPhone").value,p_trial_days:parseInt($("#psTrial").value)||0,p_warn_days:parseInt($("#psWarn").value)||0});toast("Настройките са запазени ✔")}catch(e){err(e.message)}}}
   const show=t=>{TAB=t;$$("#plTabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));$("#plView").innerHTML=`<p class="auth-note">Зареждане…</p>`;
     ({dash:loadDash,ag:loadAgencies,inv:loadInvoices,sign:loadSignups,acc:loadAccess,log:loadLogins,msg:loadMsgs,con:loadConsents,set:loadSettings})[t]()};
@@ -5606,12 +5650,13 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="2"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="3"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
   {v:"1.0",d:"19.11.2026",items:[
     "Memoriox 1.0 — номерацията на версиите започва отначало.",
+    "Плащане на абонамента с карта: Настройки → „Абонамент“ (за администратора). Достъпът се удължава сам след плащането; при изтекъл срок бутонът е и на входа.",
     "Настройки → „Приложение на телефона“: стъпка по стъпка как да добавите Memoriox на началния екран на iPhone и на Android, с адреса app.memoriox.eu. Иконката вече се казва „Memoriox“.",
     "Светла тема по подразбиране. Тъмната се включва с „☾ Тъмна тема“ долу в менюто; изборът се помни на всяко устройство.",
     "Началното табло е „Днес“: ритуали днес, тела в хладилната камера, неплатени остатъци и помени за седмицата. Оборотът за месеца е отдолу.",
@@ -5728,16 +5773,19 @@ setTimeout(()=>{showVersion();checkUpdate()},1500);
 setInterval(checkUpdate,15*60e3);
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkUpdate()});
 /* ленти най-горе: собственик в агенция, изтичащ достъп, съобщения от собственика */
+let BILL_CACHE=null;
+async function billActiveSub(){if(!isAdmin())return false;try{BILL_CACHE=await rpc("my_billing")}catch(e){return false}const s=BILL_CACHE&&BILL_CACHE.sub;return !!(s&&(s.status==="active"||s.status==="on_trial"))}
 async function agencyBars(){
   if(!CLOUD||!AG)return;let box=$("#noteBars");
   if(!box){box=document.createElement("div");box.id="noteBars";$("main").prepend(box)}
   const bars=[];
   if(AG.owner)bars.push(`<div class="nbar own"><span>Вие сте в агенция <b>${esc(AG.name)}</b> като собственик — виждате и променяте всичко като администратор.</span><button class="btn small" id="nbBack">← Към панела на собственика</button></div>`);
-  else if(AG.until){const d=Math.ceil((new Date(AG.until)-Date.now())/864e5);
-    if(d<=(AG.warn??5))bars.push(`<div class="nbar warn"><span>Достъпът ви до системата изтича на <b>${new Date(AG.until).toLocaleDateString("bg-BG")}</b>${d>0?` (след ${d} ${d===1?"ден":"дни"})`:""}. За удължаване: тел. <b>${esc(AG.phone||"")}</b></span></div>`)}
+  else if(AG.until&&!(await billActiveSub())){const d=Math.ceil((new Date(AG.until)-Date.now())/864e5);
+    if(d<=(AG.warn??5))bars.push(`<div class="nbar warn"><span>Достъпът ви до системата изтича на <b>${new Date(AG.until).toLocaleDateString("bg-BG")}</b>${d>0?` (след ${d} ${d===1?"ден":"дни"})`:""}. ${isAdmin()&&billPayButtons(BILL_CACHE)?"":` За удължаване: тел. <b>${esc(AG.phone||"")}</b>`}</span>${isAdmin()&&billPayButtons(BILL_CACHE)?`<button class="btn small primary" id="nbPay" type="button">Плати с карта</button>`:""}</div>`)}
   if(!AG.owner)try{let seen=[];try{seen=JSON.parse(sessionStorage.getItem("zayavki-seen")||"[]")}catch(e){}
     for(const n of await rpc("my_announcements"))if(!seen.includes(n.id))bars.push(`<div class="nbar info"><span>${esc(n.text)}</span><button class="btn small ghost" data-nx="${n.id}" title="Скрий">✕</button></div>`)}catch(e){}
   box.innerHTML=bars.join("");
+  const nbp=$("#nbPay");if(nbp)nbp.onclick=()=>{showTab("settings");setTimeout(()=>$("#billCard").scrollIntoView({behavior:"smooth",block:"start"}),80)};
   const bb=$("#nbBack");if(bb)bb.onclick=async()=>{try{await rpc("platform_leave_agency")}catch(e){}reloadKeep(location.pathname)};
   $$("#noteBars [data-nx]").forEach(b=>b.onclick=()=>{try{const s=JSON.parse(sessionStorage.getItem("zayavki-seen")||"[]");s.push(+b.dataset.nx);sessionStorage.setItem("zayavki-seen",JSON.stringify(s))}catch(e){}b.closest(".nbar").style.display="none"});
 }
@@ -5747,6 +5795,7 @@ async function loginAs(u,why){
   if(CLOUD){rpc("touch_login").catch(()=>{});if(!SHARED)await loadShared()}else await saveUsers();
   if(why==="Вход")audit("Вход");
   $("#auth").classList.add("hidden");lastAct=Date.now();
+  if(CLOUD&&PAID_RETURN)setTimeout(()=>toast("Благодарим! Плащането е прието. Достъпът се обновява до минута."),900);
   playIntro();applyUser();showTab(firstTab());agencyBars();
   let _nt=null;try{_nt=localStorage.getItem("memoriox-newtour")}catch(e){}
   if(_nt)setTimeout(()=>startTour(()=>{if(needsOnboarding())openOnboarding(0)}),500);
