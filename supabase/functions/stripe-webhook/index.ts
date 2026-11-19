@@ -16,8 +16,8 @@
 
 const URL_ = Deno.env.get("SUPABASE_URL")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "";
-const ALLOW_TEST = Deno.env.get("STRIPE_ALLOW_TEST") === "1";
+const SECRET = (Deno.env.get("STRIPE_WEBHOOK_SECRET") || "").trim(); // интервал/нов ред при поставяне не пречи
+const ALLOW_TEST = (Deno.env.get("STRIPE_ALLOW_TEST") || "").trim() === "1";
 const TOLERANCE = 300; // секунди
 
 const enc = new TextEncoder();
@@ -31,14 +31,15 @@ async function hmac(msg: string) {
   const key = await crypto.subtle.importKey("raw", enc.encode(SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   return hex(await crypto.subtle.sign("HMAC", key, enc.encode(msg)));
 }
+// връща "" при валиден подпис, иначе причината (без тайни данни)
 async function verify(header: string, body: string) {
   const parts = header.split(",").map((s) => s.trim().split("="));
   const t = parts.find((p) => p[0] === "t")?.[1];
   const sigs = parts.filter((p) => p[0] === "v1").map((p) => p[1]);
-  if (!t || !sigs.length) return false;
-  if (Math.abs(Date.now() / 1000 - Number(t)) > TOLERANCE) return false;
+  if (!t || !sigs.length) return "no signature header";
+  if (Math.abs(Date.now() / 1000 - Number(t)) > TOLERANCE) return "timestamp too old";
   const expected = await hmac(`${t}.${body}`);
-  return sigs.some((s) => safeEq(s, expected));
+  return sigs.some((s) => safeEq(s, expected)) ? "" : "signature mismatch (wrong STRIPE_WEBHOOK_SECRET?)";
 }
 const reply = (status: number, text: string) => new Response(text, { status, headers: { "Content-Type": "text/plain; charset=utf-8" } });
 const iso = (sec?: number | null) => (sec ? new Date(sec * 1000).toISOString() : "");
@@ -57,7 +58,8 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return reply(405, "POST only");
   if (!SECRET) return reply(500, "STRIPE_WEBHOOK_SECRET is not set");
   const body = await req.text();
-  if (!(await verify(req.headers.get("Stripe-Signature") || "", body))) return reply(400, "bad signature");
+  const bad = await verify(req.headers.get("Stripe-Signature") || "", body);
+  if (bad) { console.log("stripe-webhook rejected: " + bad + " (secret length " + SECRET.length + ", starts whsec_: " + SECRET.startsWith("whsec_") + ")"); return reply(400, "bad signature: " + bad); }
 
   let ev: any;
   try { ev = JSON.parse(body); } catch { return reply(400, "bad json"); }
