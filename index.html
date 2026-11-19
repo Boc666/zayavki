@@ -1126,6 +1126,26 @@ main>section.mx-enter .kpis>.kpi:nth-child(2),main>section.mx-enter>.card:nth-of
 main>section.mx-enter .kpis>.kpi:nth-child(3),main>section.mx-enter>.card:nth-of-type(3),main>section.mx-enter .cols2>div:nth-child(2)>.card:nth-child(1){animation-delay:.1s}
 main>section.mx-enter .kpis>.kpi:nth-child(4),main>section.mx-enter>.card:nth-of-type(n+4),main>section.mx-enter .cols2>div:nth-child(2)>.card:nth-child(2){animation-delay:.15s}
 @media(prefers-reduced-motion:reduce){main>section.mx-enter *{animation:none!important}nav.tabs .mx-pill{transition:none}}
+/* камбанка, профил на клиента, навигация в настройките */
+.gs-row{display:flex;gap:8px;align-items:stretch}
+.gs-row .gs-btn{flex:1;min-width:0}
+.gs-bell{position:relative;flex:none;width:38px;border:1px solid var(--border-soft);background:var(--panel);border-radius:9px;display:grid;place-items:center;color:var(--text2);cursor:pointer;transition:border-color .15s,transform .15s}
+.gs-bell:hover{border-color:var(--border-strong);color:var(--text)}
+.gs-bell:active{transform:scale(.94)}
+.gs-bell svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.bell-n{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;border-radius:999px;background:var(--err);color:#fff;font:700 10.5px/18px var(--ui);text-align:center;padding:0 5px;box-shadow:0 0 0 2px var(--side)}
+.bell-n.soft{background:var(--caution)}
+nav.tabs .nb-n{margin-left:auto;min-width:20px;height:20px;border-radius:999px;background:var(--err-soft);color:var(--err);font:700 11px/20px var(--ui);text-align:center;padding:0 6px}
+.mx-prof{display:flex;gap:14px;align-items:center;margin-bottom:12px}
+.mx-prof .av{width:52px;height:52px;border-radius:50%;background:var(--bronze-soft);color:var(--bronze);display:grid;place-items:center;font:700 17px var(--display);flex:none}
+.mx-prof .g b{font:700 19px/1.2 var(--display);letter-spacing:-.02em}
+.mx-kvs{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;background:var(--border-soft);border:1px solid var(--border-soft);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.mx-kvs div{background:var(--panel);padding:10px 14px}
+.mx-kvs small{display:block;color:var(--text3);font-size:12px}
+.mx-kvs b{font:700 18px var(--display);letter-spacing:-.02em}
+.mx-kvs b.sm{font-size:13.5px;letter-spacing:0}
+.mx-setnav{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:8px 0;margin-top:-8px}
+@media(max-width:900px){.mx-setnav{position:static}}
 /* Календар: седмица, слоеве */
 .mx-seg{display:inline-flex;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--panel)}
 .mx-seg button{border:0;background:none;padding:6px 12px;color:var(--text2);font:500 13px var(--ui);cursor:pointer}
@@ -1244,7 +1264,7 @@ main>section.mx-enter .mx-axis .ev{animation:mxGrow .55s cubic-bezier(.2,.8,.2,1
     <div><h1 id="appTitle">Погребална агенция</h1><small>Заявки и ритуали</small></div>
     <button class="side-burger" id="sideBurger" type="button" aria-label="Меню" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   </div>
-  <button class="gs-btn" id="gsBtn" type="button"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><span>Търсене</span><kbd id="gsKbd">Ctrl K</kbd></button>
+  <div class="gs-row"><button class="gs-btn" id="gsBtn" type="button"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><span>Търсене</span><kbd id="gsKbd">Ctrl K</kbd></button><button class="gs-bell" id="bellBtn" type="button" aria-label="Известия" title="Известия"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="bell-n hidden" id="bellN"></span></button></div>
   <nav class="tabs">
     <div class="nsec">Работа</div>
     <button data-tab="dash"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Начално табло</button>
@@ -1691,6 +1711,7 @@ main>section.mx-enter .mx-axis .ev{animation:mxGrow .55s cubic-bezier(.2,.8,.2,1
 <!-- ================= НАСТРОЙКИ ================= -->
 <section id="tab-settings" class="hidden">
   <div class="ph"><div><h2>Настройки</h2><p>Данни на агенцията, фактури, лого и архив</p></div></div>
+  <div class="mx-filters mx-setnav" id="setNav" role="navigation" aria-label="Раздели в настройките"></div>
   <div class="card hidden" id="billCard"><h2>Абонамент</h2><div id="billBody"></div></div>
   <div class="card">
     <h2>Данни на агенцията <span class="muted" style="font-weight:400">— горната част на документите</span></h2>
@@ -3027,7 +3048,15 @@ async function openClient(c){
   const keys=phoneKeys(c.phones),loose=keys.length?(await allReqs()).filter(r=>!r.clientId&&phoneKeys(r.appPhone).some(k=>keys.includes(k))):[];
   const dup=CLIENTS.filter(x=>x.id!==c.id&&(x.phoneKeys||[]).some(k=>keys.includes(k)));
   const ed=can("clients","edit");
-  const m=openModal({title:"Клиент — "+(c.name||""),wide:true,body:`
+  // обобщение: заявки, суми, неплатено, следващ помен
+  const fin=can("fin"),tot=r2(reqs.reduce((a,r)=>a+calc(r).total,0)),due=r2(reqs.reduce((a,r)=>a+(r.paid?0:Math.max(0,calc(r).rest)),0));
+  let nextPm=null;const t0=new Date();t0.setHours(0,0,0,0);
+  for(const r of reqs){if(!r.noticeDate)continue;const [y,mo,d]=r.noticeDate.split("-").map(Number),dd=new Date(y,mo-1,d);if(isNaN(dd))continue;
+    for(const [k,label,f] of PM_KINDS){const at=f(dd);if(at>=t0&&(!nextPm||at<nextPm.at))nextPm={at,label,who:r.decName||""}}}
+  const ini=String(c.name||"?").trim().split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();
+  const head=`<div class="mx-prof"><div class="av">${esc(ini)}</div><div class="g"><b>${esc(c.name||"")}</b><div class="muted">${esc(c.phones||"няма телефон")}${c.email?" · "+esc(c.email):""}</div></div></div>
+    <div class="mx-kvs"><div><small>Заявки</small><b>${reqs.length}</b></div>${fin?`<div><small>Обща сума</small><b>${eur(tot)}</b></div><div><small>Неплатено</small><b style="color:${due>0?"var(--caution)":"var(--ok)"}">${due>0?eur(due):"—"}</b></div>`:""}<div><small>Следващ помен</small><b class="sm">${nextPm?esc(nextPm.label)+" · "+d40fmt(nextPm.at):"—"}</b></div></div>`;
+  const m=openModal({title:"Клиент — "+(c.name||""),wide:true,body:head+`
     <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
       <label class="f">Име<input class="ui-in" id="cpN" value="${esc(c.name||"")}" ${ed?"":"readonly"}></label>
       <label class="f">Телефони (разделени със запетая)<input class="ui-in" id="cpP" value="${esc(c.phones||"")}" ${ed?"":"readonly"} inputmode="tel"></label>
@@ -4452,6 +4481,19 @@ document.addEventListener("click",e=>{const tr=e.target.closest("tr[data-id],li[
 $("#tab-dash").addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(b){showTab(b.dataset.go);return}
   const q=e.target.closest("[data-rid]");if(q)openReqById(q.dataset.rid)});
 $("#tab-dash").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.classList.contains("mx-att"))e.target.click()});
+// камбанка: брой + списък (същите неща като „Иска внимание“ и помените до 3 дни)
+let MX_BELL=[];
+function mxBellSet(list){MX_BELL=list||[];const n=$("#bellN");if(!n)return;const k=MX_BELL.filter(x=>x.sev==="bad").length||MX_BELL.length;
+  n.textContent=MX_BELL.length>9?"9+":String(MX_BELL.length);n.classList.toggle("hidden",!MX_BELL.length);n.classList.toggle("soft",!MX_BELL.some(x=>x.sev==="bad"));
+  const nb=$('nav.tabs button[data-tab="dash"]');if(nb){let b=nb.querySelector(".nb-n");if(!b){b=document.createElement("span");b.className="nb-n";nb.appendChild(b)}b.textContent=MX_BELL.length||"";b.classList.toggle("hidden",!MX_BELL.length)}}
+async function mxBellRefresh(){try{if(!ME||!DB.db)return;const all=await allReqs(),real=all.filter(r=>!r.sample),today=todayISO();mxBellSet(mxAttnList(all,real,today,can("fin"),canTab("fridge")))}catch(e){}}
+async function mxBellOpen(){await mxBellRefresh();let pm=[];try{if(can("req"))pm=(await pmCollect(3,false)).out}catch(e){}
+  const items=MX_BELL.map(x=>`<div class="mx-att ${x.sev}" ${x.rid?`data-rid="${esc(x.rid)}"`:`data-go="${x.go}"`} role="button" tabindex="0"><div class="g"><b>${esc(x.t)}</b><div class="muted">${esc(x.s)}</div></div></div>`).join("")
+    +pm.map(x=>`<div class="mx-att" data-rid="${esc(x.r.id)}" role="button" tabindex="0"><div class="g"><b>${esc(x.label)} — ${esc(x.r.decName||"")}</b><div class="muted">${d40fmt(x.date)} · напомнете на ${esc(x.r.appName||"близките")}</div></div></div>`).join("");
+  const m=openModal({title:"Известия",body:items||`<div class="mx-allok"><i>✓</i>Няма нищо, което да иска внимание.</div>`,actions:[{label:"Затвори"}]});
+  m.el.addEventListener("click",e=>{const x=e.target.closest("[data-rid],[data-go]");if(!x||!x.classList.contains("mx-att"))return;closeModal();if(x.dataset.rid)openReqById(x.dataset.rid);else showTab(x.dataset.go)})}
+$("#bellBtn").onclick=mxBellOpen;
+setInterval(()=>{if(document.visibilityState==="visible")mxBellRefresh()},5*60e3);
 // час от свободен текст: „10:00“, „10.30“, „10 ч.“ → 10.5; няма час → null
 function mxHour(t){const m=String(t||"").trim().match(/^(\d{1,2})(?:[.:,](\d{2}))?/);if(!m)return null;const h=+m[1],mi=+(m[2]||0);return h<24&&mi<60?h+mi/60:null}
 const mxSurname=n=>{const p=String(n||"").trim().split(/\s+/);return p.length>1?p[p.length-1]:p[0]||""};
@@ -4477,7 +4519,7 @@ function mxDay(all,evs,today){
   $("#dashDayNote").textContent=noTime?`${noTime} ${noTime===1?"ритуал днес е":"ритуала днес са"} без час`:(items.length?`${items.length} ${items.length===1?"събитие":"събития"}`:"");
 }
 // „Иска внимание“: какво може да се обърка днес и тази седмица
-function mxAttention(all,real,today,fin,seeFr){
+function mxAttnList(all,real,today,fin,seeFr){
   const out=[],soon=plusDays(today,7),old=plusDays(today,-7);
   INVD.items.filter(i=>i.status==="active"&&(i.minStock||0)>0&&i.stock<=0).forEach(i=>out.push({sev:"bad",t:"Изчерпан: "+i.name,s:"0 "+(i.unit||"бр.")+" · минимум "+numIn(i.minStock),go:"stock"}));
   for(const r of real){if(r.ritDate&&r.ritDate>=today&&r.ritDate<=soon&&mxHour(r.ritTime)==null)
@@ -4487,6 +4529,8 @@ function mxAttention(all,real,today,fin,seeFr){
   if(seeFr)frInside().forEach(x=>{const d=daysBetween(x.dateIn);if(d>=3)out.push({sev:"warn",t:"Тяло в камерата от "+d+" дни",s:(x.cell?"Клетка "+x.cell+" · ":"")+(x.name||""),go:"fridge"})});
   INVD.items.filter(i=>isLow(i)&&i.stock>0).forEach(i=>out.push({sev:"warn",t:"Малко на склад: "+i.name,s:numIn(i.stock)+" "+(i.unit||"бр.")+" · минимум "+numIn(i.minStock),go:"stock"}));
   out.sort((a,b)=>(a.sev==="bad"?0:1)-(b.sev==="bad"?0:1));
+  return out}
+function mxAttention(all,real,today,fin,seeFr){const out=mxAttnList(all,real,today,fin,seeFr);mxBellSet(out);
   const n=$("#dashAttnN");n.textContent=out.length;n.classList.toggle("zero",!out.length);
   $("#dashAttn").innerHTML=out.length?out.slice(0,6).map(x=>`<div class="mx-att ${x.sev}" ${x.rid?`data-rid="${esc(x.rid)}"`:`data-go="${x.go}"`} role="button" tabindex="0"><div class="g"><b>${esc(x.t)}</b><div class="muted">${esc(x.s)}</div></div><span class="btn small">Виж</span></div>`).join("")
     +(out.length>6?`<div class="muted" style="padding:8px 12px;font-size:12.5px">и още ${out.length-6}</div>`:"")
@@ -4943,8 +4987,12 @@ async function renderBilling(){const card=$("#billCard");if(!card)return;
   card.classList.remove("hidden");$("#billBody").innerHTML=billStatusHtml(b)}
 // връщане от страницата за плащане (в Lemon Squeezy: Confirmation → Button link = https://app.memoriox.eu/?paid=1)
 const PAID_RETURN=(()=>{try{const u=new URL(location.href);if(u.searchParams.get("paid")!=="1")return false;u.searchParams.delete("paid");history.replaceState(null,"",u.pathname+u.search+u.hash);return true}catch(e){return false}})();
+function mxSetNav(){const nav=$("#setNav");if(!nav)return;
+  const cards=[...$$("#tab-settings > .card")].filter(c=>!c.classList.contains("hidden")&&c.querySelector("h2"));
+  nav.innerHTML=cards.map((c,i)=>{const h=c.querySelector("h2"),t=[...h.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join("").replace(/[\u{1F300}-\u{1FAFF}]/gu,"").trim();return `<button type="button" data-sn="${i}">${esc(t)}</button>`}).join("");
+  nav.onclick=e=>{const b=e.target.closest("[data-sn]");if(!b)return;const c=cards[+b.dataset.sn];if(c){c.scrollIntoView({behavior:MX_RM?"auto":"smooth",block:"start"});$$("#setNav button").forEach(x=>x.classList.toggle("on",x===b))}}}
 async function renderSettings(){
-  const S=SETTINGS;applyTitle();renderRetention();renderBilling();
+  const S=SETTINGS;applyTitle();renderRetention();renderBilling().then(mxSetNav);mxSetNav();
   $("#sAgency").value=S.agency;$("#sAddr").value=S.addr;$("#sGsm").value=S.gsm;$("#sShort").value=S.short;$("#sCity").value=S.city;$("#sRep").value=S.rep;$("#sStaff").value=(S.staff||[]).join("\n");
   $("#sNext").value=S.nextNo;$("#sDigits").value=S.digits;$("#sOfferDays").value=S.offerDays;$("#sStockPin").value=S.stockPin||"";$("#sLockMin").value=S.lockMin??30;$("#sLily").checked=!!S.showLily;$("#sTag").value=S.tagline||"";
   $$("input[name=logoMode]").forEach(x=>x.checked=x.value===S.logoMode);
@@ -5979,12 +6027,13 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="8"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="9"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
   {v:"1.0",d:"19.11.2026",items:[
     "Memoriox 1.0 — номерацията на версиите започва отначало.",
+    "Известия: камбанка до търсенето с броя на нещата, които искат внимание (и помените до 3 дни). Профилът на клиента показва заявки, суми, неплатено и следващ помен. В Настройки — бърза лента към разделите.",
     "Календар: изглед „Седмица“ (по подразбиране) и „Месец“; слоеве Ритуали · Помени · Хладилна камера · Срещи и задачи. Помените се показват сами от датата на смъртта. Съботите и неделите вече не са свити.",
     "Заявки: филтри „Активни / С остатък / Приключени / Всички“ и лента за напредък. В отворена заявка — табове „Заявка · Документи · Плащания · История“.",
     "Началното табло: „Денят“ — ритуалите и срещите днес на времева линия, и „Иска внимание“ — липсващ час, просрочен остатък, изчерпан склад, дълъг престой в камерата.",
@@ -6129,6 +6178,7 @@ async function loginAs(u,why){
   if(why==="Вход")audit("Вход");
   $("#auth").classList.add("hidden");lastAct=Date.now();
   if(CLOUD&&PAID_RETURN)setTimeout(()=>toast("Благодарим! Плащането е прието. Достъпът се обновява до минута."),900);
+  setTimeout(()=>mxBellRefresh(),1500);
   playIntro();applyUser();showTab(firstTab());agencyBars();
   let _nt=null;try{_nt=localStorage.getItem("memoriox-newtour")}catch(e){}
   if(_nt)setTimeout(()=>startTour(()=>{if(needsOnboarding())openOnboarding(0)}),500);
