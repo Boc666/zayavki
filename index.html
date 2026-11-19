@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Заявки">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Memoriox">
 <meta name="theme-color" content="#111315"><meta name="format-detection" content="telephone=no">
 <link rel="icon" type="image/png" href="favicon.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.json">
 <title>Memoriox</title>
@@ -1047,6 +1047,12 @@ html[data-theme="light"]{color-scheme:light}
 .today-row .g b{font-weight:600}
 .today-row .g .muted{font-size:12.5px}
 .kpi .v.attn{color:var(--caution)}
+.inst-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.inst{background:var(--panel2);border:1px solid var(--border-soft);border-radius:var(--r-sm);padding:16px 18px;min-width:0}
+.inst h4{font:600 15px/1.3 var(--display);margin:0 0 10px;color:var(--text)}
+.inst ol{margin:0 0 10px;padding-left:20px;line-height:1.75}
+.inst p.muted{margin:0;font-size:12.5px}
+@media(max-width:760px){.inst-grid{grid-template-columns:1fr}}
 .wn-old{margin:18px 0 8px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
 @media(min-width:1101px){#dashToday[data-n="3"],#dashKpis{grid-template-columns:repeat(3,minmax(0,1fr))}#dashToday[data-n="2"]{grid-template-columns:repeat(2,minmax(0,1fr))}#dashToday[data-n="1"]{grid-template-columns:1fr}}
 </style>
@@ -1569,7 +1575,7 @@ html[data-theme="light"]{color-scheme:light}
     <div class="row"><span class="spacer"></span><button class="btn primary" id="btnSaveInvSet">Запази настройките</button></div>
   </div>
   <div class="card" id="phonesCard">
-    <h2>📱 Телефони</h2>
+    <h2>📱 Приложение на телефона</h2>
     <div id="phonesBody"></div>
   </div>
   <div class="card" id="tplCard">
@@ -4596,8 +4602,30 @@ async function renderSettings(){
 }
 /* Телефони: свързване през Wi-Fi в офиса (само от компютъра, на който върви сървърът) */
 async function renderPhones(){const B=$("#phonesBody");
-  if(CLOUD){B.innerHTML=`<p class="muted">Програмата е онлайн. На телефона отворете в Safari адреса:</p><div class="pair-url" style="margin:6px 0 10px">${esc(location.origin+location.pathname)}</div>
-    <p class="muted">После бутон „Сподели“ → <b>„Добави към началния екран“</b> и влезте със своя потребител. Работи отвсякъде с интернет.</p>`;return}
+  if(CLOUD){
+    const ios=`<div class="inst"><h4>iPhone и iPad</h4><ol>
+        <li>Отворете <b>Safari</b> и въведете <b>app.memoriox.eu</b>.</li>
+        <li>Натиснете бутона <b>„Сподели“</b> (квадрат със стрелка нагоре). На iPhone е долу в средата, на iPad е горе вдясно.</li>
+        <li>Превъртете надолу и изберете <b>„Добави към началния екран“</b>.</li>
+        <li>Натиснете <b>„Добави“</b> горе вдясно.</li>
+        <li>Отворете Memoriox от новата иконка и влезте със своя потребител.</li></ol>
+        <p class="muted">Най-сигурно е от Safari. В Chrome на iPhone същото е в „Сподели“ горе вдясно.</p></div>`;
+    const android=`<div class="inst"><h4>Android</h4><ol>
+        <li>Отворете <b>Chrome</b> и въведете <b>app.memoriox.eu</b>.</li>
+        <li>Натиснете менюто <b>⋮</b> горе вдясно.</li>
+        <li>Изберете <b>„Инсталиране на приложението“</b> или <b>„Добавяне към началния екран“</b>.</li>
+        <li>Потвърдете с <b>„Инсталиране“</b>.</li>
+        <li>Отворете Memoriox от новата иконка и влезте със своя потребител.</li></ol>
+        <p class="muted">Ако Chrome сам предложи „Инсталиране на Memoriox“ долу на екрана, натиснете него. В Samsung Internet: меню ≡ → „Добави страница към“ → „Начален екран“.</p></div>`;
+    const andFirst=/Android/i.test(navigator.userAgent);
+    B.innerHTML=`<p class="muted">Memoriox работи на всеки телефон с интернет. Добавете го на началния екран: отваря се на цял екран, като обикновено приложение. Входът и данните са същите.</p>
+      <div class="row" style="gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0 16px"><div class="pair-url">app.memoriox.eu</div>
+        <button class="btn small" type="button" id="phCopy">Копирай адреса</button>
+        ${PWA_EV?`<button class="btn small primary" type="button" id="phInstall">Инсталирай на това устройство</button>`:""}</div>
+      <div class="inst-grid">${andFirst?android+ios:ios+android}</div>`;
+    $("#phCopy").onclick=async()=>{try{await navigator.clipboard.writeText("https://app.memoriox.eu");toast("Адресът е копиран ✔")}catch(e){toast("Адресът е app.memoriox.eu")}};
+    const ib=$("#phInstall");if(ib)ib.onclick=async()=>{if(!PWA_EV)return;PWA_EV.prompt();try{await PWA_EV.userChoice}catch(e){}PWA_EV=null;$("#pwaBtn").classList.add("hidden");renderPhones()};
+    return}
   if(!SRV){B.innerHTML=`<p class="muted">За да ползвате програмата и от телефона, пуснете я с <b>START.bat</b> от папката на флашката (новата версия) — тогава тук ще има бутон „Свържи телефон“.</p>`;return}
   if(!SRV_LOCAL){B.innerHTML=`<p class="muted">Това устройство е свързано с компютъра в офиса през Wi-Fi. Телефоните се добавят и премахват от самия компютър.</p>`;return}
   let list=[];try{list=JSON.parse(await api("devices"))}catch(e){}
@@ -5577,12 +5605,14 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="1.0",APP_DATE="19.11.2026"; // от 19.11.2026 номерацията започва отначало (Memoriox 1.0)
+const APP_VERSION="1.0",APP_DATE="19.11.2026";
+const APP_BUILD="2"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
   {v:"1.0",d:"19.11.2026",items:[
     "Memoriox 1.0 — номерацията на версиите започва отначало.",
+    "Настройки → „Приложение на телефона“: стъпка по стъпка как да добавите Memoriox на началния екран на iPhone и на Android, с адреса app.memoriox.eu. Иконката вече се казва „Memoriox“.",
     "Светла тема по подразбиране. Тъмната се включва с „☾ Тъмна тема“ долу в менюто; изборът се помни на всяко устройство.",
     "Началното табло е „Днес“: ритуали днес, тела в хладилната камера, неплатени остатъци и помени за седмицата. Оборотът за месеца е отдолу.",
     "Празна заявка вече не се записва сама (например при „Работен лист“) и не хаби номер."]},
@@ -5674,7 +5704,7 @@ $("#pwaBtn").onclick=async()=>{
   openModal({title:"Инсталиране на iPhone / iPad",body:`<ol style="margin:0;padding-left:20px;line-height:1.8">
       <li>Отворете програмата в <b>Safari</b>.</li><li>Натиснете бутона <b>„Сподели“</b> (квадрат със стрелка нагоре).</li>
       <li>Изберете <b>„Добави към началния екран“</b> и после <b>„Добави“</b>.</li></ol>
-      <p class="muted" style="margin:12px 0 0">Иконката „Заявки“ се появява на телефона и програмата се отваря на цял екран. Входът и данните са същите.</p>`,actions:[{label:"Разбрах"}]})};
+      <p class="muted" style="margin:12px 0 0">Иконката „Memoriox“ се появява на телефона и програмата се отваря на цял екран. Входът и данните са същите.</p>`,actions:[{label:"Разбрах"}]})};
 function themeNow(){return document.documentElement.getAttribute("data-theme")==="dark"?"dark":"light"}
 function applyThemeMeta(){const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=themeNow()==="dark"?"#121110":"#F6F4F0";const b=$("#suTheme");if(b)b.textContent=themeNow()==="dark"?"☀ Светла тема":"☾ Тъмна тема"}
 applyThemeMeta();
@@ -5685,8 +5715,8 @@ let NEWER=null;
 async function checkUpdate(){
   if(NEWER||!/^https?:$/.test(location.protocol))return;
   try{const t=await (await fetch(location.pathname+"?v="+Date.now(),{cache:"no-store"})).text();
-    const m=t.match(/const APP_VERSION="([^"]+)"/);
-    if(m&&m[1]!==APP_VERSION){NEWER=m[1];
+    const m=t.match(/const APP_VERSION="([^"]+)"/),mb=t.match(/const APP_BUILD="([^"]+)"/);
+    if(m&&(m[1]!==APP_VERSION||(mb&&mb[1]!==APP_BUILD))){NEWER=m[1];
       const bar=document.createElement("div");bar.className="nbar info updbar";
       bar.innerHTML=`<span>Има обновена версия на програмата. Запазете промените си и презаредете — ще трябва да влезете отново.</span><button class="btn small" type="button">Презареди</button>`;
       bar.querySelector("button").onclick=()=>{if(typeof DIRTY!=="undefined"&&DIRTY&&!confirm("Има незапазени промени. Да презаредя ли БЕЗ запис?"))return;location.reload()};
