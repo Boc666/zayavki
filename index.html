@@ -1126,6 +1126,35 @@ main>section.mx-enter .kpis>.kpi:nth-child(2),main>section.mx-enter>.card:nth-of
 main>section.mx-enter .kpis>.kpi:nth-child(3),main>section.mx-enter>.card:nth-of-type(3),main>section.mx-enter .cols2>div:nth-child(2)>.card:nth-child(1){animation-delay:.1s}
 main>section.mx-enter .kpis>.kpi:nth-child(4),main>section.mx-enter>.card:nth-of-type(n+4),main>section.mx-enter .cols2>div:nth-child(2)>.card:nth-child(2){animation-delay:.15s}
 @media(prefers-reduced-motion:reduce){main>section.mx-enter *{animation:none!important}nav.tabs .mx-pill{transition:none}}
+/* „Днес“: времева линия на деня */
+.mx-daycard{padding-bottom:14px}
+.mx-axis-wrap{overflow-x:auto;overscroll-behavior-x:contain;padding:28px 24px 4px 22px}
+.mx-axis{position:relative;min-width:640px;border-left:1px solid var(--border)}
+.mx-axis .hr{position:absolute;top:0;bottom:22px;border-left:1px dashed var(--border-soft)}
+.mx-axis .hr span{position:absolute;bottom:-22px;transform:translateX(-50%);font-size:11px;color:var(--text3);white-space:nowrap}
+.mx-axis .ev{position:absolute;height:42px;border-radius:9px;padding:5px 10px;font-size:12px;line-height:1.25;overflow:hidden;border:0;border-left:3px solid;text-align:left;color:var(--text);cursor:pointer;transform-origin:0 50%;font-family:var(--ui);transition:filter .15s,transform .15s}
+.mx-axis .ev:hover{filter:brightness(.97);transform:translateY(-1px)}
+.mx-axis .ev b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mx-axis .ev span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2)}
+.mx-axis .ev.rit{background:var(--bronze-soft);border-left-color:var(--bronze)}
+.mx-axis .ev.meet{background:var(--ok-soft);border-left-color:var(--ok)}
+.mx-axis .ev.task{background:var(--caution-soft);border-left-color:var(--caution)}
+.mx-axis .now{position:absolute;top:-8px;bottom:18px;width:2px;background:var(--err);border-radius:2px;pointer-events:none}
+.mx-axis .now::before{content:"";position:absolute;top:-4px;left:-4px;width:10px;height:10px;border-radius:50%;background:var(--err)}
+.mx-axis .now span{position:absolute;top:-24px;left:8px;font-size:11px;font-weight:600;color:var(--err);white-space:nowrap}
+.mx-axis .free{position:absolute;inset:0 0 22px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px}
+@keyframes mxGrow{from{transform:scaleX(0);opacity:0}to{transform:none;opacity:1}}
+main>section.mx-enter .mx-axis .ev{animation:mxGrow .55s cubic-bezier(.2,.8,.2,1) both}
+/* „Иска внимание“ */
+.mx-att{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:9px;border-left:3px solid var(--border);cursor:pointer;transition:background .15s}
+.mx-att+.mx-att{margin-top:4px}
+.mx-att:hover{background:var(--panel2)}
+.mx-att.bad{border-left-color:var(--err)}.mx-att.warn{border-left-color:var(--caution)}
+.mx-att .g{flex:1;min-width:0}.mx-att .g b{font-weight:600}.mx-att .g .muted{font-size:12.5px}
+.mx-count{min-width:22px;height:22px;border-radius:999px;display:inline-grid;place-items:center;padding:0 7px;font-size:12px;font-weight:700;background:var(--err-soft);color:var(--err)}
+.mx-count.zero{background:var(--ok-soft);color:var(--ok)}
+.mx-allok{display:flex;align-items:center;gap:10px;padding:12px;color:var(--text2)}
+.mx-allok i{width:22px;height:22px;border-radius:50%;background:var(--ok-soft);display:grid;place-items:center;color:var(--ok);font-style:normal;font-weight:700}
 @media(max-width:900px){nav.tabs .mx-pill{display:none}nav.tabs.has-pill button.on{background:var(--bronze-soft)}}
 </style>
 </head>
@@ -1186,8 +1215,10 @@ main>section.mx-enter .kpis>.kpi:nth-child(4),main>section.mx-enter>.card:nth-of
   </div>
   <div id="dashNotice"></div>
   <div class="kpis" id="dashToday"></div>
+  <div class="card mx-daycard" id="dashDayCard"><div class="row" style="margin-bottom:4px"><h2 style="margin:0">Денят</h2><span class="spacer"></span><span class="muted" id="dashDayNote"></span></div><div class="mx-axis-wrap"><div class="mx-axis" id="dashDay"></div></div></div>
   <div class="cols2">
     <div>
+      <div class="card" id="dashAttnCard"><div class="row" style="margin-bottom:6px"><h2 style="margin:0">Иска внимание</h2><span class="spacer"></span><span class="mx-count" id="dashAttnN"></span></div><div id="dashAttn"></div></div>
       <div class="card"><div class="row" style="margin-bottom:6px"><h2 style="margin:0">Ритуали</h2><span class="spacer"></span><span class="muted">днес и следващите 14 дни</span></div><div id="dashRit"></div></div>
       <div class="card" id="dashActiveCard"><div class="row" style="margin-bottom:6px"><h2 style="margin:0">Неплатени остатъци</h2><span class="spacer"></span><span class="muted">най-новите първо</span></div><div id="dashActive"></div></div>
     </div>
@@ -4259,7 +4290,50 @@ document.addEventListener("click",e=>{const tr=e.target.closest("tr[data-id],li[
   tr.dataset.open==="ws"?openWorksheet(tr.dataset.id):openReqById(tr.dataset.id)});
 
 /* ---- начално табло ---- */
-$("#tab-dash").addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(b)showTab(b.dataset.go)});
+$("#tab-dash").addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(b){showTab(b.dataset.go);return}
+  const q=e.target.closest("[data-rid]");if(q)openReqById(q.dataset.rid)});
+$("#tab-dash").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.classList.contains("mx-att"))e.target.click()});
+// час от свободен текст: „10:00“, „10.30“, „10 ч.“ → 10.5; няма час → null
+function mxHour(t){const m=String(t||"").trim().match(/^(\d{1,2})(?:[.:,](\d{2}))?/);if(!m)return null;const h=+m[1],mi=+(m[2]||0);return h<24&&mi<60?h+mi/60:null}
+const mxSurname=n=>{const p=String(n||"").trim().split(/\s+/);return p.length>1?p[p.length-1]:p[0]||""};
+// „Денят“: ритуали и събития от календара с час, по линии без застъпване
+function mxDay(all,evs,today){
+  const items=[];let noTime=0;
+  for(const r of all){if(r.ritDate!==today)continue;const a=mxHour(r.ritTime);if(a==null){noTime++;continue}
+    const kind=/крем/i.test(kindText(r)||"")?"Кремация":"Погребение";items.push({a,b:a+1.5,c:"rit",t:kind+" · "+(mxSurname(r.decName)||"—"),s:wsPlace(r)||"",rid:r.id})}
+  for(const e of evs){if(e.date!==today)continue;const a=mxHour(e.time);if(a==null)continue;
+    items.push({a,b:a+1,c:e.type==="ritual"?"rit":e.type==="meeting"?"meet":"task",t:e.title||evType(e.type),s:e.place||"",go:"cal"})}
+  items.sort((x,y)=>x.a-y.a);
+  const H0=Math.min(8,Math.floor(items.length?items[0].a:8)),H1=Math.max(18,Math.ceil(items.reduce((m,x)=>Math.max(m,x.b),0)));
+  const span=H1-H0,pos=h=>((h-H0)/span*100).toFixed(2)+"%",MINW=Math.max(1.9,span*.16);
+  const ends=[];items.forEach(x=>{const end=x.a+Math.max(x.b-x.a,MINW);let l=ends.findIndex(e=>e<=x.a+.01);if(l<0){l=ends.length;ends.push(end)}else ends[l]=end;x.l=l;x.w=Math.max(x.b-x.a,MINW)});
+  const lanes=Math.max(1,ends.length),H=lanes*50+30;
+  const now=new Date(),nh=now.getHours()+now.getMinutes()/60;
+  const hrs=[];for(let h=H0;h<=H1;h++)hrs.push(`<div class="hr" style="left:${pos(h)}"><span>${h}:00</span></div>`);
+  $("#dashDay").style.height=H+"px";
+  $("#dashDay").innerHTML=hrs.join("")+items.map(x=>`<button type="button" class="ev ${x.c}" ${x.rid?`data-rid="${esc(x.rid)}"`:`data-go="${x.go}"`} style="left:${pos(x.a)};width:calc(${(x.w/span*100).toFixed(2)}% - 4px);top:${6+x.l*50}px" title="${esc(x.t+(x.s?" · "+x.s:""))}"><b>${String(Math.floor(x.a)).padStart(2,"0")}:${String(Math.round((x.a%1)*60)).padStart(2,"0")} · ${esc(x.t)}</b><span>${esc(x.s)}</span></button>`).join("")
+    +(items.length?"":`<div class="free">Днес няма насрочени часове.</div>`)
+    +(nh>=H0&&nh<=H1?`<div class="now" style="left:${pos(nh)}"><span>сега ${now.toLocaleTimeString("bg-BG",{hour:"2-digit",minute:"2-digit"})}</span></div>`:"");
+  {const w=$("#dashDay").parentElement,f=$("#dashDay .ev");if(f&&w.scrollWidth>w.clientWidth)w.scrollLeft=Math.max(0,f.offsetLeft-30)} // на телефон — към първото събитие
+  $("#dashDayNote").textContent=noTime?`${noTime} ${noTime===1?"ритуал днес е":"ритуала днес са"} без час`:(items.length?`${items.length} ${items.length===1?"събитие":"събития"}`:"");
+}
+// „Иска внимание“: какво може да се обърка днес и тази седмица
+function mxAttention(all,real,today,fin,seeFr){
+  const out=[],soon=plusDays(today,7),old=plusDays(today,-7);
+  INVD.items.filter(i=>i.status==="active"&&(i.minStock||0)>0&&i.stock<=0).forEach(i=>out.push({sev:"bad",t:"Изчерпан: "+i.name,s:"0 "+(i.unit||"бр.")+" · минимум "+numIn(i.minStock),go:"stock"}));
+  for(const r of real){if(r.ritDate&&r.ritDate>=today&&r.ritDate<=soon&&mxHour(r.ritTime)==null)
+    out.push({sev:"warn",t:"Липсва час на ритуала",s:"№ "+r.number+" · "+(r.decName||"—")+" · "+bgDate(r.ritDate),rid:r.id})}
+  if(fin)for(const r of real){const rest=calc(r).rest;if(!r.paid&&rest>0&&r.ritDate&&r.ritDate<old)
+    out.push({sev:"bad",t:"Просрочен остатък "+eur(rest),s:"№ "+r.number+" · "+(r.appName||"—")+" · ритуал "+bgDate(r.ritDate),rid:r.id})}
+  if(seeFr)frInside().forEach(x=>{const d=daysBetween(x.dateIn);if(d>=3)out.push({sev:"warn",t:"Тяло в камерата от "+d+" дни",s:(x.cell?"Клетка "+x.cell+" · ":"")+(x.name||""),go:"fridge"})});
+  INVD.items.filter(i=>isLow(i)&&i.stock>0).forEach(i=>out.push({sev:"warn",t:"Малко на склад: "+i.name,s:numIn(i.stock)+" "+(i.unit||"бр.")+" · минимум "+numIn(i.minStock),go:"stock"}));
+  out.sort((a,b)=>(a.sev==="bad"?0:1)-(b.sev==="bad"?0:1));
+  const n=$("#dashAttnN");n.textContent=out.length;n.classList.toggle("zero",!out.length);
+  $("#dashAttn").innerHTML=out.length?out.slice(0,6).map(x=>`<div class="mx-att ${x.sev}" ${x.rid?`data-rid="${esc(x.rid)}"`:`data-go="${x.go}"`} role="button" tabindex="0"><div class="g"><b>${esc(x.t)}</b><div class="muted">${esc(x.s)}</div></div><span class="btn small">Виж</span></div>`).join("")
+    +(out.length>6?`<div class="muted" style="padding:8px 12px;font-size:12.5px">и още ${out.length-6}</div>`:"")
+    :`<div class="mx-allok"><i>✓</i>Всичко е наред — няма просрочени, липсващи или изчерпани неща.</div>`;
+}
+
 async function renderDash(){
   const all=await allReqs(),real=all.filter(r=>!r.sample),today=todayISO(),ym=today.slice(0,7);
   const dt=new Date().toLocaleDateString("bg-BG",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
@@ -4280,6 +4354,8 @@ async function renderDash(){
       return `<div class="today-row"><div class="g"><b>${esc(x.r.decName||"—")}</b><div class="muted">${x.label} · ${d40fmt(x.date)} · ${days===0?"днес":days===1?"утре":"след "+days+" дни"}</div></div><span class="muted" style="font-size:12.5px">${esc(x.r.appName||"")}</span></div>`}).join("")
     :`<div class="empty">Няма помени в следващите 7 дни.</div>`;
   $("#dashDate").textContent=dt.charAt(0).toUpperCase()+dt.slice(1);
+  try{mxDay(all,seePm||canTab("cal")?await loadEvents():[],today)}catch(e){$("#dashDayCard").classList.add("hidden")}
+  try{mxAttention(all,real,today,fin,seeFr)}catch(e){$("#dashAttnCard").classList.add("hidden")}
   setTimeout(()=>mxCount($("#tab-dash")),30);
   const mon=real.filter(r=>reqDay(r).startsWith(ym)),inc=sumBy(mon,r=>calc(r).total),exp=sumBy(mon,r=>wsCalc(r).expenses),pr=r2(inc-exp);
   const unpaid=real.filter(r=>!r.paid&&calc(r).rest>0),mName=MONTHS[+ym.slice(5)-1].toLowerCase();
@@ -4287,7 +4363,7 @@ async function renderDash(){
     +kpi("Печалба · "+mName,`<span class="${pr<0?"neg":""}">${eur(pr)}</span>`,inc?`марж ${Math.round(pr/inc*100)} %`:"");
   const lowI=INVD.items.filter(isLow);
   $("#dashNotice").innerHTML=(!real.length&&all.length?`<div class="notice">Засега има само примерни заявки. Сумите отгоре не включват примерните заявки.</div>`:"")+
-    (lowI.length?`<div class="notice">Под минималната наличност: <b>${lowI.map(i=>esc(i.name)+" ("+numIn(i.stock)+" "+esc(i.unit)+")").join(", ")}</b>. Вижте раздел „Инвентар“.</div>`:"");
+    ""; // изчерпаните и малкото на склад са в „Иска внимание“
   const rit=all.filter(r=>r.ritDate&&r.ritDate>=today&&r.ritDate<=plusDays(today,14)).sort((a,b)=>(a.ritDate+a.ritTime).localeCompare(b.ritDate+b.ritTime));
   $("#dashRit").innerHTML=rit.length?`<table class="list"><tbody>${rit.map(r=>`<tr class="click" data-id="${r.id}">
       <td class="datecell" style="width:118px"><b>${r.ritDate===today?"Днес":bgDate(r.ritDate)}</b><span>${esc(r.ritDay||"")}${r.ritTime?" · "+esc(r.ritTime)+" ч.":""}</span></td>
@@ -5744,12 +5820,13 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="5"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="6"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
   {v:"1.0",d:"19.11.2026",items:[
     "Memoriox 1.0 — номерацията на версиите започва отначало.",
+    "Началното табло: „Денят“ — ритуалите и срещите днес на времева линия, и „Иска внимание“ — липсващ час, просрочен остатък, изчерпан склад, дълъг престой в камерата.",
     "Нов облик като на memoriox.eu: нови шрифтове, по-изчистени карти и бутони, плавни преходи между разделите.",
     "Плащане на абонамента с карта (Stripe): Настройки → „Абонамент“ (за администратора). Достъпът се удължава сам след плащането; при изтекъл срок бутонът е и на входа.",
     "Настройки → „Приложение на телефона“: стъпка по стъпка как да добавите Memoriox на началния екран на iPhone и на Android, с адреса app.memoriox.eu. Иконката вече се казва „Memoriox“.",
