@@ -8,6 +8,8 @@
 <meta name="theme-color" content="#111315"><meta name="format-detection" content="telephone=no">
 <link rel="icon" type="image/png" href="favicon.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.json">
 <title>Memoriox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600&family=Cormorant+Garamond:ital,wght@1,600&display=swap" rel="stylesheet">
 <script>(function(){var t="light";try{t=localStorage.getItem("mx-theme")||"light"}catch(e){}document.documentElement.setAttribute("data-theme",t==="dark"?"dark":"light")})()</script>
 <style>
 /* =====================================================================
@@ -1056,6 +1058,75 @@ a.btn,a.btn:hover{text-decoration:none}
 @media(max-width:760px){.inst-grid{grid-template-columns:1fr}}
 .wn-old{margin:18px 0 8px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
 @media(min-width:1101px){#dashToday[data-n="3"],#dashKpis{grid-template-columns:repeat(3,minmax(0,1fr))}#dashToday[data-n="2"]{grid-template-columns:repeat(2,minmax(0,1fr))}#dashToday[data-n="1"]{grid-template-columns:1fr}}
+/* =====================================================================
+   ОБЛИК MEMORIOX (като memoriox.eu): Inter Tight / Inter / Cormorant курсив,
+   хартия-мастило-бронз, карти с меки сенки, мастилен основен бутон, плавни движения.
+   Само екранът на програмата — бланките за печат (.sheet) имат свои шрифтове и цветове.
+   ===================================================================== */
+:root{
+  --ui:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  --display:"Inter Tight","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --mx-serif:"Cormorant Garamond",Georgia,"Times New Roman",serif;
+  --mx-primary:#EDEAE4; --mx-primary-ink:#16181D;
+  --mx-shadow:0 1px 2px rgba(0,0,0,.3),0 12px 30px -16px rgba(0,0,0,.6);
+  --r:12px; --r-sm:9px;
+}
+:root[data-theme="dark"]{
+  --bg:#121317; --side:#16171B; --panel:#1A1C21; --panel2:#202329; --panel3:#282B32; --field:#16181C;
+  --text:#EDEAE4; --text2:#B4B0A8; --text3:#8F8C85;
+  --bronze:#CFAB72; --bronze-hi:#DDBE8A; --bronze-soft:rgba(207,171,114,.13); --bronze-line:rgba(207,171,114,.4);
+  --border:rgba(237,234,228,.11); --border-soft:rgba(237,234,228,.07); --border-strong:rgba(237,234,228,.2);
+}
+:root[data-theme="light"]{
+  --bg:#F6F4F0; --side:#FFFFFF; --panel:#FFFFFF; --panel2:#F0EDE7; --panel3:#E7E3DB; --field:#FFFFFF;
+  --text:#16181D; --text2:#4A4F59; --text3:#6B6F78;
+  --border:rgba(22,24,29,.12); --border-soft:rgba(22,24,29,.075); --border-strong:rgba(22,24,29,.2);
+  --mx-primary:#16181D; --mx-primary-ink:#FFFFFF;
+  --mx-shadow:0 1px 2px rgba(22,24,29,.05),0 10px 30px -18px rgba(22,24,29,.25);
+}
+body{font-family:var(--ui);letter-spacing:0;font-feature-settings:"kern","tnum" 0;font-variant-numeric:tabular-nums}
+em.mx{font-family:var(--mx-serif);font-style:italic;font-weight:600;color:var(--bronze);letter-spacing:0}
+/* заглавия */
+.ph h2{font:700 clamp(26px,1.5rem + .8vw,32px)/1.1 var(--display);letter-spacing:-.025em}
+.ph p{font-size:14px}
+.card h2{font:600 15.5px/1.3 var(--display);letter-spacing:-.01em}
+.tb-title{font:700 18px/1.2 var(--display);letter-spacing:-.02em}
+.brand h1,#appTitle{font:700 15px/1.2 var(--display);letter-spacing:-.015em}
+.modal header h3{font:700 18px/1.25 var(--display);letter-spacing:-.02em}
+.auth-brand h1{font:700 19px/1.25 var(--display);letter-spacing:-.02em}
+.dash-h{font:600 15px/1.3 var(--display);letter-spacing:-.01em}
+.kpi .k,.tile .k,table.list th,.card h3,nav.tabs .nsec{letter-spacing:.06em}
+/* бутони */
+.btn{border-radius:var(--r-sm);font:500 13px/1.2 var(--ui);transition:background .15s,border-color .15s,color .15s,box-shadow .2s,transform .15s cubic-bezier(.2,.8,.2,1)}
+.btn:active{transform:scale(.96)}
+.btn.primary{background:var(--mx-primary);border-color:var(--mx-primary);color:var(--mx-primary-ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.14)}
+@media(hover:hover) and (pointer:fine){
+  .btn.primary:hover{background:var(--mx-primary);border-color:var(--mx-primary);transform:translateY(-1px);box-shadow:0 8px 18px -10px rgba(0,0,0,.45)}
+}
+[data-theme="light"] .btn.primary{color:#fff}
+/* карти и плочки */
+.card{border-radius:var(--r);box-shadow:var(--mx-shadow);border-color:var(--border-soft)}
+.kpis{gap:12px;background:none;border:0;box-shadow:none;overflow:visible}
+.kpis .kpi{background:var(--panel);border:1px solid var(--border-soft)!important;border-radius:var(--r);box-shadow:var(--mx-shadow);padding:16px 18px}
+.kpi .k{font-size:11px;font-weight:600;text-transform:uppercase;color:var(--text3)}
+.kpi .v{font:700 26px/1.1 var(--display);letter-spacing:-.03em;margin-top:8px}
+.notice{border-radius:10px}
+.tag,.pill{border-radius:999px}
+/* меню: плъзгащо се поле под активния раздел */
+nav.tabs{position:relative}
+nav.tabs .mx-pill{position:absolute;left:10px;right:10px;top:0;height:36px;border-radius:9px;background:var(--bronze-soft);pointer-events:none;z-index:0;transition:transform .35s cubic-bezier(.2,.8,.2,1),height .35s cubic-bezier(.2,.8,.2,1),opacity .2s}
+nav.tabs button{position:relative;z-index:1;border-radius:9px}
+nav.tabs.has-pill button.on{background:transparent;box-shadow:none}
+nav.tabs.has-pill button.on::before{display:none}
+nav.tabs button.on svg{color:var(--bronze)}
+/* появяване на екрана: карти и плочки една след друга */
+@keyframes mxIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+main>section.mx-enter>.ph,main>section.mx-enter .kpis>.kpi,main>section.mx-enter>.card,main>section.mx-enter>div>.card,main>section.mx-enter .cols2>div>.card,main>section.mx-enter .cols2>.card{animation:mxIn .45s cubic-bezier(.2,.8,.2,1) both}
+main>section.mx-enter .kpis>.kpi:nth-child(2),main>section.mx-enter>.card:nth-of-type(2),main>section.mx-enter .cols2>div>.card:nth-child(2){animation-delay:.05s}
+main>section.mx-enter .kpis>.kpi:nth-child(3),main>section.mx-enter>.card:nth-of-type(3),main>section.mx-enter .cols2>div:nth-child(2)>.card:nth-child(1){animation-delay:.1s}
+main>section.mx-enter .kpis>.kpi:nth-child(4),main>section.mx-enter>.card:nth-of-type(n+4),main>section.mx-enter .cols2>div:nth-child(2)>.card:nth-child(2){animation-delay:.15s}
+@media(prefers-reduced-motion:reduce){main>section.mx-enter *{animation:none!important}nav.tabs .mx-pill{transition:none}}
+@media(max-width:900px){nav.tabs .mx-pill{display:none}nav.tabs.has-pill button.on{background:var(--bronze-soft)}}
 </style>
 </head>
 <body>
@@ -2565,6 +2636,22 @@ async function pmContacted(x){if(!needEdit("req","отбелязване на п
 $$("#pmSeg button").forEach(b=>b.onclick=()=>{PMD=+b.dataset.d;renderPomeni()});
 $("#pmDone").onchange=renderPomeni;
 $("#d40Today").onclick=()=>{$("#d40Date").value="";renderDays40()};
+/* ---- облик: плъзгащо се поле в менюто, появяване на екрана, броене на числата ---- */
+const MX_RM=matchMedia("(prefers-reduced-motion: reduce)").matches;
+function mxPill(){const nav=$("nav.tabs");if(!nav)return;let p=nav.querySelector(".mx-pill");
+  if(!p){p=document.createElement("span");p.className="mx-pill";nav.prepend(p);nav.classList.add("has-pill")}
+  const on=nav.querySelector("button.on");if(!on||!on.offsetParent){p.style.opacity="0";return}
+  p.style.opacity="1";p.style.height=on.offsetHeight+"px";p.style.transform=`translateY(${on.offsetTop}px)`}
+function mxEnter(sec){if(!sec||MX_RM)return;sec.classList.remove("mx-enter");void sec.offsetWidth;sec.classList.add("mx-enter");
+  clearTimeout(sec._mxT);sec._mxT=setTimeout(()=>sec.classList.remove("mx-enter"),900)}
+// числата в плочките се „броят“ до стойността си (форматът — същият: „1 238,50 €“)
+function mxCount(root){if(MX_RM||!root)return;root.querySelectorAll(".kpi .v").forEach(el=>{
+  const span=el.querySelector("span")||el;if(span.children.length)return;const txt=span.textContent,m=txt.match(/-?\d[\d\s\u00a0]*(?:,\d+)?/);if(!m)return;
+  const raw=m[0],dec=(raw.split(",")[1]||"").length,to=parseFloat(raw.replace(/[\s\u00a0]/g,"").replace(",","."));if(!isFinite(to)||Math.abs(to)<2)return;
+  const fmt=v=>v.toLocaleString("bg-BG",{minimumFractionDigits:dec,maximumFractionDigits:dec});const t0=performance.now(),D=700;
+  const step=now=>{const k=Math.min(1,(now-t0)/D),e=1-Math.pow(1-k,3);span.textContent=txt.replace(raw,fmt(to*e));if(k<1)requestAnimationFrame(step);else span.textContent=txt};
+  requestAnimationFrame(step)})}
+addEventListener("resize",()=>mxPill());
 function showTab(name){
   closeMenu();$("aside.side").classList.remove("open");
   if(ME&&!canTab(name)){toast("Нямате достъп до този раздел.",true);name=firstTab()}
@@ -2582,6 +2669,7 @@ function showTab(name){
   if(name==="list")renderList();if(name==="catalog")renderCatalog();if(name==="settings")renderSettings();
   if(name==="edit"&&!CURRENT)openRequest(newRequest(),true);
   permLock();window.scrollTo(0,0);
+  mxPill();mxEnter($("#tab-"+name));
 }
 $$("nav.tabs button").forEach(b=>b.onclick=async()=>{
   if(DOC_EDIT&&DOCV&&$("#docPaper").innerHTML!==DOCV.html&&!confirm("Документът е в редакция и промените не са запазени. Да изляза ли без запис?"))return;
@@ -4176,7 +4264,7 @@ async function renderDash(){
   const all=await allReqs(),real=all.filter(r=>!r.sample),today=todayISO(),ym=today.slice(0,7);
   const dt=new Date().toLocaleDateString("bg-BG",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   const h=new Date().getHours(),first=((ME&&ME.name)||"").trim().split(/\s+/)[0];
-  $("#dashHello").textContent=(h<11?"Добро утро":h<18?"Добър ден":"Добър вечер")+(first?", "+first:"");
+  $("#dashHello").innerHTML=esc(h<11?"Добро утро":h<18?"Добър ден":"Добър вечер")+(first?', <em class="mx">'+esc(first)+'</em>':"");
   // „Днес“: какво иска внимание сега — ритуали, камера, неплатено, помени
   const ritToday=all.filter(r=>r.ritDate===today),fin=can("fin"),seeFr=canTab("fridge"),seePm=can("req");
   const ins=seeFr?frInside():[],longest=ins.length?Math.max(...ins.map(x=>daysBetween(x.dateIn))):0;
@@ -4192,6 +4280,7 @@ async function renderDash(){
       return `<div class="today-row"><div class="g"><b>${esc(x.r.decName||"—")}</b><div class="muted">${x.label} · ${d40fmt(x.date)} · ${days===0?"днес":days===1?"утре":"след "+days+" дни"}</div></div><span class="muted" style="font-size:12.5px">${esc(x.r.appName||"")}</span></div>`}).join("")
     :`<div class="empty">Няма помени в следващите 7 дни.</div>`;
   $("#dashDate").textContent=dt.charAt(0).toUpperCase()+dt.slice(1);
+  setTimeout(()=>mxCount($("#tab-dash")),30);
   const mon=real.filter(r=>reqDay(r).startsWith(ym)),inc=sumBy(mon,r=>calc(r).total),exp=sumBy(mon,r=>wsCalc(r).expenses),pr=r2(inc-exp);
   const unpaid=real.filter(r=>!r.paid&&calc(r).rest>0),mName=MONTHS[+ym.slice(5)-1].toLowerCase();
   $("#dashKpis").innerHTML=kpi("Оборот · "+mName,eur(inc),`${mon.length} ${mon.length===1?"заявка":"заявки"}`,"lead")+kpi("Разходи · "+mName,eur(exp),"от работните листове")
@@ -5655,12 +5744,13 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="4"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="5"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
   {v:"1.0",d:"19.11.2026",items:[
     "Memoriox 1.0 — номерацията на версиите започва отначало.",
+    "Нов облик като на memoriox.eu: нови шрифтове, по-изчистени карти и бутони, плавни преходи между разделите.",
     "Плащане на абонамента с карта (Stripe): Настройки → „Абонамент“ (за администратора). Достъпът се удължава сам след плащането; при изтекъл срок бутонът е и на входа.",
     "Настройки → „Приложение на телефона“: стъпка по стъпка как да добавите Memoriox на началния екран на iPhone и на Android, с адреса app.memoriox.eu. Иконката вече се казва „Memoriox“.",
     "Светла тема по подразбиране. Тъмната се включва с „☾ Тъмна тема“ долу в менюто; изборът се помни на всяко устройство.",
