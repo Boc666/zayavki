@@ -1126,6 +1126,45 @@ main>section.mx-enter .kpis>.kpi:nth-child(2),main>section.mx-enter>.card:nth-of
 main>section.mx-enter .kpis>.kpi:nth-child(3),main>section.mx-enter>.card:nth-of-type(3),main>section.mx-enter .cols2>div:nth-child(2)>.card:nth-child(1){animation-delay:.1s}
 main>section.mx-enter .kpis>.kpi:nth-child(4),main>section.mx-enter>.card:nth-of-type(n+4),main>section.mx-enter .cols2>div:nth-child(2)>.card:nth-child(2){animation-delay:.15s}
 @media(prefers-reduced-motion:reduce){main>section.mx-enter *{animation:none!important}nav.tabs .mx-pill{transition:none}}
+/* Заявки: филтри и напредък */
+.mx-filters{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 14px}
+.mx-filters button{border:0;background:none;padding:7px 13px;border-radius:999px;color:var(--text2);font:500 13px var(--ui);cursor:pointer;display:inline-flex;gap:7px;align-items:center;transition:background .2s,color .2s}
+.mx-filters button span{font-size:11.5px;opacity:.65}
+.mx-filters button:hover{background:var(--panel2)}
+.mx-filters button.on{background:var(--mx-primary);color:var(--mx-primary-ink)}
+.mx-prog{height:4px;border-radius:9px;background:var(--panel2);overflow:hidden;width:72px;margin-top:6px}
+.mx-prog i{display:block;height:100%;background:var(--bronze);border-radius:9px}
+/* Случай: табове */
+.mx-ctabs{position:relative;display:flex;gap:2px;border-bottom:1px solid var(--border);margin:4px 0 16px;overflow-x:auto}
+.mx-ctabs button{border:0;background:none;padding:10px 14px;color:var(--text2);font:500 13.5px var(--ui);cursor:pointer;white-space:nowrap}
+.mx-ctabs button.on{color:var(--text);font-weight:600}
+.mx-ctabs button span{font-size:11.5px;color:var(--text3)}
+.mx-ctabs .ul{position:absolute;bottom:-1px;left:0;height:2px;background:var(--bronze);border-radius:2px;transition:transform .3s cubic-bezier(.2,.8,.2,1),width .3s cubic-bezier(.2,.8,.2,1)}
+.mx-docs{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
+.mx-doc{border:1px solid var(--border-soft);border-radius:var(--r);background:var(--panel);overflow:hidden;display:flex;flex-direction:column;padding:0;text-align:left;cursor:pointer;color:var(--text);font-family:var(--ui);box-shadow:var(--mx-shadow);transition:transform .2s,box-shadow .2s}
+.mx-doc:hover:not([disabled]){transform:translateY(-3px);box-shadow:0 18px 34px -22px rgba(0,0,0,.35)}
+.mx-doc[disabled]{opacity:.5;cursor:default}
+.mx-doc .pv{background:var(--panel2);padding:16px 22px 0;height:150px;overflow:hidden}
+.mx-doc .b{padding:12px 14px;display:flex;flex-direction:column;gap:3px}
+.mx-doc .b small{color:var(--text3);font-size:12px}
+.mx-paper{background:#fff;color:#1c1a17;border-radius:3px 3px 0 0;box-shadow:0 6px 18px -8px rgba(0,0,0,.25);padding:14px 14px 0;height:100%;font-family:Georgia,"Times New Roman",serif}
+.mx-paper .h1{font-size:9px;font-weight:700;letter-spacing:.06em;text-align:center}
+.mx-paper .h2{font-size:6.5px;text-align:center;color:#6b655c;margin-top:2px}
+.mx-paper .ln{height:4px;background:#d9d3c6;border-radius:2px;margin-top:6px}.mx-paper .ln.s{width:60%}.mx-paper .ln.m{width:80%}
+.mx-paper .bx{display:flex;gap:4px;margin-top:7px}.mx-paper .bx i{flex:1;height:14px;border:1px solid #d9d3c6;border-radius:2px}
+.mx-pay{display:flex;align-items:center;gap:12px;padding:11px 4px;border-top:1px solid var(--border-soft)}
+.mx-pay .ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:var(--ok-soft);color:var(--ok);font-weight:700;flex:none}
+.mx-pay.ref .ic{background:var(--err-soft);color:var(--err)}
+.mx-pay .g{flex:1;min-width:0}.mx-pay .g .muted{font-size:12.5px}
+.mx-sum{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--border);margin-top:6px;padding-top:12px}
+.mx-sum div{display:flex;justify-content:space-between;gap:10px}
+.mx-sum .tot{font:700 19px var(--display);letter-spacing:-.02em;border-top:1px solid var(--border-soft);padding-top:10px}
+.mx-tl{position:relative;padding:4px 0 0 24px}
+.mx-tl::before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:var(--border)}
+.mx-tl .e{position:relative;padding:0 0 16px}
+.mx-tl .e::before{content:"";position:absolute;left:-22px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--panel);border:2px solid var(--bronze)}
+.mx-tl .e .muted{font-size:12.5px}
+@media print{.mx-ctabs,#casePane{display:none!important}}
 /* „Днес“: времева линия на деня */
 .mx-daycard{padding-bottom:14px}
 .mx-axis-wrap{overflow-x:auto;overscroll-behavior-x:contain;padding:28px 24px 4px 22px}
@@ -1239,6 +1278,7 @@ main>section.mx-enter .mx-axis .ev{animation:mxGrow .55s cubic-bezier(.2,.8,.2,1
     <button class="btn primary" id="btnNew"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Нова заявка</button>
   </div>
   <div id="backupNotice" class="notice hidden"></div>
+  <div class="mx-filters" id="listFilters" role="group" aria-label="Филтър на заявките"></div>
   <div class="card">
     <table class="list">
       <thead><tr><th>№</th><th>Дата</th><th>Заявител</th><th>Починал</th><th>Вид</th><th class="money">Общо</th><th class="money">Остатък</th><th class="money listProfitH" title="Обща сума по заявката минус разходите от работния лист">Чиста печалба</th><th></th></tr></thead>
@@ -1420,6 +1460,14 @@ main>section.mx-enter .mx-axis .ev{animation:mxGrow .55s cubic-bezier(.2,.8,.2,1
     </div>
   </div>
   <div id="caseBar" class="card casebar"></div>
+  <div class="mx-ctabs" id="caseTabs" role="tablist" aria-label="Части на случая">
+    <button type="button" role="tab" data-ct="req" class="on">Заявка</button>
+    <button type="button" role="tab" data-ct="docs">Документи</button>
+    <button type="button" role="tab" data-ct="pay">Плащания<span id="ctPayN"></span></button>
+    <button type="button" role="tab" data-ct="log">История</button>
+    <span class="ul" id="ctUl"></span>
+  </div>
+  <div id="casePane" class="hidden"></div>
   <div id="sheets"></div>
   <div id="preview" class="hidden">
     <div class="row" style="margin-bottom:10px"><b>Преглед — точно така ще се отпечата</b><span class="spacer"></span><button class="btn" id="btnBack">← Обратно към попълването</button></div>
@@ -2669,6 +2717,7 @@ $("#pmDone").onchange=renderPomeni;
 $("#d40Today").onclick=()=>{$("#d40Date").value="";renderDays40()};
 /* ---- облик: плъзгащо се поле в менюто, появяване на екрана, броене на числата ---- */
 const MX_RM=matchMedia("(prefers-reduced-motion: reduce)").matches;
+let MX_LAST_CASE=null;
 function mxPill(){const nav=$("nav.tabs");if(!nav)return;let p=nav.querySelector(".mx-pill");
   if(!p){p=document.createElement("span");p.className="mx-pill";nav.prepend(p);nav.classList.add("has-pill")}
   const on=nav.querySelector("button.on");if(!on||!on.offsetParent){p.style.opacity="0";return}
@@ -2701,6 +2750,7 @@ function showTab(name){
   if(name==="edit"&&!CURRENT)openRequest(newRequest(),true);
   permLock();window.scrollTo(0,0);
   mxPill();mxEnter($("#tab-"+name));
+  if(name==="edit"){if(MX_LAST_CASE!==(CURRENT&&CURRENT.id)){MX_LAST_CASE=CURRENT&&CURRENT.id;mxCaseTab("req")}else mxCaseUl()}
 }
 $$("nav.tabs button").forEach(b=>b.onclick=async()=>{
   if(DOC_EDIT&&DOCV&&$("#docPaper").innerHTML!==DOCV.html&&!confirm("Документът е в редакция и промените не са запазени. Да изляза ли без запис?"))return;
@@ -2723,14 +2773,20 @@ const ICO={ws:svgI('<rect x="5" y="4" width="14" height="17" rx="1"/><path d="M9
   del:svgI('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'),
   arch:svgI('<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v12h14V8M10 12h4"/>')};
 /* ---------------- списък ---------------- */
+let LISTF="active";
+const MX_STP={new:25,prep:50,confirmed:75,done:100};
 async function renderList(){
   const q=$("#search").value.trim().toLowerCase();
   let all=(await DB.all("requests")).sort((a,b)=>(b.created||"").localeCompare(a.created||""));
   if(q)all=all.filter(r=>[r.number,r.appName,r.decName,r.appPhone,r.cemetery].join(" ").toLowerCase().includes(q));
+  // филтър: Активни / С остатък / Приключени / Всички (брой до всеки)
+  const FT=[["active","Активни",r=>statusOf(r).v!=="done"],["debt","С остатък",r=>!r.paid&&calc(normalizeRequest(structuredClone(r))).rest>0],["done","Приключени",r=>statusOf(r).v==="done"],["all","Всички",()=>true]];
+  $("#listFilters").innerHTML=FT.map(([k,n,f])=>`<button type="button" data-lf="${k}" class="${LISTF===k?"on":""}">${n}<span>${all.filter(f).length}</span></button>`).join("");
+  all=all.filter((FT.find(x=>x[0]===LISTF)||FT[3])[2]);
   const tb=$("#listBody");tb.innerHTML="";$("#listEmpty").classList.toggle("hidden",all.length>0);
   for(const raw of all){const r=normalizeRequest(structuredClone(raw)),c=calc(r),tr=document.createElement("tr");
     if(r.id===JUST_SAVED){tr.dataset.flash="1";JUST_SAVED=null}
-    tr.innerHTML=`<td><b>${esc(r.number)}</b>${r.sample?'<span class="pill">ПРИМЕР</span>':""}${stTag(r)}</td><td>${bgDate(r.reqDate)}</td>
+    tr.innerHTML=`<td><b>${esc(r.number)}</b>${r.sample?'<span class="pill">ПРИМЕР</span>':""}${stTag(r)}<div class="mx-prog" title="${esc(stLabel(statusOf(r).v))}"><i style="width:${MX_STP[statusOf(r).v]||25}%"></i></div></td><td>${bgDate(r.reqDate)}</td>
       <td>${esc(r.appName)}</td><td>${esc(r.decName)}</td><td>${esc(r.kind)}</td><td class="money">${eur(c.total)}</td>
       <td class="money${r.paid||c.rest<0?" paidcell":""}" style="color:${c.rest>0?"var(--caution)":"var(--ok)"}">${r.paid?"✔ Платена":c.rest<0?"надплатено "+eur(-c.rest):eur(c.rest)}</td>
       ${(()=>{const w=wsCalc(r);return w.has?`<td class="money listProfit ${w.profit<0?"neg":"pos"}" title="Приход ${eur(w.income)} − разходи ${eur(w.expenses)}">${eur(w.profit)}</td>`
@@ -2759,6 +2815,7 @@ async function renderList(){
   const last=SETTINGS.lastBackup?new Date(SETTINGS.lastBackup):null,days=last?Math.floor((Date.now()-last)/864e5):null;
   if(real>0&&(days===null||days>=7)){n.innerHTML=`${last?`Последният архив е отпреди ${days} дни.`:"Още не сте правили архив."} Отидете в „Настройки“ → „Свали архив“.`;n.classList.remove("hidden")}else n.classList.add("hidden");
 }
+$("#listFilters").addEventListener("click",e=>{const b=e.target.closest("[data-lf]");if(!b)return;LISTF=b.dataset.lf;renderList()});
 $("#search").oninput=renderList;
 $("#btnNew").onclick=()=>{openRequest(newRequest(),true);showTab("edit")};
 $$("[data-new]").forEach(b=>b.onclick=()=>$("#btnNew").click());
@@ -2966,6 +3023,38 @@ function statusOf(r){if(r.status)return{v:r.status,inferred:false};
   return{v:r.paid&&r.ritDate&&r.ritDate<todayISO()?"done":r.ritDate&&r.ritDate>=todayISO()?"confirmed":"new",inferred:true}}
 const stLabel=v=>(CASE_ST.find(x=>x[0]===v)||CASE_ST[0])[1];
 function stTag(r){const s=statusOf(r);return`<span class="tag st st-${s.v}${s.inferred?" inferred":""}" title="${s.inferred?"Изчислен статус — не е задаван ръчно":""}">${stLabel(s.v)}</span>`}
+/* ---- табове на случая: Заявка · Документи · Плащания · История ---- */
+let CTAB="req";
+function mxCaseUl(){const b=$("#caseTabs button.on"),u=$("#ctUl");if(!b||!u||!b.offsetParent)return;u.style.width=b.offsetWidth+"px";u.style.transform=`translateX(${b.offsetLeft}px)`}
+function mxCaseTab(t){CTAB=t;$$("#caseTabs [data-ct]").forEach(b=>{b.classList.toggle("on",b.dataset.ct===t);b.setAttribute("aria-selected",b.dataset.ct===t)});
+  const req=t==="req";$("#casePane").classList.toggle("hidden",req);$("#sheets").classList.toggle("hidden",!req);
+  if(!req&&!$("#preview").classList.contains("hidden"))$("#preview").classList.add("hidden");
+  mxCaseUl();if(!req)mxCaseRender()}
+const mxPaper=(t,s)=>`<div class="mx-paper"><div class="h1">${t}</div><div class="h2">${s}</div><div class="ln m"></div><div class="ln"></div><div class="ln s"></div><div class="bx"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln m"></div></div>`;
+async function mxCaseRender(){const P=$("#casePane");if(!CURRENT||!P||CTAB==="req")return;const r=CURRENT,c=calc(r);
+  if(CTAB==="docs"){const D=[["btnPreview","ЗАЯВКА","за погребение или кремация","Заявка","Преглед и печат на бланката"],["btnWs","РАБОТЕН ЛИСТ","разходи и задачи","Работен лист","Разходи и печалба по случая"],["btnInv","ФАКТУРА",r.inv&&r.inv.no?"№ "+esc(r.inv.no):"чернова","Фактура",r.inv&&r.inv.no?"Издадена · № "+esc(r.inv.no):"Още не е издадена"],["btnOffer","ОФЕРТА","за близките","Оферта","Ценово предложение за клиента"]];
+    P.innerHTML=`<div class="mx-docs">${D.map(d=>{const b=$("#"+d[0]),off=!b||b.classList.contains("np")||b.disabled;return `<button type="button" class="mx-doc" data-cd="${d[0]}" ${off?"disabled":""}><div class="pv">${mxPaper(d[1],d[2])}</div><div class="b"><b>${d[3]}</b><small>${d[4]}</small></div></button>`}).join("")}</div>
+      <div class="row" style="gap:8px;margin-top:14px;flex-wrap:wrap"><button type="button" class="btn" data-cd="btnLink">Линк към близките</button><button type="button" class="btn" data-cd="btnPrint">Печат / PDF</button></div>`;return}
+  if(CTAB==="pay"){const ps=(r.payments||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    P.innerHTML=`<div class="card"><div class="row" style="margin-bottom:8px"><h2 style="margin:0">Плащания</h2><span class="spacer"></span><button type="button" class="btn primary small" data-cd="btnPaid">+ Плащане</button></div>
+      ${ps.length?ps.map(p=>`<div class="mx-pay ${p.type==="refund"?"ref":""}"><div class="ic">${p.type==="refund"?"↺":"✓"}</div><div class="g"><b>${p.type==="refund"?"Сторно":"Плащане"} · ${esc(p.method||"")}</b><div class="muted">${bgDate(p.date)}${p.by?" · "+esc(p.by):""}${p.note?" · "+esc(p.note):""}</div></div><b>${p.type==="refund"?"−":""}${eur(p.amount)}</b></div>`).join("")
+        :(r.advance?`<div class="mx-pay"><div class="ic">✓</div><div class="g"><b>Аванс</b><div class="muted">${bgDate(r.advanceDate)||""} · записан на бланката</div></div><b>${eur(r.advance)}</b></div>`:`<div class="empty" style="padding:22px">Още няма плащания по този случай.</div>`)}
+      <div class="mx-sum"><div><span class="muted">Обща сума</span><b>${eur(c.total)}</b></div><div><span class="muted">Платено</span><span>${eur(r2(c.total-c.rest))}</span></div><div class="tot"><span>Остатък</span><span style="color:${c.rest>0?"var(--caution)":"var(--ok)"}">${c.rest<0?"надплатено "+eur(-c.rest):eur(c.rest)}</span></div></div></div>`;return}
+  if(CTAB==="log"){const E=[];const add=(ts,t,d)=>{if(ts)E.push({ts,t,d})};
+    add(r.created,"Заявката е създадена","№ "+esc(r.number));
+    (r.payments||[]).forEach(p=>add(p.at||p.date,(p.type==="refund"?"Сторно ":"Плащане ")+eur(p.amount),esc(p.method||"")+(p.by?" · "+esc(p.by):"")));
+    (r.tasks||[]).filter(t=>t.done).forEach(t=>add(null,"",""));
+    if(r.updated)add(r.updated,"Последна промяна",r.updatedBy?esc(r.updatedBy):"");
+    let fromLog=false;
+    if(CLOUD&&isAdmin()&&!String(r.id).startsWith("tmp")){try{const L=(await sb(`/rest/v1/records?select=value&store=eq.audit&value->>ref=eq.${enc_(r.id)}&order=updated_at.desc&limit=60`)).map(x=>x.value);
+      if(L.length){fromLog=true;E.length=0;L.forEach(x=>add(x.ts,esc(x.action),esc(x.user)+(x.details?" · "+esc(x.details):"")))}}catch(e){}}
+    E.sort((a,b)=>String(b.ts).localeCompare(String(a.ts)));
+    P.innerHTML=`<div class="card"><div class="mx-tl">${E.map(e=>{const d=new Date(e.ts);return `<div class="e"><b>${e.t}</b><div class="muted">${isNaN(d)?"":d.toLocaleString("bg-BG",{dateStyle:"short",timeStyle:"short"})}${e.d?" · "+e.d:""}</div></div>`}).join("")||'<div class="muted">Още няма история.</div>'}</div>
+      ${fromLog||!isAdmin()?"":'<p class="muted" style="font-size:12.5px;margin:6px 0 0">Подробната история на действията е в „Потребители“ → „История на действията“.</p>'}</div>`}}
+$("#caseTabs").addEventListener("click",e=>{const b=e.target.closest("[data-ct]");if(b)mxCaseTab(b.dataset.ct)});
+$("#casePane").addEventListener("click",e=>{const b=e.target.closest("[data-cd]");if(!b||b.disabled)return;const t=$("#"+b.dataset.cd);if(!t)return;
+  if(b.dataset.cd==="btnPreview"||b.dataset.cd==="btnPrint")mxCaseTab("req");t.click()});
+addEventListener("resize",()=>mxCaseUl());
 function renderCaseBar(){
   const box=$("#caseBar");if(!box)return;if(!CURRENT){box.innerHTML="";return}
   const r=CURRENT,ed=can("req","edit"),tasks=Array.isArray(r.tasks)?r.tasks:[],dn=tasks.filter(t=>t.done).length,s=statusOf(r);
@@ -2994,6 +3083,8 @@ function renderCaseBar(){
   const dr=$("#dfRestore");if(dr)dr.onclick=()=>{if(!confirm("Да заменя ли полетата на заявката с вашия запазен вариант? (После натиснете „Запази“.)"))return;
     const keepWs=CURRENT.ws,keepInv=CURRENT.inv;CURRENT=normalizeRequest({...structuredClone(draft.data),id:CURRENT.id,ws:keepWs,inv:keepInv,updated:CURRENT.updated});renderSheets();setDirty(true);renderCaseBar();toast("Вариантът е възстановен — проверете и запазете.")};
   const dd=$("#dfDrop");if(dd)dd.onclick=()=>{try{localStorage.removeItem(DRAFT_KEY(CURRENT.id))}catch(e){}renderCaseBar()};
+  const pn=$("#ctPayN");if(pn){const n=(CURRENT.payments||[]).length;pn.textContent=n?" "+n:""}
+  if(CTAB!=="req")mxCaseRender();
 }
 
 /* ---------- календар на ритуалите ---------- */
@@ -5820,12 +5911,13 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="6"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="7"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
   {v:"1.0",d:"19.11.2026",items:[
     "Memoriox 1.0 — номерацията на версиите започва отначало.",
+    "Заявки: филтри „Активни / С остатък / Приключени / Всички“ и лента за напредък. В отворена заявка — табове „Заявка · Документи · Плащания · История“.",
     "Началното табло: „Денят“ — ритуалите и срещите днес на времева линия, и „Иска внимание“ — липсващ час, просрочен остатък, изчерпан склад, дълъг престой в камерата.",
     "Нов облик като на memoriox.eu: нови шрифтове, по-изчистени карти и бутони, плавни преходи между разделите.",
     "Плащане на абонамента с карта (Stripe): Настройки → „Абонамент“ (за администратора). Достъпът се удължава сам след плащането; при изтекъл срок бутонът е и на входа.",
