@@ -97,6 +97,10 @@ function run(){
   T("отделно изображение за програмата",()=>{const v=E(`(()=>{const S=migrateSettings({logoMode:"custom",logo:"data:doc",sideLogoMode:"custom",sideLogo:"data:side"});return [docLogoSrc(S),sideLogoSrc(S).src]})()`);return eq(v,["data:doc","data:side"])});
   T("стари настройки с лого: програмата показва същото лого",()=>{const v=E(`(()=>{const S=migrateSettings({logoMode:"custom",logo:"data:x"});return [S.sideLogoMode,sideLogoSrc(S).src]})()`);return eq(v,["doc","data:x"])});
   T("„Същото като на документите“ без лого → логото на програмата",()=>{const v=E(`(()=>{const S=migrateSettings({logoMode:"none",sideLogoMode:"doc"});const r=sideLogoSrc(S);return [r.app,r.src===APP_LOGO]})()`);return eq(v,[true,true])});
+  G("Празна заявка не се записва");
+  T("нова заявка без нищо попълнено е празна",()=>eq(E(`isBlankReq(newRequest())`),true));
+  T("само име на заявител → не е празна",()=>eq(E(`(()=>{const r=newRequest();r.appName="Мария";return isBlankReq(r)})()`),false));
+  T("само избрана услуга → не е празна",()=>eq(E(`(()=>{const r=newRequest();r.lines[1].used=true;return isBlankReq(r)})()`),false));
   G("Разходи на агенцията");
   const CO=(c,rg)=>E(`(()=>{COSTS=migrateCosts(${JSON.stringify(c)});return costsInRange(${JSON.stringify(rg)}).map(x=>[x.date,x.kind,x.amount])})()`);
   T("еднократен разход в периода се брои, извън периода — не",()=>eq(CO({items:[{id:"a",date:"2026-11-05",cat:"pay",amount:800},{id:"b",date:"2026-10-30",cat:"rent",amount:500}]},["2026-11-01","2026-11-30"]),[["2026-11-05","one",800]]));

@@ -8,6 +8,7 @@
 <meta name="theme-color" content="#111315"><meta name="format-detection" content="telephone=no">
 <link rel="icon" type="image/png" href="favicon.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.json">
 <title>Memoriox</title>
+<script>(function(){var t="light";try{t=localStorage.getItem("mx-theme")||"light"}catch(e){}document.documentElement.setAttribute("data-theme",t==="dark"?"dark":"light")})()</script>
 <style>
 /* =====================================================================
    ДИЗАЙН-СИСТЕМА — тъмна тема на програмата
@@ -1001,6 +1002,53 @@ button.appver:hover{color:var(--text2)}
   .btn:active,nav.tabs button:active,.seg button:active,#menu .mi:active{transform:none!important}
   @keyframes fadeOnly{from{opacity:0}}
 }
+/* =====================================================================
+   СВЕТЛА ТЕМА (по подразбиране от версия 1.11) — същите токени, дневни стойности.
+   Тъмната остава по избор (бутонът със слънце/луна до името долу в менюто).
+   ===================================================================== */
+:root[data-theme="light"]{
+  --bg:#F6F4F0; --side:#FBFAF7; --panel:#FFFFFF; --panel2:#F3F0EA; --panel3:#EAE6DE; --field:#FFFFFF;
+  --text:#1F1C18; --text2:#5A544B; --text3:#6B645A;
+  --bronze:#8C6A36; --bronze-hi:#7A5A2B; --bronze-soft:rgba(140,106,54,.10); --bronze-line:rgba(140,106,54,.36);
+  --border:rgba(31,28,24,.13); --border-soft:rgba(31,28,24,.08); --border-strong:rgba(31,28,24,.22);
+  --ok:#2F7A4F; --ok-soft:rgba(47,122,79,.10);
+  --caution:#9A5F14; --caution-soft:rgba(196,138,48,.12);
+  --err:#B23B32; --err-soft:rgba(178,59,50,.08);
+  --hl:none;
+  --sh-pop:0 18px 48px rgba(31,28,24,.16),0 2px 8px rgba(31,28,24,.08);
+  --ring:0 0 0 3px rgba(140,106,54,.2);
+}
+html[data-theme="light"]{color-scheme:light}
+[data-theme="light"] ::selection{background:rgba(140,106,54,.22);color:var(--text)}
+@media(hover:hover) and (pointer:fine){
+  [data-theme="light"] table.list tbody tr:hover td{background:rgba(31,28,24,.028)}
+  [data-theme="light"] .btn.ghost:hover{background:rgba(31,28,24,.05)}
+  [data-theme="light"] nav.tabs button:hover{background:rgba(31,28,24,.045)}
+}
+[data-theme="light"] nav.tabs button.on{background:var(--bronze-soft)}
+[data-theme="light"] .btn.primary{color:#fff;box-shadow:0 1px 2px rgba(31,28,24,.18)}
+[data-theme="light"] .ui-in{box-shadow:none}
+[data-theme="light"] .ui-in:focus{box-shadow:var(--ring)}
+[data-theme="light"] .seg button.on{background:var(--panel);box-shadow:0 1px 2px rgba(31,28,24,.12)}
+[data-theme="light"] .notice{border-color:rgba(154,95,20,.28)}
+[data-theme="light"] #modalWrap,[data-theme="light"] #modalWrapOut{background:rgba(31,28,24,.32)}
+[data-theme="light"] .cal-d.we{background:var(--panel2)}
+[data-theme="light"] .cal-d.today .cal-n span{color:#fff}
+[data-theme="light"] .toolbar{background:rgba(246,244,240,.88)}
+[data-theme="light"] .brand .plate{box-shadow:0 0 0 1px rgba(31,28,24,.1),0 4px 12px rgba(31,28,24,.1)}
+[data-theme="light"] .card{box-shadow:0 1px 2px rgba(31,28,24,.04)}
+[data-theme="light"] #toast{background:#26221D;color:#F6F4F0;border-color:#26221D}
+/* табло „Днес“ */
+.dash-h{font:600 15px/1.3 var(--display);margin:6px 0 10px;color:var(--text2)}
+.today-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-soft)}
+.today-row:last-child{border-bottom:0}
+.today-row .t{width:54px;flex:none;font-weight:600}
+.today-row .g{flex:1;min-width:0}
+.today-row .g b{font-weight:600}
+.today-row .g .muted{font-size:12.5px}
+.kpi .v.attn{color:var(--caution)}
+.wn-old{margin:18px 0 8px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+@media(min-width:1101px){#dashToday[data-n="3"],#dashKpis{grid-template-columns:repeat(3,minmax(0,1fr))}#dashToday[data-n="2"]{grid-template-columns:repeat(2,minmax(0,1fr))}#dashToday[data-n="1"]{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -1047,7 +1095,7 @@ button.appver:hover{color:var(--text2)}
     <button class="btn ghost small ico" id="suPw" title="Смени паролата си"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg></button>
     <button class="btn ghost small ico" id="suOut" title="Изход"><svg viewBox="0 0 24 24"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 16l-4-4 4-4M6 12h11"/></svg></button>
   </div>
-  <div class="side-foot"><span id="sideWhere">Данните са само на този компютър</span><br><b id="sideBackup">—</b><br><button type="button" class="appver" id="appVer" title="Какво ново — история на версиите"></button><br><button class="side-install hidden" id="pwaBtn" type="button">Инсталирай като приложение</button></div>
+  <div class="side-foot"><span id="sideWhere">Данните са само на този компютър</span><br><b id="sideBackup">—</b><br><button type="button" class="appver" id="appVer" title="Какво ново — история на версиите"></button><br><button type="button" class="appver" id="suTheme" title="Светла / тъмна тема"></button><br><button class="side-install hidden" id="pwaBtn" type="button">Инсталирай като приложение</button></div>
 </aside>
 
 <div id="app">
@@ -1055,18 +1103,23 @@ button.appver:hover{color:var(--text2)}
 <!-- ================= НАЧАЛНО ТАБЛО ================= -->
 <section id="tab-dash" class="hidden">
   <div class="ph">
-    <div><h2>Начално табло</h2><p id="dashDate"></p></div><span class="spacer"></span>
+    <div><h2 id="dashHello">Днес</h2><p id="dashDate"></p></div><span class="spacer"></span>
     <button class="btn primary" data-new><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Нова заявка</button>
   </div>
   <div id="dashNotice"></div>
-  <div class="kpis" id="dashKpis"></div>
+  <div class="kpis" id="dashToday"></div>
   <div class="cols2">
     <div>
-      <div class="card"><div class="row" style="margin-bottom:6px"><h2 style="margin:0">Предстоящи ритуали</h2><span class="spacer"></span><span class="muted">следващите 14 дни</span></div><div id="dashRit"></div></div>
-      <div class="card"><div class="row" style="margin-bottom:6px"><h2 style="margin:0">Активни заявки</h2><span class="spacer"></span><span class="muted">с неплатен остатък</span></div><div id="dashActive"></div></div>
+      <div class="card"><div class="row" style="margin-bottom:6px"><h2 style="margin:0">Ритуали</h2><span class="spacer"></span><span class="muted">днес и следващите 14 дни</span></div><div id="dashRit"></div></div>
+      <div class="card" id="dashActiveCard"><div class="row" style="margin-bottom:6px"><h2 style="margin:0">Неплатени остатъци</h2><span class="spacer"></span><span class="muted">най-новите първо</span></div><div id="dashActive"></div></div>
     </div>
-    <div class="card"><h2>Последни действия</h2><ul class="feed" id="dashFeed"></ul></div>
+    <div>
+      <div class="card" id="dashPmCard"><div class="row" style="margin-bottom:6px"><h2 style="margin:0">Помени за напомняне</h2><span class="spacer"></span><button class="btn ghost small" type="button" data-go="days40">Всички →</button></div><div id="dashPm"></div></div>
+      <div class="card"><h2>Последни действия</h2><ul class="feed" id="dashFeed"></ul></div>
+    </div>
   </div>
+  <h3 class="dash-h" id="dashMonthH">Този месец</h3>
+  <div class="kpis" id="dashKpis"></div>
 </section>
 
 <!-- ================= СПИСЪК ================= -->
@@ -1848,6 +1901,8 @@ function egnBirth(e){ // ЕГН -> дата на раждане (само ако
 let SETTINGS,CATALOG,CURRENT=null,DIRTY=false;
 const padNo=n=>String(n).padStart(SETTINGS.digits||1,"0");
 const emptyLine=no=>({no,used:false,note:"",qty:null,price:null});
+// „празна“ = няма заявител, починал, телефон и нито една услуга → не се записва (не хаби номер и не влиза в отчетите)
+const isBlankReq=r=>!String(r.appName||"").trim()&&!String(r.decName||"").trim()&&!String(r.appPhone||"").trim()&&!(r.lines||[]).some(l=>l.used||l.qty||l.price);
 const PROV_NO=new Map(); // id на нова заявка → предварителният номер (истинският се взима от базата при първия запис)
 function newRequest(){const id=uid();PROV_NO.set(id,padNo(SETTINGS.nextNo));
   return {id,created:new Date().toISOString(),updated:null,sample:false,
@@ -2454,17 +2509,20 @@ const pmId=(r,k)=>"pm-"+r.id+"-"+k;
 const telHref=p=>{const n=phoneKeys(p)[0]||"";return n?"+"+n:""}; // при няколко номера — първият
 function pmText(x){const S=SETTINGS,ag=S.short?`агенция „${S.short}“`:(S.agency||"погребалната агенция");
   return `Здравейте. На ${d40fmt(x.date)} се навършват ${x.label} от смъртта на ${x.r.decName||"Вашия близък"}. Ако желаете, ${ag} може да помогне с организацията на помена — панихида, некролози, жито и др.${S.gsm?" Тел.: "+S.gsm:""}`}
-async function renderPomeni(){
-  const box=$("#pmCard");if(!box)return;const ok=can("req");box.classList.toggle("hidden",!ok);if(!ok)return;
-  $$("#pmSeg button").forEach(b=>b.classList.toggle("on",+b.dataset.d===PMD));
-  const today=new Date();today.setHours(0,0,0,0);const end=d40add(today,PMD);
+async function pmCollect(days,withDone){ // предстоящи помени за следващите `days` дни (за „Помени“ и таблото)
+  const today=new Date();today.setHours(0,0,0,0);const end=d40add(today,days);
   const reqs=(await allReqs()).filter(r=>!r.sample),evs=await loadEvents(),evBy=Object.fromEntries(evs.map(e=>[e.id,e]));
   const out=[];let noDate=0;
   for(const r of reqs){if(!r.noticeDate){if(r.ritDate&&r.ritDate>=isoOf(d40add(today,-370)))noDate++;continue}
     const [y,m,d]=r.noticeDate.split("-").map(Number),dd=new Date(y,m-1,d);if(isNaN(dd))continue;
     for(const [k,label,f] of PM_KINDS){const at=f(dd);if(at<today||at>end)continue;const ev=evBy[pmId(r,k)];
-      if(ev&&ev.contacted&&!$("#pmDone").checked)continue;out.push({r,k,label,date:at,ev})}}
-  out.sort((a,b)=>a.date-b.date);
+      if(ev&&ev.contacted&&!withDone)continue;out.push({r,k,label,date:at,ev})}}
+  out.sort((a,b)=>a.date-b.date);return {out,noDate}}
+async function renderPomeni(){
+  const box=$("#pmCard");if(!box)return;const ok=can("req");box.classList.toggle("hidden",!ok);if(!ok)return;
+  $$("#pmSeg button").forEach(b=>b.classList.toggle("on",+b.dataset.d===PMD));
+  const today=new Date();today.setHours(0,0,0,0);const end=d40add(today,PMD);
+  const {out,noDate}=await pmCollect(PMD,$("#pmDone").checked);
   const ed=can("req","edit");
   $("#pmList").innerHTML=out.length?`<table class="list"><thead><tr><th>Дата</th><th>Помен</th><th>Починал</th><th>Заявител</th><th></th></tr></thead><tbody>${out.map((x,i)=>{
       const tel=telHref(x.r.appPhone),days=Math.round((x.date-today)/864e5);
@@ -3041,6 +3099,7 @@ let JUST_SAVED=null; // id на току-що записана заявка — 
 async function saveCurrent(opts={}){
   if(!CURRENT)return false;
   if(!can("req","edit")){toast("Нямате права да променяте заявки.",true);return false}
+  if(isBlankReq(CURRENT)&&!BASE[CURRENT.id]&&!(await DB.get("requests",CURRENT.id))){toast("Заявката е празна и не е записана. Попълнете поне заявителя или починалия.",true);return false}
   if(!String(CURRENT.number||"").trim()){alert("Моля, въведете номер на заявката.");return false}
   const over=opts.quiet?[]:overMaxList(CURRENT);
   if(over.length&&!confirm("⚠ Има цени над максималните допустими:\n\n"+over.map(o=>`• ${o.label}: ${fmt(o.v)} € (макс. ${fmt(o.max)} €)`).join("\n")+"\n\nДа запазя ли заявката въпреки това?"))return false;
@@ -4103,21 +4162,37 @@ document.addEventListener("click",e=>{const tr=e.target.closest("tr[data-id],li[
   tr.dataset.open==="ws"?openWorksheet(tr.dataset.id):openReqById(tr.dataset.id)});
 
 /* ---- начално табло ---- */
+$("#tab-dash").addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(b)showTab(b.dataset.go)});
 async function renderDash(){
   const all=await allReqs(),real=all.filter(r=>!r.sample),today=todayISO(),ym=today.slice(0,7);
   const dt=new Date().toLocaleDateString("bg-BG",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+  const h=new Date().getHours(),first=((ME&&ME.name)||"").trim().split(/\s+/)[0];
+  $("#dashHello").textContent=(h<11?"Добро утро":h<18?"Добър ден":"Добър вечер")+(first?", "+first:"");
+  // „Днес“: какво иска внимание сега — ритуали, камера, неплатено, помени
+  const ritToday=all.filter(r=>r.ritDate===today),fin=can("fin"),seeFr=canTab("fridge"),seePm=can("req");
+  const ins=seeFr?frInside():[],longest=ins.length?Math.max(...ins.map(x=>daysBetween(x.dateIn))):0;
+  const unpaidAll=real.filter(r=>!r.paid&&calc(r).rest>0);
+  const pm=seePm?(await pmCollect(7,false)).out:[];
+  const tiles=[kpi("Ритуали днес",String(ritToday.length),ritToday.length?ritToday.map(r=>r.ritTime||"").filter(Boolean).join(" · "):"няма насрочени","lead")];
+  if(seeFr)tiles.push(kpi("В хладилната камера",String(ins.length),ins.length?`най-дълго: <span class="${longest>=3?"attn":""}">${longest} ${longest===1?"ден":"дни"}</span>`:"празна"));
+  if(fin)tiles.push(kpi("Неплатени остатъци",`<span class="${unpaidAll.length?"attn":""}">${eur(sumBy(unpaidAll,r=>calc(r).rest))}</span>`,`${unpaidAll.length} ${unpaidAll.length===1?"заявка":"заявки"}`));
+  if(seePm)tiles.push(kpi("Помени тази седмица",String(pm.length),pm.length?"за напомняне на близките":"няма"));
+  $("#dashToday").innerHTML=tiles.join("");$("#dashToday").dataset.n=tiles.length;
+  $("#dashActiveCard").classList.toggle("hidden",!fin);$("#dashPmCard").classList.toggle("hidden",!seePm);
+  $("#dashPm").innerHTML=pm.length?pm.slice(0,6).map(x=>{const days=Math.round((x.date-new Date(today+"T00:00:00"))/864e5);
+      return `<div class="today-row"><div class="g"><b>${esc(x.r.decName||"—")}</b><div class="muted">${x.label} · ${d40fmt(x.date)} · ${days===0?"днес":days===1?"утре":"след "+days+" дни"}</div></div><span class="muted" style="font-size:12.5px">${esc(x.r.appName||"")}</span></div>`}).join("")
+    :`<div class="empty">Няма помени в следващите 7 дни.</div>`;
   $("#dashDate").textContent=dt.charAt(0).toUpperCase()+dt.slice(1);
   const mon=real.filter(r=>reqDay(r).startsWith(ym)),inc=sumBy(mon,r=>calc(r).total),exp=sumBy(mon,r=>wsCalc(r).expenses),pr=r2(inc-exp);
   const unpaid=real.filter(r=>!r.paid&&calc(r).rest>0),mName=MONTHS[+ym.slice(5)-1].toLowerCase();
   $("#dashKpis").innerHTML=kpi("Оборот · "+mName,eur(inc),`${mon.length} ${mon.length===1?"заявка":"заявки"}`,"lead")+kpi("Разходи · "+mName,eur(exp),"от работните листове")
-    +kpi("Печалба · "+mName,`<span class="${pr<0?"neg":""}">${eur(pr)}</span>`,inc?`марж ${Math.round(pr/inc*100)} %`:"")
-    +kpi("Неплатени",`<span style="color:${unpaid.length?"var(--caution)":"inherit"}">${eur(sumBy(unpaid,r=>calc(r).rest))}</span>`,`${unpaid.length} ${unpaid.length===1?"заявка":"заявки"} с остатък`);
+    +kpi("Печалба · "+mName,`<span class="${pr<0?"neg":""}">${eur(pr)}</span>`,inc?`марж ${Math.round(pr/inc*100)} %`:"");
   const lowI=INVD.items.filter(isLow);
   $("#dashNotice").innerHTML=(!real.length&&all.length?`<div class="notice">Засега има само примерни заявки. Сумите отгоре не включват примерните заявки.</div>`:"")+
     (lowI.length?`<div class="notice">Под минималната наличност: <b>${lowI.map(i=>esc(i.name)+" ("+numIn(i.stock)+" "+esc(i.unit)+")").join(", ")}</b>. Вижте раздел „Инвентар“.</div>`:"");
   const rit=all.filter(r=>r.ritDate&&r.ritDate>=today&&r.ritDate<=plusDays(today,14)).sort((a,b)=>(a.ritDate+a.ritTime).localeCompare(b.ritDate+b.ritTime));
   $("#dashRit").innerHTML=rit.length?`<table class="list"><tbody>${rit.map(r=>`<tr class="click" data-id="${r.id}">
-      <td class="datecell" style="width:118px"><b>${bgDate(r.ritDate)}</b><span>${esc(r.ritDay||"")}${r.ritTime?" · "+esc(r.ritTime)+" ч.":""}</span></td>
+      <td class="datecell" style="width:118px"><b>${r.ritDate===today?"Днес":bgDate(r.ritDate)}</b><span>${esc(r.ritDay||"")}${r.ritTime?" · "+esc(r.ritTime)+" ч.":""}</span></td>
       <td><div style="font-weight:600">${esc(r.decName)||"—"}${sampleTag(r)}</div><div class="muted">${esc(kindText(r))||""}</div></td>
       <td class="muted">${esc(wsPlace(r))}</td></tr>`).join("")}</tbody></table>`
     :`<div class="empty">Няма насрочени ритуали в следващите 14 дни.</div>`;
@@ -5502,10 +5577,15 @@ function platformShow(P){
   show("ag");
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
-const APP_VERSION="1.10",APP_DATE="19.11.2026";
+const APP_VERSION="1.0",APP_DATE="19.11.2026"; // от 19.11.2026 номерацията започва отначало (Memoriox 1.0)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
+  {v:"1.0",d:"19.11.2026",items:[
+    "Memoriox 1.0 — номерацията на версиите започва отначало.",
+    "Светла тема по подразбиране. Тъмната се включва с „☾ Тъмна тема“ долу в менюто; изборът се помни на всяко устройство.",
+    "Началното табло е „Днес“: ритуали днес, тела в хладилната камера, неплатени остатъци и помени за седмицата. Оборотът за месеца е отдолу.",
+    "Празна заявка вече не се записва сама (например при „Работен лист“) и не хаби номер."]},
   {v:"1.10",d:"19.11.2026",items:[
     "Нов раздел „Каталог за клиенти“: добавяте раздели (ковчези, урни, венци…) и артикули със снимка и цена.",
     "Близките го отварят с QR код на телефона си, без вход. QR кода и линка намирате в „Каталог за клиенти“ → „QR код / Линк“."]},
@@ -5561,7 +5641,7 @@ const CHANGELOG=[
     "Номерата на заявките и фактурите никога не се повтарят, дори двама да създават едновременно.",
     "Ако двама променят едно и също едновременно, промените се сливат или излиза предупреждение — нищо не се губи.",
     "По-добра защита при забравена парола."]},
-  {v:"1.0",d:"11.11.2026",items:[
+  {v:"1.0 (стара)",d:"11.11.2026",items:[
     "Календар с ръчни събития и помени с напомняния; календарът може да се вижда и в телефона.",
     "Клиенти, партньори с телефони и търсене навсякъде.",
     "Плащания по заявката (капаро, доплащане) и справка за счетоводителя.",
@@ -5569,7 +5649,7 @@ const CHANGELOG=[
     "Програмата се инсталира като приложение и се отваря по-бързо.",
     "Ново оформление."]}];
 const WN_KEY="zayavki-seen-ver";
-function whatsNewHtml(list){return list.map(e=>`<div class="wn-v"><div class="wn-h"><b>Версия ${esc(e.v)}</b><span>${esc(e.d)}</span></div><ul>${e.items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`).join("")}
+function whatsNewHtml(list){const k=list.findIndex(e=>e.v==="1.0");return list.map((e,i)=>(k>=0&&i===k+1?`<div class="wn-old">Преди Memoriox 1.0 — стара номерация</div>`:"")+`<div class="wn-v"><div class="wn-h"><b>Версия ${esc(e.v)}</b><span>${esc(e.d)}</span></div><ul>${e.items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`).join("")}
 function showWhatsNew(all){
   let seen=null;try{seen=localStorage.getItem(WN_KEY)}catch(e){}
   let list=CHANGELOG;
@@ -5578,6 +5658,7 @@ function showWhatsNew(all){
   try{localStorage.setItem(WN_KEY,APP_VERSION)}catch(e){}}
 function whatsNewOnLogin(){let seen=null;try{seen=localStorage.getItem(WN_KEY)}catch(e){}
   if(seen===APP_VERSION)return;
+  if(seen===null){try{localStorage.setItem(WN_KEY,APP_VERSION)}catch(e){}return} // нов потребител/устройство: няма „предишна версия“, с която да сравнява
   if($("#modalWrap")||!$("#auth").classList.contains("hidden")){try{localStorage.setItem(WN_KEY,APP_VERSION)}catch(e){}return}
   showWhatsNew(false)} // сменя се при всяко публикуване: 1-ва цифра — голяма промяна, 2-ра — нова възможност/етап, 3-та — дребна поправка
 /* ---------- инсталиране като приложение (иконка на телефона / компютъра) ---------- */
@@ -5594,6 +5675,10 @@ $("#pwaBtn").onclick=async()=>{
       <li>Отворете програмата в <b>Safari</b>.</li><li>Натиснете бутона <b>„Сподели“</b> (квадрат със стрелка нагоре).</li>
       <li>Изберете <b>„Добави към началния екран“</b> и после <b>„Добави“</b>.</li></ol>
       <p class="muted" style="margin:12px 0 0">Иконката „Заявки“ се появява на телефона и програмата се отваря на цял екран. Входът и данните са същите.</p>`,actions:[{label:"Разбрах"}]})};
+function themeNow(){return document.documentElement.getAttribute("data-theme")==="dark"?"dark":"light"}
+function applyThemeMeta(){const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=themeNow()==="dark"?"#121110":"#F6F4F0";const b=$("#suTheme");if(b)b.textContent=themeNow()==="dark"?"☀ Светла тема":"☾ Тъмна тема"}
+applyThemeMeta();
+$("#suTheme").onclick=()=>{const t=themeNow()==="dark"?"light":"dark";document.documentElement.setAttribute("data-theme",t);try{localStorage.setItem("mx-theme",t)}catch(e){}applyThemeMeta();toast(t==="dark"?"Тъмна тема":"Светла тема")};
 function showVersion(){const v=$("#appVer");if(v){v.textContent="Версия "+APP_VERSION+" · обновена "+APP_DATE;v.onclick=()=>showWhatsNew(true)}
   const a=$("#auth .auth-box");if(a&&!a.querySelector(".appver")){const e=document.createElement("div");e.className="appver auth-ver";e.textContent="Версия "+APP_VERSION+" · обновена "+APP_DATE;a.appendChild(e)}}
 let NEWER=null;
@@ -5689,7 +5774,7 @@ function permLock(){
   np("#stkNew,#stkDel,#stkTable [data-sa=del],#stkTable [data-sa=edit],#stkTable [data-sa=arch]",!can("stock","edit"));np("#stkAdj",!can("stockadj"));
   ro("#tab-catalog",can("catalog","edit"));
   np("#docUpload,#docDrop,#dvEdit,#docTable [data-da=ren],#docTable [data-da=del]",!can("files","edit"));
-  $$("#tab-dash .kpis,.listProfitH,.listProfit,#listBody td.money.muted:nth-child(8)").forEach(e=>e.classList.toggle("np",!can("fin")));
+  $$("#dashKpis,#dashMonthH,.listProfitH,.listProfit,#listBody td.money.muted:nth-child(8)").forEach(e=>e.classList.toggle("np",!can("fin")));
 }
 const needEdit=(area,what)=>{if(can(area,"edit"))return true;toast("Нямате права за "+what+".",true);return false};
 
