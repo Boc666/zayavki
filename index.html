@@ -1126,6 +1126,50 @@ main>section.mx-enter .kpis>.kpi:nth-child(2),main>section.mx-enter>.card:nth-of
 main>section.mx-enter .kpis>.kpi:nth-child(3),main>section.mx-enter>.card:nth-of-type(3),main>section.mx-enter .cols2>div:nth-child(2)>.card:nth-child(1){animation-delay:.1s}
 main>section.mx-enter .kpis>.kpi:nth-child(4),main>section.mx-enter>.card:nth-of-type(n+4),main>section.mx-enter .cols2>div:nth-child(2)>.card:nth-child(2){animation-delay:.15s}
 @media(prefers-reduced-motion:reduce){main>section.mx-enter *{animation:none!important}nav.tabs .mx-pill{transition:none}}
+/* каталог (Инвентар): карти */
+.mx-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.mx-card{background:var(--panel);border:1px solid var(--border-soft);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--mx-shadow);transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s}
+.mx-card:hover{transform:translateY(-3px);box-shadow:0 20px 40px -24px rgba(0,0,0,.35)}
+.mx-card.arch{opacity:.6}
+.mx-card .img{aspect-ratio:16/10;max-width:100%;position:relative;background:linear-gradient(135deg,var(--panel3),var(--panel2)) center/cover no-repeat;display:grid;place-items:center}
+.mx-card .img>span:not(.mx-chip){font:700 34px var(--display);color:var(--text3);opacity:.6}
+.mx-card .img .mx-chip{position:absolute;left:10px;top:10px;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.mx-card .b{padding:12px 14px;display:flex;flex-direction:column;gap:9px;flex:1}
+.mx-card .nm{font-weight:600;font-size:14.5px}
+.mx-card .cat{font-size:12px;margin-top:-6px}
+.mx-card .kv{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:12px}
+.mx-card .kv span{color:var(--text3);display:block}
+.mx-card .kv b{font-size:14px}
+.mx-card .qr{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border-soft);padding-top:9px;margin-top:auto;font-size:13px;color:var(--text2)}
+.mx-card .acts{display:flex;gap:6px;flex-wrap:wrap}
+.mx-chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 9px;font:600 12px var(--ui);white-space:nowrap;background:var(--panel)}
+.mx-chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.mx-chip.ok{color:var(--ok)}.mx-chip.warn{color:var(--caution)}.mx-chip.bad{color:var(--err)}.mx-chip.neu{color:var(--text2)}
+.mx-seg.sm button{padding:5px 10px;font-size:12.5px}
+.mx-sw{position:relative;width:36px;height:21px;border-radius:99px;background:var(--border-strong);border:0;padding:0;flex:none;cursor:pointer;transition:background .2s}
+.mx-sw::after{content:"";position:absolute;left:3px;top:3px;width:15px;height:15px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+.mx-sw[aria-checked="true"]{background:var(--ok)}
+.mx-sw[aria-checked="true"]::after{transform:translateX(15px)}
+.mx-sw[disabled]{opacity:.5;cursor:default}
+.mx-thumb{width:64px;height:48px;border-radius:8px;background:var(--panel2) center/cover no-repeat;border:1px solid var(--border-soft);flex:none}
+main>section.mx-enter .mx-card{animation:mxIn .45s cubic-bezier(.2,.8,.2,1) both}
+/* образци */
+.mx-tplbtn{margin-left:auto;align-self:center;border:1px solid var(--border);background:var(--panel);border-radius:999px;padding:6px 12px;font:600 12.5px var(--ui);color:var(--bronze);cursor:pointer;white-space:nowrap;order:99}
+.mx-tplbtn:hover{border-color:var(--bronze-line)}
+.mx-tpls{display:flex;flex-direction:column;gap:6px}
+.mx-tpl{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border-soft);border-radius:10px;flex-wrap:wrap}
+.mx-tpl .g{flex:1;min-width:180px}.mx-tpl .g .muted{font-size:12.5px}
+/* отчети */
+.mx-fin2{margin-bottom:18px}
+#finChart svg{max-height:240px}
+.mx-money{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--border-soft);border:1px solid var(--border-soft);border-radius:10px;overflow:hidden}
+.mx-money div{background:var(--panel);padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.mx-money small{color:var(--text3);font-size:12px}
+.mx-money b{font:700 20px var(--display);letter-spacing:-.02em}
+.mx-money .muted{font-size:11.5px}
+@keyframes mxBar{from{transform:scaleY(0)}to{transform:none}}
+main>section.mx-enter .mxb{transform-box:fill-box;transform-origin:50% 100%;animation:mxBar .7s cubic-bezier(.2,.8,.2,1) both}
+@media(max-width:700px){.mx-money{grid-template-columns:1fr}}
 /* камбанка, профил на клиента, навигация в настройките */
 .gs-row{display:flex;gap:8px;align-items:stretch}
 .gs-row .gs-btn{flex:1;min-width:0}
@@ -1327,6 +1371,7 @@ main>section.mx-enter .mx-axis .ev{animation:mxGrow .55s cubic-bezier(.2,.8,.2,1
   <div class="ph">
     <div><h2>Заявки</h2><p>Всички запазени заявки за погребение и кремация</p></div><span class="spacer"></span>
     <input id="search" class="ui-in" placeholder="Търсене по №, име, телефон…" style="width:280px">
+    <button class="btn" id="btnNewTpl" type="button">★ По образец</button>
     <button class="btn primary" id="btnNew"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Нова заявка</button>
   </div>
   <div id="backupNotice" class="notice hidden"></div>
@@ -1342,7 +1387,7 @@ main>section.mx-enter .mx-axis .ev{animation:mxGrow .55s cubic-bezier(.2,.8,.2,1
 
 <!-- ================= ИНВЕНТАР ================= -->
 <section id="tab-stock" class="hidden">
-  <div class="ph"><div><h2>Инвентар</h2><p>Складови артикули, доставки и движения</p></div><span class="spacer"></span>
+  <div class="ph"><div><h2>Инвентар</h2><p>Каталог на артикулите: цена, разход, наличност, снимка и каталог за клиенти — на едно място</p></div><span class="spacer"></span>
     <button class="btn" id="stkMovesBtn">Складови движения</button>
     <button class="btn" id="stkAdj">Корекция на наличност</button>
     <button class="btn dark" id="stkDel">Нова доставка</button>
@@ -1353,11 +1398,12 @@ main>section.mx-enter .mx-axis .ev{animation:mxGrow .55s cubic-bezier(.2,.8,.2,1
     <div class="filters" style="margin-bottom:12px">
       <input id="stkSearch" class="ui-in" placeholder="Търсене по име или код…" style="width:260px">
       <select id="stkCat" class="ui-in" style="width:auto"></select>
-      <select id="stkFilter" class="ui-in" style="width:auto"><option value="all">Всякаква наличност</option><option value="in">В наличност</option><option value="low">Под минимума</option><option value="zero">Изчерпани</option></select>
+      <select id="stkFilter" class="ui-in" style="width:auto"><option value="all">Всякаква наличност</option><option value="in">В наличност</option><option value="low">Под минимума</option><option value="od">Купуват се при нужда</option><option value="zero">Изчерпани</option></select>
       <select id="stkStatus" class="ui-in" style="width:auto"><option value="active">Активни</option><option value="archived">Архивирани</option><option value="all">Всички</option></select>
-      <span class="spacer"></span><span class="muted">Сортиране: натиснете заглавие на колона</span>
+      <span class="spacer"></span><div class="mx-seg" id="stkView" role="group" aria-label="Изглед"><button type="button" data-sv="cards">Карти</button><button type="button" data-sv="table">Таблица</button></div>
     </div>
     <table class="list" id="stkTable"></table>
+    <div class="mx-cards hidden" id="stkCards"></div>
   </div>
   <div class="card hidden" id="stkMovesCard">
     <div class="row" style="margin-bottom:10px"><h2 style="margin:0">Складови движения</h2><span class="spacer"></span>
@@ -1478,6 +1524,7 @@ main>section.mx-enter .mx-axis .ev{animation:mxGrow .55s cubic-bezier(.2,.8,.2,1
     </div>
   </div>
   <div class="kpis" id="finKpis"></div>
+  <div class="cols2 mx-fin2"><div class="card" id="finMoney"></div><div class="card" id="finChart"></div></div>
   <div class="card"><div class="row" style="margin-bottom:6px"><h2 style="margin:0">Неплатени суми</h2><span class="spacer"></span><span class="muted">всички заявки с остатък, независимо от периода</span></div><div id="finUnpaid"></div></div>
   <div class="card"><h2>Заявки за периода</h2><div id="finList"></div></div>
   <div class="card"><h2>Справка за счетоводителя</h2>
@@ -1514,6 +1561,7 @@ main>section.mx-enter .mx-axis .ev{animation:mxGrow .55s cubic-bezier(.2,.8,.2,1
   </div>
   <div id="caseBar" class="card casebar"></div>
   <div class="mx-ctabs" id="caseTabs" role="tablist" aria-label="Части на случая">
+    <button type="button" class="mx-tplbtn" id="tplBtn" title="Запазете услугите и цените като образец или попълнете от образец">★ Образци</button>
     <button type="button" role="tab" data-ct="req" class="on">Заявка</button>
     <button type="button" role="tab" data-ct="docs">Документи</button>
     <button type="button" role="tab" data-ct="pay">Плащания<span id="ctPayN"></span></button>
@@ -1639,7 +1687,7 @@ main>section.mx-enter .mx-axis .ev{animation:mxGrow .55s cubic-bezier(.2,.8,.2,1
     <button class="btn primary" id="scAdd" type="button">＋ Раздел</button>
   </div>
   <div class="card"><div id="scToggleWrap"></div>
-    <p class="muted" style="margin:8px 0 0;font-size:12.5px">Добавете раздели (напр. Ковчези, Урни, Венци) и в тях артикули със снимка и цена. После натиснете „QR код / Линк“, за да получите кода за печат и залепяне в офиса.</p></div>
+    <p class="muted" style="margin:8px 0 0;font-size:12.5px">Най-лесно: в „Инвентар“ отметнете „В каталога за клиенти“ на артикулите — появяват се тук сами, по категория, със снимката и цената. Можете да добавите и ръчни раздели (напр. Ковчези, Урни, Венци) с артикули със снимка и цена. После натиснете „QR код / Линк“, за да получите кода за печат и залепяне в офиса.</p></div>
   <div id="scList"></div>
 </section>
 
@@ -2531,12 +2579,12 @@ sheets.addEventListener("click",e=>{
   if(b.dataset.act==="rec"){applyRecommended(i,true);return}
   if(b.dataset.act==="add"){activateLine(l,it);if(l.price==null)l.price=it.price??0;renderSheets();setDirty(true)}
   if(b.dataset.act==="stk"){
-    const opts=linkedItems(it.no),cur=l.item?itemById(l.item):null,lab=x=>`${x.name}${x.sku?" ["+x.sku+"]":""} — ${x.salePrice!=null?fmt(x.salePrice)+" €":"без цена"} · налични ${numIn(x.stock)} ${x.unit}`;
+    const opts=linkedItems(it.no),cur=l.item?itemById(l.item):null,lab=x=>`${x.name}${x.sku?" ["+x.sku+"]":""} — ${x.salePrice!=null?fmt(x.salePrice)+" €":"без цена"} · ${x.onDemand?"купува се при нужда":"налични "+numIn(x.stock)+" "+x.unit}`;
     const map=new Map(opts.map(x=>[lab(x),x]));const NONE="✕ Без артикул от склада (обикновена услуга)";
     openMenu(b,{title:"Склад → "+it.name,items:[...map.keys(),...(l.item?[NONE]:[])],current:cur?lab(cur):null,custom:false,onPick:v=>{
       if(v===NONE){if(cur&&l.note===cur.name)l.note="";l.item=null}
       else{const x=map.get(v);if(!x)return;l.item=x.id;l.note=x.name;l.used=true;if(x.salePrice!=null)l.price=x.salePrice;if(l.qty==null)l.qty=1;
-        if(x.stock<qtyOf(l)-(l.issued&&l.issued.itemId===x.id?l.issued.qty:0))toast(`Внимание: от „${x.name}“ има само ${numIn(x.stock)} ${x.unit} в склада.`,true)}
+        if(!x.onDemand&&x.stock<qtyOf(l)-(l.issued&&l.issued.itemId===x.id?l.issued.qty:0))toast(`Внимание: от „${x.name}“ има само ${numIn(x.stock)} ${x.unit} в склада.`,true)}
       renderSheets();setDirty(true)}});
     if(!opts.length&&!l.item)toast("Няма активни складови артикули за това перо.",true);
     return}
@@ -3094,7 +3142,7 @@ function mxCaseTab(t){CTAB=t;$$("#caseTabs [data-ct]").forEach(b=>{b.classList.t
   mxCaseUl();if(!req)mxCaseRender()}
 const mxPaper=(t,s)=>`<div class="mx-paper"><div class="h1">${t}</div><div class="h2">${s}</div><div class="ln m"></div><div class="ln"></div><div class="ln s"></div><div class="bx"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln m"></div></div>`;
 async function mxCaseRender(){const P=$("#casePane");if(!CURRENT||!P||CTAB==="req")return;const r=CURRENT,c=calc(r);
-  if(CTAB==="docs"){const D=[["btnPreview","ЗАЯВКА","за погребение или кремация","Заявка","Преглед и печат на бланката"],["btnWs","РАБОТЕН ЛИСТ","разходи и задачи","Работен лист","Разходи и печалба по случая"],["btnInv","ФАКТУРА",r.inv&&r.inv.no?"№ "+esc(r.inv.no):"чернова","Фактура",r.inv&&r.inv.no?"Издадена · № "+esc(r.inv.no):"Още не е издадена"],["btnOffer","ОФЕРТА","за близките","Оферта","Ценово предложение за клиента"]];
+  if(CTAB==="docs"){const D=[["btnPreview","ЗАЯВКА","за погребение или кремация","Заявка","Преглед и печат на бланката"],["btnWs","РАБОТЕН ЛИСТ","разходи и задачи","Работен лист","Разходи и печалба по случая"],["btnInv","ФАКТУРА",r.inv&&r.inv.number?"№ "+esc(r.inv.number):"чернова","Фактура",r.inv&&r.inv.number?"Издадена · № "+esc(r.inv.number):"Още не е издадена"],["btnOffer","ОФЕРТА","за близките","Оферта","Ценово предложение за клиента"]];
     P.innerHTML=`<div class="mx-docs">${D.map(d=>{const b=$("#"+d[0]),off=!b||b.classList.contains("np")||b.disabled;return `<button type="button" class="mx-doc" data-cd="${d[0]}" ${off?"disabled":""}><div class="pv">${mxPaper(d[1],d[2])}</div><div class="b"><b>${d[3]}</b><small>${d[4]}</small></div></button>`}).join("")}</div>
       <div class="row" style="gap:8px;margin-top:14px;flex-wrap:wrap"><button type="button" class="btn" data-cd="btnLink">Линк към близките</button><button type="button" class="btn" data-cd="btnPrint">Печат / PDF</button></div>`;return}
   if(CTAB==="pay"){const ps=(r.payments||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
@@ -3114,6 +3162,38 @@ async function mxCaseRender(){const P=$("#casePane");if(!CURRENT||!P||CTAB==="re
     P.innerHTML=`<div class="card"><div class="mx-tl">${E.map(e=>{const d=new Date(e.ts);return `<div class="e"><b>${e.t}</b><div class="muted">${isNaN(d)?"":d.toLocaleString("bg-BG",{dateStyle:"short",timeStyle:"short"})}${e.d?" · "+e.d:""}</div></div>`}).join("")||'<div class="muted">Още няма история.</div>'}</div>
       ${fromLog||!isAdmin()?"":'<p class="muted" style="font-size:12.5px;margin:6px 0 0">Подробната история на действията е в „Потребители“ → „История на действията“.</p>'}</div>`}}
 $("#caseTabs").addEventListener("click",e=>{const b=e.target.closest("[data-ct]");if(b)mxCaseTab(b.dataset.ct)});
+/* ---- образци: потребителят запазва услугите и цените на заявка под име и после попълва нова заявка от тях ---- */
+let TPLS=null;
+async function tplLoad(){if(TPLS)return TPLS;const t=await getMeta("packs",null);TPLS=Array.isArray(t&&t.list)?t.list:[];return TPLS}
+async function tplSave(what){await setMeta("packs",{list:TPLS});if(what)audit("Образци на заявки",what)}
+const tplTotal=t=>calc(normalizeRequest(Object.assign(newRequest(),{lines:structuredClone(t.lines),orgFee:t.orgFee,doctorOn:t.doctorOn,doctorFee:t.doctorFee}))).total;
+function tplFrom(r,name){return{id:uid(),name,created:new Date().toISOString(),by:ME?ME.name:"",kind:r.kind||"",ritual:r.ritual||"",orgFee:r.orgFee,doctorOn:!!r.doctorOn,doctorFee:r.doctorFee,
+  lines:structuredClone(r.lines).map(l=>({...l,issued:null,note:l.item&&itemById(l.item)?itemById(l.item).name:(l.note||"")}))}}
+function tplApply(r,t){r.lines=CATALOG.items.map((it,i)=>{const src=t.lines.find(l=>l.no===it.no)||t.lines[i];return src&&src.no===it.no?{...structuredClone(src),issued:null}:emptyLine(it.no)});
+  r.orgFee=t.orgFee;r.doctorOn=t.doctorOn;r.doctorFee=t.doctorFee;if(t.kind&&!r.kind)r.kind=t.kind;if(t.ritual&&!r.ritual)r.ritual=t.ritual;return r}
+async function tplModal(mode){await tplLoad();const ed=can("req","edit"),inCase=mode==="case"&&CURRENT;
+  const used=inCase?CURRENT.lines.filter(l=>l.used).length:0;
+  const m=openModal({title:"Образци на заявки",wide:true,body:`
+    <p class="muted" style="margin:0 0 12px">Образецът пази <b>само услугите, количествата и цените</b> (без лични данни). Направете си „Стандартно погребение“, „Кремация“ и т.н. и попълвайте нова заявка с едно натискане.</p>
+    ${TPLS.length?`<div class="mx-tpls">${TPLS.map(t=>{const n=t.lines.filter(l=>l.used).length;return `<div class="mx-tpl"><div class="g"><b>${esc(t.name)}</b><div class="muted">${n} ${n===1?"услуга":"услуги"} · ${eur(tplTotal(t))}${t.by?" · "+esc(t.by):""}</div></div>
+      <button type="button" class="btn small primary" data-tpl-use="${t.id}">${inCase?"Попълни тази заявка":"Нова заявка"}</button>${ed?`<button type="button" class="btn small ghost" data-tpl-ren="${t.id}">Преименувай</button><button type="button" class="btn small ghost ico del" data-tpl-del="${t.id}" title="Изтрий образеца">🗑</button>`:""}</div>`}).join("")}</div>`
+      :`<div class="empty" style="padding:18px">Още няма образци.${inCase?" Попълнете услугите в тази заявка и натиснете „Запази като образец“.":" Отворете заявка с попълнени услуги и натиснете „★ Образци“ → „Запази като образец“."}</div>`}
+    ${inCase&&ed?`<div class="row" style="gap:8px;margin-top:14px;flex-wrap:wrap;align-items:center"><input class="ui-in" id="tplName" placeholder="Име, напр. Стандартно погребение" style="flex:1;min-width:200px"><button type="button" class="btn" id="tplAdd" ${used?"":"disabled"}>Запази като образец</button></div>
+      <p class="muted" style="font-size:12.5px;margin:6px 0 0">${used?`Ще се запазят ${used} ${used===1?"услуга":"услуги"} от тази заявка с цените им.`:"В тази заявка още няма избрани услуги."}</p>`:""}`,
+    actions:[{label:"Затвори"}]});
+  m.el.addEventListener("click",async e=>{const u=e.target.closest("[data-tpl-use]"),d=e.target.closest("[data-tpl-del]"),rn=e.target.closest("[data-tpl-ren]");
+    if(u){const t=TPLS.find(x=>x.id===u.dataset.tplUse);if(!t)return;
+      if(inCase){if(CURRENT.lines.some(l=>l.used)&&!confirm("Услугите и цените в тази заявка ще се заменят с тези от образеца. Личните данни остават. Продължаване?"))return;
+        const keep=CURRENT.lines.filter(l=>l.issued&&l.issued.qty>0);if(keep.length){toast("В тази заявка има изписани от склада артикули — първо ги върнете, после приложете образеца.",true);return}
+        tplApply(CURRENT,t);closeModal();renderSheets();setDirty(true);toast(`Попълнено от образец „${t.name}“ — проверете и запазете.`)}
+      else{const n=tplApply(newRequest(),t);closeModal();openRequest(n,true);showTab("edit");toast(`Нова заявка по образец „${t.name}“ — личните данни са празни.`)}return}
+    if(d){const t=TPLS.find(x=>x.id===d.dataset.tplDel);if(!t||!confirm(`Да изтрия ли образеца „${t.name}“? Заявките не се променят.`))return;TPLS=TPLS.filter(x=>x!==t);await tplSave("Изтрит: "+t.name);closeModal();tplModal(mode);return}
+    if(rn){const t=TPLS.find(x=>x.id===rn.dataset.tplRen);if(!t)return;const nn=prompt("Ново име на образеца:",t.name);if(!nn||!nn.trim())return;t.name=nn.trim();await tplSave("Преименуван: "+t.name);closeModal();tplModal(mode);return}
+    if(e.target.id==="tplAdd"){const nm=m.q("#tplName").value.trim();if(!nm){toast("Напишете име на образеца.",true);m.q("#tplName").focus();return}
+      if(TPLS.some(x=>x.name.toLowerCase()===nm.toLowerCase())&&!confirm(`Вече има образец „${nm}“. Да го заменя ли с услугите от тази заявка?`))return;
+      TPLS=TPLS.filter(x=>x.name.toLowerCase()!==nm.toLowerCase());TPLS.push(tplFrom(CURRENT,nm));await tplSave("Нов: "+nm);toast(`Образецът „${nm}“ е запазен.`);closeModal();tplModal(mode)}});
+}
+$("#tplBtn").onclick=()=>tplModal("case");$("#btnNewTpl").onclick=()=>tplModal("new");
 $("#casePane").addEventListener("click",e=>{const b=e.target.closest("[data-cd]");if(!b||b.disabled)return;const t=$("#"+b.dataset.cd);if(!t)return;
   if(b.dataset.cd==="btnPreview"||b.dataset.cd==="btnPrint")mxCaseTab("req");t.click()});
 addEventListener("resize",()=>mxCaseUl());
@@ -4155,7 +4235,7 @@ const STK_UNITS=["бр.","компл.","м","пак.","л"];
 const qn=v=>Math.round((+v||0)*1000)/1000;
 const itemById=id=>INVD.items.find(x=>x.id===id);
 function migrateInvd(d){d=d||{};if(!Array.isArray(d.items))d.items=[];if(!Array.isArray(d.moves))d.moves=[];
-  d.items.forEach(it=>{for(const[k,v]of Object.entries({sku:"",desc:"",cat:"",unit:"бр.",stock:0,avgCost:0,lastCost:null,salePrice:null,minStock:0,lines:[],lastBuy:"",status:"active"}))if(it[k]===undefined)it[k]=v});
+  d.items.forEach(it=>{for(const[k,v]of Object.entries({sku:"",desc:"",cat:"",unit:"бр.",stock:0,avgCost:0,lastCost:null,salePrice:null,minStock:0,lines:[],lastBuy:"",status:"active",onDemand:false,img:"",qr:false}))if(it[k]===undefined)it[k]=v});
   return d}
 /* записва инвентара (и при нужда заявката) атомарно; mut работи върху копия */
 async function invCommit(mut,req){
@@ -4193,7 +4273,7 @@ function doDelivery(d,o){const it=d.items.find(x=>x.id===o.itemId);if(!it)throw 
 const issuedCost=l=>l&&l.issued?l.issued.cost||0:0;
 function stockPlan(r){
   const ops=[];
-  r.lines.forEach((l,i)=>{const iss=l.issued&&l.issued.qty>0?l.issued:null,want=l.used&&l.item?{itemId:l.item,qty:qtyOf(l)}:null;
+  r.lines.forEach((l,i)=>{const iss=l.issued&&l.issued.qty>0?l.issued:null,od=l.item&&(itemById(l.item)||{}).onDemand,want=l.used&&l.item&&!od?{itemId:l.item,qty:qtyOf(l)}:null;
     let base=0;
     if(iss&&(!want||want.itemId!==iss.itemId))ops.push({i,itemId:iss.itemId,kind:"return",qty:iss.qty,full:true});
     else if(iss)base=iss.qty;
@@ -4265,19 +4345,22 @@ const posNum=(v,label,allowZero)=>{const n=num(v);if(n==null||!isFinite(n)||n<0|
 /* ---- раздел „Инвентар“ ---- */
 let STK_SORT={k:"name",dir:1};
 const stockValue=()=>r2(INVD.items.reduce((s,i)=>s+Math.max(0,i.stock)*(i.avgCost||0),0));
-const isLow=it=>it.status==="active"&&(it.minStock||0)>0&&it.stock<it.minStock;
+const isLow=it=>it.status==="active"&&!it.onDemand&&(it.minStock||0)>0&&it.stock<it.minStock;
+// разход за единица: при „на склад“ — среднопретеглената от доставките; при „при нужда“ — въведената покупна цена
+const itemCost=it=>it.onDemand?(it.lastCost??null):(it.avgCost||it.lastCost||null);
 const lineNames=it=>(it.lines||[]).map(no=>itemOf(no)?itemOf(no).name:"ред "+no);
 async function usedInRequests(id){return(await DB.all("requests")).filter(r=>(r.lines||[]).some(l=>l.item===id||(l.issued&&l.issued.itemId===id)))}
+let STKV=(()=>{try{return localStorage.getItem("mx-stk-view")||"cards"}catch(e){return "cards"}})();
 function renderStock(){
-  const act=INVD.items.filter(i=>i.status==="active"),low=act.filter(isLow);
-  $("#stkKpis").innerHTML=kpi("Активни артикули",act.length,`${INVD.items.length-act.length} архивирани`)+kpi("Обща наличност",numIn(r2(act.reduce((s,i)=>s+Math.max(0,i.stock),0))),"единици по всички артикули")
+  const act=INVD.items.filter(i=>i.status==="active"),low=act.filter(isLow),od=act.filter(i=>i.onDemand),stk=act.filter(i=>!i.onDemand);
+  $("#stkKpis").innerHTML=kpi("Активни артикули",act.length,`${od.length} при нужда · ${INVD.items.length-act.length} архивирани`)+kpi("Обща наличност",numIn(r2(stk.reduce((s,i)=>s+Math.max(0,i.stock),0))),"единици на склад")
     +kpi("Под минимума",`<span style="color:${low.length?"var(--caution)":"inherit"}">${low.length}</span>`,low.length?esc(low.slice(0,3).map(i=>i.name).join(", "))+(low.length>3?"…":""):"всички са над минимума")
     +kpi("Стойност на склада",eur(stockValue()),"по среднопретеглена цена","lead");
   const cats=[...new Set(INVD.items.map(i=>i.cat).filter(Boolean))].sort(),cs=$("#stkCat"),cv=cs.value;
   cs.innerHTML=`<option value="">Всички категории</option>`+cats.map(c=>`<option ${c===cv?"selected":""}>${esc(c)}</option>`).join("");
   const q=$("#stkSearch").value.trim().toLowerCase(),fs=$("#stkFilter").value,st=$("#stkStatus").value,cat=cs.value;
   let rows=INVD.items.filter(i=>(st==="all"||i.status===st)&&(!cat||i.cat===cat)&&(!q||[i.name,i.sku].join(" ").toLowerCase().includes(q))
-    &&(fs==="all"||(fs==="low"&&isLow(i))||(fs==="zero"&&i.stock<=0)||(fs==="in"&&i.stock>0)));
+    &&(fs==="all"||(fs==="low"&&isLow(i))||(fs==="zero"&&!i.onDemand&&i.stock<=0)||(fs==="in"&&!i.onDemand&&i.stock>0)||(fs==="od"&&i.onDemand)));
   const key={name:i=>i.name.toLowerCase(),stock:i=>i.stock,cost:i=>i.lastCost??-1,price:i=>i.salePrice??-1}[STK_SORT.k];
   rows.sort((a,b)=>{const x=key(a),y=key(b);return(x<y?-1:x>y?1:0)*STK_SORT.dir});
   const th=(k,l,cls="")=>`<th class="${cls} sortable" data-sort="${k}">${l}${STK_SORT.k===k?(STK_SORT.dir>0?" ↑":" ↓"):""}</th>`;
@@ -4285,15 +4368,37 @@ function renderStock(){
     rows.map(i=>`<tr class="${i.status==="archived"?"arch":""}"><td class="num muted">${esc(i.sku)||"—"}</td>
       <td><b>${esc(i.name)}</b>${i.status==="archived"?' <span class="tag">архивиран</span>':""}${i.desc?`<div class="muted">${esc(i.desc)}</div>`:""}<div class="lnk">${lineNames(i).map(n=>`<span>${esc(n)}</span>`).join("")}</div></td>
       <td class="muted">${esc(i.cat)||"—"}</td>
-      <td class="money" style="font-weight:600;${isLow(i)||i.stock<=0?"color:var(--caution)":""}">${numIn(i.stock)} <span class="muted">${esc(i.unit)}</span>${isLow(i)?'<div class="muted" style="color:var(--caution)">под минимума</div>':""}</td>
+      <td class="money" style="font-weight:600;${!i.onDemand&&(isLow(i)||i.stock<=0)?"color:var(--caution)":""}">${i.onDemand?'<span class="tag">при нужда</span>':`${numIn(i.stock)} <span class="muted">${esc(i.unit)}</span>${isLow(i)?'<div class="muted" style="color:var(--caution)">под минимума</div>':""}`}</td>
       <td class="money muted">${numIn(i.minStock)||"—"}</td><td class="money">${i.lastCost!=null?eur(i.lastCost):"—"}</td><td class="money">${i.salePrice!=null?eur(i.salePrice):"—"}</td>
       <td class="num muted">${bgDate(i.lastBuy)||"—"}</td>
-      <td class="acts"><button class="btn small" data-sa="del" data-id="${i.id}" ${i.status==="archived"?"disabled":""}>Доставка</button>
+      <td class="acts"><button class="btn small" data-sa="del" data-id="${i.id}" ${i.status==="archived"||i.onDemand?"disabled":""}>Доставка</button>
         <button class="btn small ghost" data-sa="hist" data-id="${i.id}">История</button><button class="btn small ghost" data-sa="edit" data-id="${i.id}">Редакция</button>
         <button class="btn small ghost ${i.status==="archived"?"":"ico del"}" data-sa="arch" data-id="${i.id}" title="${i.status==="archived"?"Върни в активните":"Архивирай"}">${i.status==="archived"?"Активирай":ICO.arch}</button></td></tr>`).join("")
     ||`<tr><td colspan="9" class="empty">${INVD.items.length?"Няма артикули по тези филтри.":"Още няма складови артикули. Натиснете „Нов артикул“."}</td></tr>`}</tbody>`;
+  // изглед „Карти“: снимка, цена, разход, марж, наличност или „при нужда“, каталог за клиенти
+  const cardsOn=STKV==="cards";$("#stkTable").classList.toggle("hidden",cardsOn);$("#stkCards").classList.toggle("hidden",!cardsOn);
+  $$("#stkView [data-sv]").forEach(b=>b.classList.toggle("on",b.dataset.sv===STKV));
+  const ed=can("stock","edit"),adm=isAdmin();
+  if(cardsOn)$("#stkCards").innerHTML=rows.length?rows.map(i=>{const c=itemCost(i),m=i.salePrice&&c!=null?Math.round((i.salePrice-c)/i.salePrice*100):null;
+    const chip=i.onDemand?'<span class="mx-chip neu">при нужда</span>':i.stock<=0?'<span class="mx-chip bad">изчерпан</span>':isLow(i)?`<span class="mx-chip warn">${numIn(i.stock)} ${esc(i.unit)} · малко</span>`:`<span class="mx-chip ok">${numIn(i.stock)} ${esc(i.unit)}</span>`;
+    const ini=esc(String(i.name||"?").trim().charAt(0).toUpperCase());
+    return `<article class="mx-card${i.status==="archived"?" arch":""}"><div class="img" ${i.img?`style="background-image:url('${esc(scImgUrl(i.img))}')"`:""}>${i.img?"":`<span>${ini}</span>`}${chip}</div>
+      <div class="b"><div class="nm">${esc(i.name)}</div><div class="muted cat">${esc(i.cat||"Без категория")}${i.sku?" · "+esc(i.sku):""}</div>
+      <div class="kv"><div><span>Цена</span><b>${i.salePrice!=null?eur(i.salePrice):"—"}</b></div><div><span>Разход</span><b>${c!=null?eur(c):"—"}</b></div><div><span>Марж</span><b style="color:${m==null?"inherit":m>=30?"var(--ok)":"var(--caution)"}">${m==null?"—":m+" %"}</b></div></div>
+      ${ed&&i.status==="active"?`<div class="mx-seg sm"><button type="button" data-od="${i.id}" data-v="0" class="${i.onDemand?"":"on"}">На склад</button><button type="button" data-od="${i.id}" data-v="1" class="${i.onDemand?"on":""}">При нужда</button></div>`:""}
+      ${CLOUD?`<div class="qr"><span>В каталога за клиенти</span><button type="button" class="mx-sw" role="switch" aria-checked="${!!i.qr}" data-qr="${i.id}" ${adm?"":"disabled title=\"Само администратор\""} aria-label="Каталог за клиенти: ${esc(i.name)}"></button></div>`:""}
+      <div class="acts">${!i.onDemand&&i.status==="active"?`<button class="btn small" data-sa="del" data-id="${i.id}">Доставка</button>`:""}<button class="btn small ghost" data-sa="hist" data-id="${i.id}">История</button>${ed?`<button class="btn small ghost" data-sa="edit" data-id="${i.id}">Редакция</button>`:""}</div></div></article>`}).join("")
+    :`<div class="empty">${INVD.items.length?"Няма артикули по тези филтри.":"Още няма артикули. Натиснете „Нов артикул“."}</div>`;
   if(!$("#stkMovesCard").classList.contains("hidden"))renderMoves();permLock();
 }
+$("#stkView").addEventListener("click",e=>{const b=e.target.closest("[data-sv]");if(!b)return;STKV=b.dataset.sv;try{localStorage.setItem("mx-stk-view",STKV)}catch(_){}renderStock()});
+$("#stkCards").addEventListener("click",async e=>{
+  const sa=e.target.closest("[data-sa]");if(sa){const id=sa.dataset.id;({del:()=>deliveryModal(id),hist:()=>historyModal(id),edit:()=>itemModal(id)})[sa.dataset.sa]();return}
+  const od=e.target.closest("[data-od]");if(od){if(!needEdit("stock","смяна на начина на водене"))return;const id=od.dataset.od,v=od.dataset.v==="1",it=itemById(id);if(!it||!!it.onDemand===v)return;
+    if(v&&it.stock>0&&!confirm(`„${it.name}“ има ${numIn(it.stock)} ${it.unit} на склад. Ако го направите „при нужда“, наличността спира да се води (остава записана в историята). Продължаване?`))return;
+    try{await invCommit(d=>{const x=d.items.find(z=>z.id===id);x.onDemand=v;if(v&&x.lastCost==null&&x.avgCost)x.lastCost=x.avgCost});audit("Артикул: начин на водене",it.name+" → "+(v?"при нужда":"на склад"));renderStock();toast(v?"„"+it.name+"“ — купува се при нужда":"„"+it.name+"“ — води се на склад")}catch(err){toast(err.message,true)}return}
+  const q=e.target.closest("[data-qr]");if(q&&!q.disabled){const id=q.dataset.qr,it=itemById(id);if(!it)return;const v=!it.qr;
+    try{await invCommit(d=>{d.items.find(z=>z.id===id).qr=v});await scSyncFromStock(v?"Показан от склада: "+it.name:"Скрит: "+it.name);renderStock();toast(v?"Показва се в каталога за клиенти":"Скрит от каталога за клиенти")}catch(err){toast(err.message,true)}}});
 ["stkSearch"].forEach(id=>$("#"+id).oninput=renderStock);["stkCat","stkFilter","stkStatus"].forEach(id=>$("#"+id).onchange=renderStock);
 $("#stkTable").addEventListener("click",e=>{const s=e.target.closest("[data-sort]");if(s){STK_SORT=STK_SORT.k===s.dataset.sort?{k:s.dataset.sort,dir:-STK_SORT.dir}:{k:s.dataset.sort,dir:1};renderStock();return}
   const b=e.target.closest("[data-sa]");if(!b)return;const id=b.dataset.id;
@@ -4301,7 +4406,7 @@ $("#stkTable").addEventListener("click",e=>{const s=e.target.closest("[data-sort
 $("#stkNew").onclick=()=>itemModal(null);$("#stkDel").onclick=()=>deliveryModal(null);$("#stkAdj").onclick=()=>adjustModal(null);
 $("#stkMovesBtn").onclick=()=>{const c=$("#stkMovesCard");c.classList.toggle("hidden");$("#stkMovesBtn").classList.toggle("on",!c.classList.contains("hidden"));if(!c.classList.contains("hidden")){renderMoves();c.scrollIntoView({behavior:"smooth",block:"start"})}};
 
-function itemOpts(sel,onlyActive=true){return INVD.items.filter(i=>!onlyActive||i.status==="active").sort((a,b)=>a.name.localeCompare(b.name,"bg"))
+function itemOpts(sel,onlyActive=true,stockOnly=false){return INVD.items.filter(i=>(!onlyActive||i.status==="active")&&(!stockOnly||!i.onDemand)).sort((a,b)=>a.name.localeCompare(b.name,"bg"))
   .map(i=>`<option value="${i.id}" ${i.id===sel?"selected":""}>${esc(i.name)}${i.sku?" ["+esc(i.sku)+"]":""} — налични ${numIn(i.stock)} ${esc(i.unit)}</option>`).join("")}
 
 function itemModal(id){
@@ -4315,11 +4420,16 @@ function itemModal(id){
       <label class="f">Мерна единица<input class="ui-in" id="fiUnit" value="${esc(v("unit")||"бр.")}" list="fiUnits"><datalist id="fiUnits">${STK_UNITS.map(u=>`<option>${u}</option>`).join("")}</datalist></label>
       <label class="f">Продажна цена (€) *<input class="ui-in money" id="fiPrice" value="${numIn(it?it.salePrice:null)}" inputmode="decimal"></label>
       <label class="f">Минимална наличност<input class="ui-in money" id="fiMin" value="${numIn(it?it.minStock:null)}" inputmode="decimal" placeholder="0"></label>
+      <div class="f full"><span class="muted">Как се води</span><div class="mx-seg" id="fiOdSeg"><button type="button" data-v="0" class="${it&&it.onDemand?"":"on"}">На склад — броим наличността</button><button type="button" data-v="1" class="${it&&it.onDemand?"on":""}">Купува се при нужда</button></div>
+        <span class="muted" id="fiOdHint" style="font-size:12.5px"></span></div>
+      <label class="f fi-od">Покупна цена за единица (€)<input class="ui-in money" id="fiOdCost" value="${numIn(it?it.lastCost:null)}" inputmode="decimal" placeholder="за изчисляване на печалбата"></label>
       ${isNew?`<label class="f">Начална наличност<input class="ui-in money" id="fiQty" inputmode="decimal" placeholder="0"></label>
         <label class="f">Покупна цена за единица (€)<input class="ui-in money" id="fiCost" inputmode="decimal"></label>`
-        :`<div class="f"><span class="muted">Наличност</span><b style="font-size:16px">${numIn(it.stock)} ${esc(it.unit)}</b><span class="muted">променя се само с доставка или корекция</span></div>
-        <div class="f"><span class="muted">Последна покупна цена</span><b style="font-size:16px">${it.lastCost!=null?eur(it.lastCost):"—"}</b><span class="muted">средна: ${eur(it.avgCost||0)}</span></div>`}
+        :`<div class="f fi-st"><span class="muted">Наличност</span><b style="font-size:16px">${numIn(it.stock)} ${esc(it.unit)}</b><span class="muted">променя се само с доставка или корекция</span></div>
+        <div class="f fi-st"><span class="muted">Последна покупна цена</span><b style="font-size:16px">${it.lastCost!=null?eur(it.lastCost):"—"}</b><span class="muted">средна: ${eur(it.avgCost||0)}</span></div>`}
       <label class="f full">Описание (по желание)<input class="ui-in" id="fiDesc" value="${esc(v("desc"))}"></label>
+      ${CLOUD?`<div class="f full"><span class="muted">Снимка (за каталога за клиенти)</span><div class="row" style="gap:12px;align-items:center"><div class="mx-thumb" id="fiImgPrev" ${it&&it.img?`style="background-image:url('${esc(scImgUrl(it.img))}')"`:""}></div><input type="file" id="fiImg" accept="image/*">${it&&it.img?'<button type="button" class="btn small ghost" id="fiImgDel">Махни снимката</button>':""}</div></div>
+      ${isAdmin()?`<label class="f full" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="fiQr" ${it&&it.qr?"checked":""}> Показвай в каталога за клиенти (QR) — с цената и снимката, в раздел по категорията</label>`:""}`:""}
     </div>
     <h3>Към кои пера от заявката може да се добавя *</h3>
     <div class="lines-pick">${CATALOG.items.map(c=>`<label><input type="checkbox" value="${c.no}" ${(it?it.lines:[]).includes(c.no)?"checked":""}> <span class="muted">${c.no}.</span> ${esc(c.name)}</label>`).join("")}</div>
@@ -4332,19 +4442,31 @@ function itemModal(id){
       const price=posNum(m.q("#fiPrice").value,"Продажна цена",true),min=m.q("#fiMin").value.trim()?posNum(m.q("#fiMin").value,"Минимална наличност",true):0;
       const lines=[...m.el.querySelectorAll(".lines-pick input:checked")].map(x=>+x.value);
       if(!lines.length)throw new Error("Изберете поне едно перо от заявката.");
-      const data={sku,name,cat:m.q("#fiCat").value.trim(),unit:m.q("#fiUnit").value.trim()||"бр.",salePrice:price,minStock:min,lines,desc:m.q("#fiDesc").value.trim()};
+      const odv=m.el.querySelector("#fiOdSeg .on").dataset.v==="1";
+      const data={sku,name,cat:m.q("#fiCat").value.trim(),unit:m.q("#fiUnit").value.trim()||"бр.",salePrice:price,minStock:odv?0:min,lines,desc:m.q("#fiDesc").value.trim(),onDemand:odv};
+      if(odv){const oc=m.q("#fiOdCost").value.trim();data.lastCost=oc?posNum(oc,"Покупна цена",true):null}
+      if(m.q("#fiQr"))data.qr=m.q("#fiQr").checked;
+      const f=m.q("#fiImg")&&m.q("#fiImg").files[0];
+      if(f){if(f.size>6e6)throw new Error("Снимката е над 6 MB — изберете по-малка.");try{data.img=await scUpload(f)}catch(err){throw new Error("Снимката не се качи: "+err.message)}}
+      else if(m.el.dataset.imgDel==="1")data.img="";
       let q0=0,c0=null;
-      if(isNew){if(m.q("#fiQty").value.trim())q0=posNum(m.q("#fiQty").value,"Начална наличност",true);
+      if(isNew&&!odv){if(m.q("#fiQty").value.trim())q0=posNum(m.q("#fiQty").value,"Начална наличност",true);
         if(q0>0)c0=posNum(m.q("#fiCost").value,"Покупна цена за единица",true)}
       await invCommit(d=>{if(isNew){const n={id:uid(),created:new Date().toISOString(),...data,stock:0,avgCost:0,lastCost:null,lastBuy:"",status:"active"};d.items.push(n);
           if(q0>0)doDelivery(d,{itemId:n.id,qty:q0,price:c0,date:todayISO(),note:"Начална наличност"})}
         else Object.assign(d.items.find(i=>i.id===id),data)});
-      audit(isNew?"Нов складов артикул":"Редакция на артикул",name+(sku?" ["+sku+"]":"")+" · продажна "+eur(price)+(isNew&&q0?" · начална наличност "+numIn(q0)+" по "+eur(c0):""));renderStock();toast(isNew?`Артикулът „${name}“ е създаден.`:"Промените са запазени.")}}]});
+      if(isAdmin())await scSyncFromStock();audit(isNew?"Нов складов артикул":"Редакция на артикул",name+(sku?" ["+sku+"]":"")+" · продажна "+eur(price)+(isNew&&q0?" · начална наличност "+numIn(q0)+" по "+eur(c0):""));renderStock();toast(isNew?`Артикулът „${name}“ е създаден.`:"Промените са запазени.")}}]});
+  const odSync=()=>{const od=m.el.querySelector("#fiOdSeg .on").dataset.v==="1";m.el.querySelectorAll(".fi-od").forEach(x=>x.classList.toggle("hidden",!od));
+    const mn=m.q("#fiMin");if(mn)mn.closest(".f").classList.toggle("hidden",od);["#fiQty","#fiCost"].forEach(k=>{const x=m.q(k);if(x)x.closest(".f").classList.toggle("hidden",od)});m.el.querySelectorAll(".fi-st").forEach(x=>x.classList.toggle("hidden",od));
+    m.q("#fiOdHint").textContent=od?"Не се брои наличност и не се изписва от склада. Цената и разходът се ползват в заявките и отчетите.":"Наличността се води с доставки и се изписва от склада при продажба."};
+  m.el.querySelectorAll("#fiOdSeg button").forEach(b=>b.onclick=()=>{m.el.querySelectorAll("#fiOdSeg button").forEach(x=>x.classList.toggle("on",x===b));odSync()});odSync();
+  const fimg=m.q("#fiImg");if(fimg)fimg.onchange=()=>{const f=fimg.files[0];if(f)m.q("#fiImgPrev").style.backgroundImage=`url('${URL.createObjectURL(f)}')`};
+  const fdel=m.q("#fiImgDel");if(fdel)fdel.onclick=()=>{m.el.dataset.imgDel="1";m.q("#fiImgPrev").style.backgroundImage="";fdel.remove()};
 }
 function deliveryModal(id){
   if(!INVD.items.some(i=>i.status==="active")){toast("Първо създайте складов артикул.",true);return}
   openModal({title:"Нова доставка",body:`<div class="grid">
-      <label class="f full">Артикул *<select class="ui-in" id="fdItem">${itemOpts(id)}</select></label>
+      <label class="f full">Артикул *<select class="ui-in" id="fdItem">${itemOpts(id,true,true)}</select></label>
       <label class="f">Получено количество *<input class="ui-in money" id="fdQty" inputmode="decimal"></label>
       <label class="f">Покупна цена за единица (€) *<input class="ui-in money" id="fdPrice" inputmode="decimal"></label>
       <label class="f">Дата на покупката *<input class="ui-in" type="date" id="fdDate" value="${todayISO()}"></label>
@@ -4366,7 +4488,7 @@ function deliveryModal(id){
 function adjustModal(id){
   if(!INVD.items.length){toast("Още няма складови артикули.",true);return}
   openModal({title:"Корекция на наличност",body:`<div class="grid">
-      <label class="f full">Артикул *<select class="ui-in" id="faItem">${itemOpts(id,false)}</select></label>
+      <label class="f full">Артикул *<select class="ui-in" id="faItem">${itemOpts(id,false,true)}</select></label>
       <label class="f">Нова наличност (преброена) *<input class="ui-in money" id="faQty" inputmode="decimal"></label>
       <div class="f"><span class="muted">Разлика</span><b id="faDiff" style="font-size:16px">—</b></div>
       <label class="f full">Причина *<input class="ui-in" id="faWhy" placeholder="напр. инвентаризация, повредена бройка, грешно въвеждане"></label>
@@ -4763,6 +4885,14 @@ function migrateShowcase(x){x=x||{};if(typeof x.on!=="boolean")x.on=false;if(typ
 const scImgUrl=pp=>pp?(pp.indexOf("http")===0?pp:SB.url+"/storage/v1/object/public/showcase/"+pp):"";
 const scLink=()=>location.origin+location.pathname.replace(/[^/]*$/,"")+"katalog.html?a="+(AG?AG.code:"");
 async function saveShowcase(what){await setMeta("showcase",SHOWCASE);if(what)audit("Каталог за клиенти",what)}
+// раздели „от склада“: артикулите с отметка за каталога, групирани по категория (ръчните раздели не се пипат)
+async function scSyncFromStock(what){if(!CLOUD||!isAdmin())return;
+  const items=INVD.items.filter(i=>i.status==="active"&&i.qr),by=new Map();
+  for(const i of items){const k=(i.cat||"Други").trim();if(!by.has(k))by.set(k,[]);by.get(k).push({id:"inv-"+i.id,name:i.name,price:i.salePrice!=null?eur(i.salePrice):"",desc:i.desc||"",img:i.img||""})}
+  const manual=SHOWCASE.sections.filter(x=>!x.auto),old=SHOWCASE.sections.filter(x=>x.auto).map(x=>x.title);
+  const auto=[...by.entries()].sort((a,b)=>{const ia=old.indexOf(a[0]),ib=old.indexOf(b[0]);return(ia<0?99:ia)-(ib<0?99:ib)||a[0].localeCompare(b[0],"bg")}).map(([t,it])=>({id:"auto-"+t,auto:true,title:t,items:it}));
+  const next=JSON.stringify([...auto,...manual]);if(next===JSON.stringify(SHOWCASE.sections))return;
+  SHOWCASE.sections=[...auto,...manual];await saveShowcase(what||"Обновени артикулите от склада")}
 async function scUpload(file){const ext=((file.type&&file.type.split("/")[1])||"jpg").replace("jpeg","jpg").replace(/[^a-z0-9]/gi,"")||"jpg";const path=AG.id+"/"+uid()+"."+ext;
   await sb("/storage/v1/object/showcase/"+path,{method:"POST",body:file,headers:{"x-upsert":"true","Content-Type":file.type||"image/jpeg"}});return path}
 function renderShowcase(){const adm=isAdmin();
@@ -4772,16 +4902,17 @@ function renderShowcase(){const adm=isAdmin();
   const IMG=`height:150px;border-radius:10px 10px 0 0;background:var(--panel2);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:12px`;
   $("#scList").innerHTML=SHOWCASE.sections.length?SHOWCASE.sections.map((sec,si)=>`
     <div class="card">
-      <div class="row" style="margin-bottom:8px"><h3 style="margin:0">${esc(sec.title||"Раздел")}</h3><span class="muted" style="margin-left:8px">${sec.items.length} бр.</span><span class="spacer"></span>
-        ${adm?`<button class="btn small ghost ico" data-secup="${si}" ${si===0?"disabled":""} title="Нагоре">↑</button><button class="btn small ghost ico" data-secdn="${si}" ${si===SHOWCASE.sections.length-1?"disabled":""} title="Надолу">↓</button><button class="btn small ghost" data-seced="${si}">Име</button><button class="btn small" data-itadd="${si}">＋ Артикул</button><button class="btn small danger ghost" data-secdel="${si}">Изтрий</button>`:""}</div>
+      <div class="row" style="margin-bottom:8px"><h3 style="margin:0">${esc(sec.title||"Раздел")}</h3><span class="muted" style="margin-left:8px">${sec.items.length} бр.</span>${sec.auto?'<span class="tag" style="margin-left:8px">от склада</span>':""}<span class="spacer"></span>
+        ${sec.auto?`<button class="btn small ghost" data-go="stock">Промени в „Инвентар“</button>`:adm?`<button class="btn small ghost ico" data-secup="${si}" ${si===0?"disabled":""} title="Нагоре">↑</button><button class="btn small ghost ico" data-secdn="${si}" ${si===SHOWCASE.sections.length-1?"disabled":""} title="Надолу">↓</button><button class="btn small ghost" data-seced="${si}">Име</button><button class="btn small" data-itadd="${si}">＋ Артикул</button><button class="btn small danger ghost" data-secdel="${si}">Изтрий</button>`:""}</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px">${sec.items.length?sec.items.map((it,ii)=>`
         <div style="border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)">
           <div style="${IMG}${it.img?`;background-image:url('${esc(scImgUrl(it.img))}')`:""}">${it.img?"":"няма снимка"}</div>
           <div style="padding:10px 12px"><b>${esc(it.name||"")}</b>${it.price?`<div style="color:var(--bronze-hi,#d2b07a);font-weight:700;margin-top:2px">${esc(it.price)}</div>`:""}${it.desc?`<p class="muted" style="font-size:12px;margin:5px 0 0">${esc(it.desc)}</p>`:""}
-            ${adm?`<div class="row" style="margin-top:8px;gap:6px"><button class="btn small ghost" data-ited="${si}|${ii}">Промени</button><button class="btn small danger ghost ico" data-itdel="${si}|${ii}">🗑</button></div>`:""}</div>
+            ${adm&&!sec.auto?`<div class="row" style="margin-top:8px;gap:6px"><button class="btn small ghost" data-ited="${si}|${ii}">Промени</button><button class="btn small danger ghost ico" data-itdel="${si}|${ii}">🗑</button></div>`:""}</div>
         </div>`).join(""):`<p class="muted">Няма артикули.${adm?' Натиснете „＋ Артикул“.':""}</p>`}</div>
     </div>`).join(""):`<div class="empty">Още няма раздели.${adm?' Натиснете „＋ Раздел“ (напр. Ковчези, Урни, Венци, Паметници).':""}</div>`;
   $$("#scList [data-seced]").forEach(b=>b.onclick=()=>scSection(+b.dataset.seced));
+  $$("#scList [data-go]").forEach(b=>b.onclick=()=>showTab(b.dataset.go));
   $$("#scList [data-secdel]").forEach(b=>b.onclick=()=>{const i=+b.dataset.secdel;if(!confirm(`Да изтрия ли раздел „${SHOWCASE.sections[i].title}“ с всичките му артикули?`))return;SHOWCASE.sections.splice(i,1);saveShowcase("Изтрит раздел").then(()=>renderShowcase())});
   $$("#scList [data-secup]").forEach(b=>b.onclick=()=>{const i=+b.dataset.secup;const a=SHOWCASE.sections;[a[i-1],a[i]]=[a[i],a[i-1]];saveShowcase().then(()=>renderShowcase())});
   $$("#scList [data-secdn]").forEach(b=>b.onclick=()=>{const i=+b.dataset.secdn;const a=SHOWCASE.sections;[a[i+1],a[i]]=[a[i],a[i+1]];saveShowcase().then(()=>renderShowcase())});
@@ -4881,6 +5012,7 @@ async function renderFin(){
     +kpi("Печалба от заявките",`<span class="${pr<0?"neg":"pos"}">${eur(pr)}</span>`,inc?`марж ${Math.round(pr/inc*100)} %`:"")
     +(()=>{const oh=costsTotal(rg),net=r2(pr-oh);return kpi("Общи разходи",eur(oh),`<a href="#" data-gocosts>от „Разходи“</a>`)+kpi("Чиста печалба",`<span class="${net<0?"neg":"pos"}">${eur(net)}</span>`,"след общите разходи")})()+kpi("Неплатено за периода",`<span style="color:${un.length?"var(--caution)":"inherit"}">${eur(sumBy(un,r=>calc(r).rest))}</span>`,`${un.length} ${un.length===1?"заявка":"заявки"}`);
   const allUn=all.filter(r=>!r.paid&&calc(r).rest>0).sort((a,b)=>(a.ritDate||reqDay(a)).localeCompare(b.ritDate||reqDay(b)));
+  mxFinMoney(all,rg);mxFinChart(all);
   $("#finUnpaid").innerHTML=allUn.length?`<table class="list"><thead><tr><th>№</th><th>Заявител</th><th>Телефон</th><th>Ритуал</th><th class="money">Общо</th><th class="money">Аванс</th><th class="money">Остатък</th></tr></thead><tbody>${
     allUn.map(r=>{const c=calc(r);return `<tr class="click" data-id="${r.id}"><td><b>${esc(r.number)}</b>${sampleTag(r)}</td><td>${esc(r.appName)||"—"}</td><td class="num muted">${esc(r.appPhone)||""}</td><td class="num">${bgDate(r.ritDate)||"—"}</td>
       <td class="money">${eur(c.total)}</td><td class="money muted">${eur(c.advance)}</td><td class="money" style="color:var(--caution);font-weight:600">${eur(c.rest)}</td></tr>`}).join("")}</tbody>
@@ -4891,6 +5023,25 @@ async function renderFin(){
     <tfoot><tr><td colspan="4">Общо</td><td class="money">${eur(inc)}</td><td class="money">${eur(exp)}</td><td class="money ${pr<0?"neg":"pos"}">${eur(pr)}</td></tr></tfoot></table>`:`<div class="empty">Няма заявки за избрания период.</div>`;
 }
 $$("#finSeg button").forEach(b=>b.onclick=()=>{FINP=b.dataset.p;renderFin()});
+// „Парите в периода“: какво реално е влязло (плащания по дата на плащане) и какво е фактурирано (по дата на фактурата)
+function mxFinMoney(all,rg){const inR=d=>finIn(d,rg);let paid=0,refund=0,np=0;
+  for(const r of all)for(const p of (r.payments||[])){if(!inR(p.date))continue;const a=Number(p.amount)||0;if(p.type==="refund")refund+=a;else{paid+=a;np++}}
+  const inv=all.filter(r=>r.inv&&String(r.inv.number||"").trim()&&inR(r.inv.date));const invT=inv.reduce((a,r)=>a+invCalc({...r,inv:Object.assign(emptyInv(),r.inv)}).total,0);
+  $("#finMoney").innerHTML=`<h2>Парите в периода</h2>
+    <div class="mx-money"><div><small>Получени плащания</small><b>${eur(r2(paid))}</b><span class="muted">${np} ${np===1?"плащане":"плащания"} · по дата на плащане</span></div>
+    <div><small>Върнати (сторно)</small><b>${refund?"−"+eur(r2(refund)):"—"}</b><span class="muted">&nbsp;</span></div>
+    <div><small>Фактурирано</small><b>${eur(r2(invT))}</b><span class="muted">${inv.length} ${inv.length===1?"фактура":"фактури"} · по дата на фактурата</span></div></div>
+    <p class="muted" style="font-size:12.5px;margin:10px 0 0">„Оборот“ горе е по дата на заявката. Тук е по датата, на която парите реално са влезли — както ги вижда счетоводителят.</p>`}
+// последните 6 месеца: оборот и разходи по случаите
+function mxFinChart(all){const now=new Date(),M=[];for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);M.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"))}
+  const T=M.map(ym=>sumBy(all.filter(r=>reqDay(r).startsWith(ym)),r=>calc(r).total)),C=M.map(ym=>sumBy(all.filter(r=>reqDay(r).startsWith(ym)),r=>wsCalc(r).expenses));
+  const mx=Math.max(1,...T,...C),nice=v=>{const p=Math.pow(10,Math.floor(Math.log10(v)));return Math.ceil(v/p)*p},top=nice(mx);
+  const W=560,H=210,pl=48,pb=26,pt=10,y=v=>pt+(H-pt-pb)*(1-v/top),step=(W-pl-8)/6,bw=Math.min(22,step/3);
+  const ticks=[0,top/2,top],lab=v=>v>=1000?(v/1000).toLocaleString("bg-BG",{maximumFractionDigits:1})+" хил.":String(Math.round(v));
+  $("#finChart").innerHTML=`<h2>Последните 6 месеца</h2><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Оборот и разходи по месеци" style="width:100%;height:auto;display:block">
+    ${ticks.map(v=>`<line x1="${pl}" x2="${W-4}" y1="${y(v)}" y2="${y(v)}" stroke="var(--border)"/><text x="${pl-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--text3)">${lab(v)}</text>`).join("")}
+    ${M.map((ym,i)=>{const x=pl+step*i+step/2,mn=MONTHS[+ym.slice(5)-1].slice(0,3);return `<rect class="mxb" x="${x-bw-1}" y="${y(T[i])}" width="${bw}" height="${y(0)-y(T[i])}" rx="3" fill="var(--bronze)"><title>${mn}: оборот ${eur(T[i])}</title></rect><rect class="mxb" x="${x+1}" y="${y(C[i])}" width="${bw}" height="${y(0)-y(C[i])}" rx="3" fill="var(--text3)" opacity=".45"><title>${mn}: разходи ${eur(C[i])}</title></rect><text x="${x}" y="${H-8}" text-anchor="middle" font-size="11.5" fill="var(--text2)">${mn}</text>`}).join("")}</svg>
+    <div class="row" style="gap:16px;font-size:12.5px;color:var(--text2);margin-top:6px"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--bronze);margin-right:6px"></i>Оборот</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--text3);opacity:.45;margin-right:6px"></i>Разходи по случаите</span></div>`}
 $("#finKpis").addEventListener("click",e=>{if(e.target.closest("[data-gocosts]")){e.preventDefault();COP=FINP;if(FINP==="custom"){$("#coFrom").value=$("#finFrom").value;$("#coTo").value=$("#finTo").value}showTab("costs")}});
 // справка за счетоводителя: CSV с „;“ и BOM — Excel на български го отваря направо
 function downloadCsv(name,head,rows){
@@ -6027,11 +6178,14 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="9"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="10"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
   {v:"1.0",d:"19.11.2026",items:[
+    "Инвентар стана единен каталог: всеки артикул е „на склад“ (брои се и се изписва) или „купува се при нужда“ (само цена и разход, без наличност). Изглед „Карти“ със снимка, цена, разход и марж; отметка „В каталога за клиенти“ — артикулът се появява сам в QR каталога, в раздел по категория.",
+    "Образци на заявки: запазете услугите и цените на заявка като образец (напр. „Стандартно погребение“) и попълвайте нова заявка от него с едно натискане — бутони „★ Образци“ в заявката и „★ По образец“ в списъка.",
+    "Финанси: нов блок „Парите в периода“ — получени плащания и сторно по дата на плащане, фактурирано по дата на фактурата; графика на оборота и разходите за последните 6 месеца.",
     "Memoriox 1.0 — номерацията на версиите започва отначало.",
     "Известия: камбанка до търсенето с броя на нещата, които искат внимание (и помените до 3 дни). Профилът на клиента показва заявки, суми, неплатено и следващ помен. В Настройки — бърза лента към разделите.",
     "Календар: изглед „Седмица“ (по подразбиране) и „Месец“; слоеве Ритуали · Помени · Хладилна камера · Срещи и задачи. Помените се показват сами от датата на смъртта. Съботите и неделите вече не са свити.",
