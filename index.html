@@ -2027,7 +2027,7 @@ async function pwLeaked(pw){if(!pw||!crypto.subtle)return 0;
     for(const ln of (await r.text()).split("\n")){const [suf,n]=ln.trim().split(":");if(suf===h.slice(5))return +n||0}return 0}catch(e){return 0}}
 async function pwGuard(pw){const n=await pwLeaked(pw);
   if(n>0)throw new Error(`Тази парола е изтекла при чужди пробиви (среща се ${n.toLocaleString("bg-BG")} пъти) и лесно се отгатва. Изберете друга — напр. 3–4 несвързани думи.`)}
-const PW_ARG={setup_first_admin:"p_password",self_signup:"p_admin_password",recover_admin:"p_password",platform_reset_password:"p_password",platform_create_agency:"p_admin_password",change_my_password:"p_new",admin_create_user:"p_password",admin_update_user:"p_password"};
+const PW_ARG={setup_first_admin:"p_password",self_signup:"p_admin_password",recover_admin:"p_password",platform_reset_password:"p_password",platform_create_agency:"p_admin_password",change_my_password:"p_new",admin_create_user:"p_password",admin_update_user:"p_password",password_reset_confirm:"p_password"};
 const rpc=async(fn,args={})=>{const k=PW_ARG[fn];if(k&&args[k])await pwGuard(args[k]);return sb("/rest/v1/rpc/"+fn,{method:"POST",body:args})};
 const enc_=encodeURIComponent,DOC_BLOBS=new WeakSet(); // Word файлове, които вече са в хранилището
 if(CLOUD)Object.assign(DB,{
@@ -2082,9 +2082,10 @@ async function cloudContext(){
     DB.db=true;USERS=await sbProfiles();
     return {id:SBS.uid,username:c.username,name:c.name+(/собственик/i.test(c.name)?"":" (собственик)"),role:"admin",perms:{},active:true,owner:true}}
   if(!c||!c.active){await sbLogout();DB.db=null;throw new Error("Този потребител е спрян. Обърнете се към администратора.")}
+  if(c.must_confirm){DB.db=null;const er=new Error("Потвърдете имейла си — изпратихме ви линк.");er.confirm=true;er.email=c.email||"";throw er}
   if(!c.agency_active||c.expired){let b=null;if(c.agency_active&&c.expired)try{b=await rpc("my_billing")}catch(e){}
     await sbLogout();DB.db=null;const er=new Error(noAccessMsg(c.support_phone));if(b&&b.admin&&billPayButtons(b))er.billing=b;throw er}
-  AG={id:c.agency_id,code:c.code,name:c.agency_name,until:c.access_until,warn:c.warn_days,phone:c.support_phone};
+  AG={id:c.agency_id,code:c.code,name:c.agency_name,until:c.access_until,warn:c.warn_days,phone:c.support_phone,email:c.email||"",emailOk:!!c.email_confirmed};
   DB.db=true;USERS=await sbProfiles();const x=USERS.find(z=>z.id===SBS.uid);
   if(!x||!x.active){await sbLogout();DB.db=null;throw new Error("Този потребител е спрян. Обърнете се към администратора.")}
   await consentGate(x);
@@ -2099,17 +2100,24 @@ async function cloudLogin(code,u,p){
 async function cloudStart(){
   SETTINGS=migrateSettings(null);CATALOG=migrateCatalog(null);NECRO=migrateNecro(null);INVD=migrateInvd(null); // докато няма вход
   $("#sideWhere").textContent="Данните са в защитената база (ЕС)";
-  let startMsg="";
+  let startMsg="",startNote="";
   try{
+    const qs0=new URLSearchParams(location.search),ctok=qs0.get("confirm"),rtok=qs0.get("reset");
+    if(ctok||rtok){history.replaceState(null,"",location.pathname);
+      if(rtok){authShow("reset",{token:rtok});return}
+      try{const cr=await rpc("email_confirm",{p_token:ctok});
+        if(cr&&cr.ok){try{localStorage.setItem(AG_KEY,cr.code)}catch(_){}startNote="Имейлът е потвърден ✓"+(SBS?"":" Влезте с вашето потребителско име и парола.")}
+        else startMsg=(cr&&cr.msg)||"Линкът е невалиден."}catch(e){if(e.net)throw e;startMsg=e.message}}
     if(SBS){try{await sbToken();
       // линк за друга агенция (…?a=код) — не отваряме запомнения вход, а показваме празен вход
       const urlAg=(new URLSearchParams(location.search).get("a")||"").toLowerCase();
       if(urlAg){const c=await rpc("my_context");if(!c||c.kind!=="agency"||c.code!==urlAg){sbSave(null);DB.db=null;authShow("login");return}}
       const u=await cloudContext();
       if(u.platform){platformShow(u);return}
-      ME=u;await loadShared();lastAct=Date.now();applyUser();showTab(firstTab());agencyBars();return}catch(e){if(e.net)throw e;startMsg=e.message}
+      ME=u;await loadShared();lastAct=Date.now();applyUser();showTab(firstTab());agencyBars();if(startNote)setTimeout(()=>toast(startNote),600);return}catch(e){if(e.net)throw e;
+        if(e.confirm){authShow("confirm",{email:e.email,msg:startMsg});return}startMsg=e.message}
       sbSave(null);DB.db=null}
-    authShow(new URLSearchParams(location.search).has("trial")?"trial":((await rpc("needs_setup"))?"setup":"login"),{msg:startMsg,admin:new URLSearchParams(location.search).has("admin")});
+    authShow(new URLSearchParams(location.search).has("trial")?"trial":((await rpc("needs_setup"))?"setup":"login"),{msg:startMsg,note:startNote,admin:new URLSearchParams(location.search).has("admin")});
   }catch(e){authShow("offline")}
 }
 
@@ -4654,6 +4662,7 @@ function mxDay(all,evs,today){
 // „Иска внимание“: какво може да се обърка днес и тази седмица
 function mxAttnList(all,real,today,fin,seeFr){
   const out=[],soon=plusDays(today,7),old=plusDays(today,-7);
+  if(CLOUD&&AG&&!AG.owner&&ME&&ME.role==="admin"&&!AG.emailOk)out.push({sev:"warn",t:AG.email?"Потвърдете имейла за възстановяване":"Добавете имейл за възстановяване",s:"Без него не можете да смените забравена парола · Потребители → Имейл за възстановяване",go:"users"});
   INVD.items.filter(i=>i.status==="active"&&(i.minStock||0)>0&&i.stock<=0).forEach(i=>out.push({sev:"bad",t:"Изчерпан: "+i.name,s:"0 "+(i.unit||"бр.")+" · минимум "+numIn(i.minStock),go:"stock"}));
   for(const r of real){if(r.ritDate&&r.ritDate>=today&&r.ritDate<=soon&&mxHour(r.ritTime)==null)
     out.push({sev:"warn",t:"Липсва час на ритуала",s:"№ "+r.number+" · "+(r.decName||"—")+" · "+bgDate(r.ritDate),rid:r.id})}
@@ -5826,8 +5835,9 @@ function authShow(mode,opt={}){
       ${CLOUD&&!opt.locked&&!adm?`<button type="button" class="auth-link" id="liTrial" style="font-weight:700;color:var(--bronze-hi,#d2b07a)">✨ Нова агенция? Пробвайте 14 дни безплатно</button><button type="button" class="auth-link auth-small" id="liSign">или заявете достъп по телефон</button>`:""}
       ${CLOUD&&!opt.locked?`<button type="button" class="auth-link auth-small" id="liAdm">${adm?"← Вход за агенция":"Вход за администратор"}</button>`:""}</form>`;
     if(opt.msg)$("#fLogin .auth-err").textContent=opt.msg;
+    if(opt.note){const nt=document.createElement("p");nt.className="auth-note";nt.style.cssText="color:var(--ok);font-weight:600";nt.textContent=opt.note;$("#fLogin").prepend(nt)}
     setTimeout(()=>(opt.user?$("#liP"):CLOUD&&!adm&&!$("#liA").value?$("#liA"):$("#liU")).focus(),50);
-    $("#liRec").onclick=()=>authShow("recover",{admin:adm});
+    $("#liRec").onclick=()=>authShow(CLOUD&&!adm?"forgot":"recover",{admin:adm});
     if($("#liAdm"))$("#liAdm").onclick=()=>authShow("login",{admin:!adm});
     if($("#liSign"))$("#liSign").onclick=()=>authShow("signup");if($("#liTrial"))$("#liTrial").onclick=()=>authShow("trial");
     $("#fLogin").onsubmit=async e=>{e.preventDefault();const er=$("#fLogin .auth-err");er.textContent="";
@@ -5836,7 +5846,7 @@ function authShow(mode,opt={}){
       const code=adm?"":($("#liA")?$("#liA").value:"");
       if(CLOUD&&!adm&&!normUser(code)){er.textContent="Въведете кода на агенцията.";$("#liA").focus();return}
       try{if(CLOUD){x=await cloudLogin(code,u,p);if(x&&x.platform){if(opt.locked&&ME)reloadKeep();else platformShow(x);return}}else{x=USERS.find(z=>z.username===u&&z.active);if(x&&(await pwHash(p,x.salt))!==x.hash)x=null}}
-      catch(err){if(err.billing)er.innerHTML=`<b>Срокът на достъпа е изтекъл.</b> Платете с карта и влезте отново след минута.`+billPayButtons(err.billing)+`<p class="muted" style="margin:8px 0 0;font-size:12.5px">Или се обадете: ${esc(err.message.split("тел. ")[1]||"")}</p>`;else er.textContent=err.message;return}
+      catch(err){if(err.confirm){authShow("confirm",{email:err.email});return}if(err.billing)er.innerHTML=`<b>Срокът на достъпа е изтекъл.</b> Платете с карта и влезте отново след минута.`+billPayButtons(err.billing)+`<p class="muted" style="margin:8px 0 0;font-size:12.5px">Или се обадете: ${esc(err.message.split("тел. ")[1]||"")}</p>`;else er.textContent=err.message;return}
       if(!x){FAILS++;if(FAILS>=5){LOCK_UNTIL=Date.now()+30e3;FAILS=0}audit("Неуспешен вход","потребител: "+u);er.textContent="Грешно потребителско име или парола.";$("#liP").value="";return}
       FAILS=0;
       if(opt.locked&&ME&&x.id===ME.id){$("#auth").classList.add("hidden");lastAct=Date.now();audit("Отключване");return}
@@ -5846,17 +5856,18 @@ function authShow(mode,opt={}){
   }
   else if(mode==="trial"){$("#authSub").textContent="14 дни безплатно";$("#authTitle").textContent="Нова агенция";
     B.innerHTML=`<form class="auth-form" id="fTrial" autocomplete="on">
-      <p class="auth-note">Създайте акаунт за вашата агенция и влезте веднага — <b>14 дни безплатно, без банкова карта</b>.</p>
+      <p class="auth-note">Създайте акаунт за вашата агенция — <b>14 дни безплатно, без банкова карта</b>. Ще ви изпратим линк за потвърждение на имейла.</p>
       <label class="f">Име на агенцията<input class="ui-in" id="trN" autocomplete="organization" required placeholder="напр. Погребална агенция Мир"></label>
       <label class="f">Код за вход<input class="ui-in" id="trC" autocapitalize="none" spellcheck="false" placeholder="напр. mir" required><span class="auth-note" style="display:block;font-size:12px;margin-top:4px">Малки латински букви, цифри и тире. Този код пишат служителите при вход.</span></label>
       <label class="f">Вашето име и фамилия<input class="ui-in" id="trAN" autocomplete="name" required></label>
+      <label class="f">Имейл<input class="ui-in" id="trE" type="email" autocomplete="email" inputmode="email" required placeholder="на него идва линкът за потвърждение"></label>
       <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px"><label class="f">Потребителско име<input class="ui-in" id="trAU" autocomplete="username" value="admin"></label>
         <label class="f">Телефон (по желание)<input class="ui-in" id="trT" type="tel" autocomplete="tel"></label></div>
       <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px"><label class="f">Парола (поне 6 знака)<input class="ui-in" type="password" id="trP" autocomplete="new-password" required></label>
         <label class="f">Повтори паролата<input class="ui-in" type="password" id="trP2" autocomplete="new-password" required></label></div>
       <input id="trW" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;width:1px;height:1px" aria-hidden="true">
       <p class="auth-legal">С регистрацията приемате ${legalA("usloviya","Общите условия")} и ${legalA("poveritelnost","Политиката за поверителност")}.</p>
-      <div class="auth-err"></div><button class="btn primary" type="submit">Създай и влез — 14 дни безплатно</button>
+      <div class="auth-err"></div><button class="btn primary" type="submit">Създай — 14 дни безплатно</button>
       <button type="button" class="auth-link" id="trBack">← Вече имам агенция? Вход</button></form>`;
     $("#trBack").onclick=()=>authShow("login");
     const trAuto={v:true};
@@ -5865,19 +5876,20 @@ function authShow(mode,opt={}){
     setTimeout(()=>$("#trN").focus(),50);
     $("#fTrial").onsubmit=async e=>{e.preventDefault();const er=$("#fTrial .auth-err");er.textContent="";const b=$("#fTrial .btn.primary");
       if($("#trW").value)return;
-      const nm=$("#trN").value.trim(),cd=normUser($("#trC").value),an=$("#trAN").value.trim(),au=normUser($("#trAU").value)||"admin",pw=$("#trP").value,ph=$("#trT").value.trim();
+      const nm=$("#trN").value.trim(),cd=normUser($("#trC").value),an=$("#trAN").value.trim(),au=normUser($("#trAU").value)||"admin",pw=$("#trP").value,ph=$("#trT").value.trim(),em=$("#trE").value.trim();
       if(!nm){er.textContent="Попълнете името на агенцията.";return}
       if(!/^[a-z0-9][a-z0-9-]{1,29}$/.test(cd)){er.textContent="Кодът е 2–30 знака: малки латински букви, цифри и тире.";$("#trC").focus();return}
       if(!an){er.textContent="Попълнете вашето име и фамилия.";return}
+      if(!/^[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}$/.test(em)){er.textContent="Попълнете валиден имейл.";$("#trE").focus();return}
       if(pw.length<6){er.textContent="Паролата трябва да е поне 6 знака.";return}
       if(pw!==$("#trP2").value){er.textContent="Паролите не съвпадат.";return}
       b.disabled=true;
-      try{const rr=await rpc("self_signup",{p_agency_name:nm,p_code:cd,p_admin_name:an,p_admin_username:au,p_admin_password:pw,p_phone:ph});
+      try{const rr=await rpc("self_signup",{p_agency_name:nm,p_code:cd,p_admin_name:an,p_admin_username:au,p_admin_password:pw,p_phone:ph,p_email:em});
         try{localStorage.setItem("memoriox-newtour","1");localStorage.setItem(AG_KEY,rr.code)}catch(x){}
         const xx=await cloudLogin(rr.code,rr.username,pw);
         if(!xx||xx.platform)throw new Error("Акаунтът е създаден. Влезте с код „"+rr.code+"“ и вашата парола.");
         await loginAs(xx,"Самостоятелна регистрация");
-      }catch(x){b.disabled=false;er.textContent=/Could not find the function|PGRST202|schema cache/.test(x.message)?"Регистрацията временно не е достъпна. Обадете се на +359 893 008 182.":x.message}};
+      }catch(x){if(x.confirm){authShow("confirm",{email:x.email});return}b.disabled=false;er.textContent=/Could not find the function|PGRST202|schema cache/.test(x.message)?"Регистрацията временно не е достъпна. Обадете се на +359 893 008 182.":x.message}};
   }
   else if(mode==="signup"){$("#authSub").textContent="Заявка за достъп";$("#authTitle").textContent="Програма „Заявки“";
     B.innerHTML=`<form class="auth-form" id="fSign" autocomplete="on">
@@ -5900,6 +5912,61 @@ function authShow(mode,opt={}){
         B.innerHTML=`<div class="auth-form"><p style="font-size:15px;margin:0"><b>Благодарим! Заявката е изпратена.</b></p><p class="auth-note">Ще се свържем с вас на посочения телефон, обикновено до един работен ден.</p>
           <button type="button" class="auth-link" id="sgDone">← Към входа</button></div>`;$("#sgDone").onclick=()=>authShow("login")}
       catch(x){er.textContent=/Could not find the function|PGRST202/.test(x.message)?"В момента заявките не се приемат онлайн. Обадете се на тел. +359 893 008 182.":x.message;b.disabled=false}};
+  }
+  else if(mode==="confirm"){$("#authSub").textContent="Потвърдете имейла";
+    B.innerHTML=`<div class="auth-form" id="fConf">
+      <p style="font-size:15px;margin:0"><b>Изпратихме ви писмо${opt.email?" на "+esc(opt.email):""}.</b></p>
+      <p class="auth-note">Отворете го и натиснете <b>„Потвърди имейла“</b> — след това влизате направо в програмата. Ако писмото не е дошло до няколко минути, проверете папка „Спам“ или „Промоции“.</p>
+      <div class="auth-err"></div><p class="auth-note hidden" id="cfOk" style="color:var(--ok);font-weight:600"></p>
+      <button class="btn primary" type="button" id="cfDone">Потвърдих — влез</button>
+      <button class="btn" type="button" id="cfAgain" style="justify-content:center">Изпрати писмото пак</button>
+      <button type="button" class="auth-link" id="cfChange">Сгрешен имейл? Смени го</button>
+      <button type="button" class="auth-link auth-small" id="cfOut">Изход</button></div>`;
+    if(opt.msg)$("#fConf .auth-err").textContent=opt.msg;
+    const ok=t=>{$("#cfOk").textContent=t;$("#cfOk").classList.remove("hidden");$("#fConf .auth-err").textContent=""},bad=t=>{$("#fConf .auth-err").textContent=t;$("#cfOk").classList.add("hidden")};
+    // ако потвърди в друг раздел/на телефона — влизаме сами
+    clearInterval(window.CF_T);window.CF_T=setInterval(async()=>{if($("#auth").classList.contains("hidden")||!$("#fConf")){clearInterval(window.CF_T);return}
+      try{const c=await rpc("my_context");if(c&&c.kind==="agency"&&!c.must_confirm){clearInterval(window.CF_T);location.reload()}}catch(e){}},6000);
+    $("#cfDone").onclick=async()=>{try{const c=await rpc("my_context");if(c&&c.kind==="agency"&&!c.must_confirm){location.reload();return}bad("Имейлът още не е потвърден. Натиснете линка в писмото.")}catch(e){bad(e.message)}};
+    $("#cfAgain").onclick=async()=>{const b=$("#cfAgain");b.disabled=true;try{const r=await rpc("request_email_confirm",{});ok("Изпратихме ново писмо на "+(r.email||"имейла ви")+".")}catch(e){bad(e.message)}finally{b.disabled=false}};
+    $("#cfChange").onclick=async()=>{const v=prompt("Нов имейл:");if(!v||!v.trim())return;try{const r=await rpc("request_email_confirm",{p_email:v.trim()});ok("Изпратихме писмо на "+(r.email||v.trim())+". Старият линк вече не важи.")}catch(e){bad(e.message)}};
+    $("#cfOut").onclick=async()=>{clearInterval(window.CF_T);await sbLogout();DB.db=null;authShow("login")};
+  }
+  else if(mode==="forgot"){$("#authSub").textContent="Забравена парола";
+    B.innerHTML=`<form class="auth-form" id="fFgt" autocomplete="on">
+      <p class="auth-note">Ще изпратим линк за нова парола на <b>потвърдения имейл на администратора</b>. Служителите — помолете администратора да ви смени паролата от „Потребители“.</p>
+      <label class="f">Код на агенцията<input class="ui-in" id="fgA" autocapitalize="none" spellcheck="false" value="${esc(lastAgency())}"></label>
+      <label class="f">Потребителско име на администратор<input class="ui-in" id="fgU" autocomplete="username" autocapitalize="none"></label>
+      <div class="auth-err"></div><button class="btn primary" type="submit">Изпрати линк</button>
+      <button type="button" class="auth-link" id="fgBack">← Назад към входа</button></form>`;
+    $("#fgBack").onclick=()=>authShow("login");
+    setTimeout(()=>($("#fgA").value?$("#fgU"):$("#fgA")).focus(),50);
+    $("#fFgt").onsubmit=async e=>{e.preventDefault();const er=$("#fFgt .auth-err");er.textContent="";const b=$("#fFgt .btn.primary");
+      const ac=normUser($("#fgA").value),un=normUser($("#fgU").value);if(!ac||!un){er.textContent="Попълнете кода на агенцията и потребителското име.";return}
+      b.disabled=true;
+      try{const r=await rpc("password_reset_request",{p_agency:ac,p_username:un});if(r&&r.ok===false)throw new Error(r.msg||"Опитайте отново.");
+        B.innerHTML=`<div class="auth-form"><p style="font-size:15px;margin:0"><b>Проверете пощата си.</b></p>
+          <p class="auth-note">Ако данните са верни и администраторът има потвърден имейл, след малко ще получите писмо с линк за нова парола. Линкът важи 1 час. Проверете и папка „Спам“.</p>
+          <p class="auth-note">Нямате достъп до имейла? Обадете се на ${esc((AG&&AG.phone)||"+359 893 008 182")}.</p>
+          <button type="button" class="auth-link" id="fgDone">← Към входа</button></div>`;$("#fgDone").onclick=()=>authShow("login")}
+      catch(x){b.disabled=false;er.textContent=/Could not find the function|PGRST202/.test(x.message)?"Тази функция още не е включена. Обадете се на +359 893 008 182.":x.message}};
+  }
+  else if(mode==="reset"){$("#authSub").textContent="Нова парола";
+    B.innerHTML=`<form class="auth-form" id="fRst" autocomplete="off">
+      <p class="auth-note">Изберете нова парола за администратора. След запазване влизате направо в програмата.</p>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px"><label class="f">Нова парола (поне 6 знака)<input class="ui-in" type="password" id="rsP" autocomplete="new-password"></label>
+        <label class="f">Повтори<input class="ui-in" type="password" id="rsP2" autocomplete="new-password"></label></div>
+      <div class="auth-err"></div><button class="btn primary" type="submit">Запази и влез</button>
+      <button type="button" class="auth-link" id="rsBack">← Към входа</button></form>`;
+    $("#rsBack").onclick=()=>authShow("login");setTimeout(()=>$("#rsP").focus(),50);
+    $("#fRst").onsubmit=async e=>{e.preventDefault();const er=$("#fRst .auth-err");er.textContent="";const b=$("#fRst .btn.primary");
+      const p=$("#rsP").value;if(p.length<6){er.textContent="Паролата трябва да е поне 6 знака.";return}if(p!==$("#rsP2").value){er.textContent="Паролите не съвпадат.";return}
+      b.disabled=true;
+      try{const r=await rpc("password_reset_confirm",{p_token:opt.token,p_password:p});if(!r||!r.ok)throw new Error((r&&r.msg)||"Линкът е невалиден.");
+        try{localStorage.setItem(AG_KEY,r.code)}catch(_){}
+        const a=await cloudLogin(r.code,r.username,p);if(!a){authShow("login",{note:"Паролата е сменена ✓ Влезте с новата парола.",user:r.username});return}
+        await loginAs(a,"Вход");audit("Паролата е сменена по линк от имейла",a.name);setTimeout(()=>toast("Паролата е сменена ✓"),500)}
+      catch(x){b.disabled=false;if(x.confirm){authShow("confirm",{email:x.email});return}er.textContent=x.message}};
   }
   else if(mode==="recover"){$("#authSub").textContent="Възстановяване на достъпа";
     B.innerHTML=`<form class="auth-form" id="fRec" autocomplete="off">
@@ -6159,10 +6226,9 @@ function platformShow(P){
       <label class="f">Администратор — име и фамилия<input class="ui-in" id="naAN" value="${esc(SU?SU.contact_person:"")}"></label>
       <label class="f">Потребителско име<input class="ui-in" id="naAU" autocapitalize="none"></label>
       <label class="f">Парола (поне 6 знака)<input class="ui-in" type="password" id="naAP" autocomplete="new-password"></label>
-      <label class="f">Код за възстановяване (по желание, 8+)<input class="ui-in" type="password" id="naR" autocomplete="off"></label></div>`,
+      <p class="auth-note" style="grid-column:1/-1;margin:0">Администраторът добавя имейл за „Забравена парола“ от „Потребители“ след първия вход.</p></div>`,
     actions:[{label:"Отказ"},{label:"Създай агенцията",cls:"primary",act:async m=>{
-      const code=normUser(m.q("#naC").value),un=normUser(m.q("#naAU").value),rc=m.q("#naR").value.trim();
-      if(rc&&rc.length<8)throw new Error("Кодът за възстановяване трябва да е поне 8 знака (или го оставете празен).");
+      const code=normUser(m.q("#naC").value),un=normUser(m.q("#naAU").value),rc="";
       const agId=await rpc("platform_create_agency",{p_code:code,p_name:m.q("#naN").value.trim(),p_admin_username:un,p_admin_name:m.q("#naAN").value.trim(),p_admin_password:m.q("#naAP").value,p_recovery:rc});
       if(SU){try{await rpc("platform_update_agency",{p_agency:agId,p:{name:m.q("#naN").value.trim(),contact_person:SU.contact_person||"",contact_phone:SU.phone||"",contact_email:SU.email||"",eik:SU.eik||"",address:SU.city||"",notes:SU.note||"",monthly_fee:""}});
         await rpc("platform_signup_set",{p_id:SU.id,p_status:"approved",p_agency:agId})}catch(e){}signBadge()}
@@ -6189,11 +6255,12 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="11"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="12"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
   {v:"1.0",d:"19.11.2026",items:[
+    "Имейл на администратора: при нова регистрация влизате след потвърждение на имейла; „Забравена парола“ праща линк за нова парола на потвърдения имейл (важи 1 час). Кодът за възстановяване вече не се ползва — добавете имейл от „Потребители → Имейл за възстановяване“.",
     "Защита от изтекли пароли: нова парола, която вече е изтекла при чужди пробиви в интернет, не се приема. Ако сегашната ви парола е такава, програмата ви подсказва да я смените. Проверката праща навън само първите 5 знака от отпечатъка на паролата — никога самата парола.",
     "Инвентар стана единен каталог: всеки артикул е „на склад“ (брои се и се изписва) или „купува се при нужда“ (само цена и разход, без наличност). Изглед „Карти“ със снимка, цена, разход и марж; отметка „В каталога за клиенти“ — артикулът се появява сам в QR каталога, в раздел по категория.",
     "Образци на заявки: запазете услугите и цените на заявка като образец (напр. „Стандартно погребение“) и попълвайте нова заявка от него с едно натискане — бутони „★ Образци“ в заявката и „★ По образец“ в списъка.",
@@ -6423,7 +6490,18 @@ function renderUsers(){
 $$("#usrSeg button").forEach(b=>b.onclick=()=>{UV=b.dataset.uv;renderUsers()});
 $("#usrTable").addEventListener("click",e=>{const b=e.target.closest("[data-ue]");if(b)userModal(b.dataset.ue)});
 $("#usrNew").onclick=()=>userModal(null);
-$("#usrRec").onclick=()=>openModal({title:"Нов код за възстановяване",body:`<p class="auth-note" style="margin-bottom:14px">Кодът служи за смяна на паролата на администратор, ако я забравите. Старият код спира да важи.</p>
+function emailModal(){
+  const has=!!(AG&&AG.email);
+  const m=openModal({title:"Имейл за възстановяване",body:`<p class="auth-note" style="margin:0 0 12px">С него сменяте паролата си през <b>„Забравена парола“</b> на екрана за вход — получавате линк на имейла. Вижда се само в тази агенция.</p>
+    <p style="margin:0 0 14px">Сега: ${has?`<b>${esc(AG.email)}</b> — ${AG.emailOk?'<span class="tag ok">потвърден</span>':'<span class="tag warn">не е потвърден</span>'}`:'<span class="muted">няма въведен имейл</span>'}</p>
+    <label class="f">${has?"Нов имейл (по желание)":"Имейл"}<input class="ui-in" type="email" id="emN" autocomplete="email" inputmode="email" placeholder="напр. ime@agencia.bg"></label>
+    <p class="auth-note" style="margin:8px 0 0">Ще изпратим линк за потвърждение. Имейлът важи, след като натиснете линка.</p>`,
+    actions:[{label:"Затвори"},{label:"Изпрати линк",cls:"primary",act:async m=>{const v=m.q("#emN").value.trim();
+      if(!v&&!has)throw new Error("Въведете имейл.");if(v&&!/^[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}$/.test(v))throw new Error("Невалиден имейл.");
+      const r=await rpc("request_email_confirm",v?{p_email:v}:{});audit("Поискано потвърждение на имейл",r.email||v);toast("Изпратихме линк на "+(r.email||v)+". Натиснете го, за да потвърдите.")}}]});
+  setTimeout(()=>m.q("#emN").focus(),50)}
+if(CLOUD)$("#usrRec").textContent="Имейл за възстановяване";
+$("#usrRec").onclick=()=>CLOUD?emailModal():openModal({title:"Нов код за възстановяване",body:`<p class="auth-note" style="margin-bottom:14px">Кодът служи за смяна на паролата на администратор, ако я забравите. Старият код спира да важи.</p>
   <div class="grid" style="grid-template-columns:1fr"><label class="f">Вашата парола<input class="ui-in" type="password" id="rkP"></label>
   <label class="f">Нов код (поне 8 знака)<input class="ui-in" type="password" id="rkC" autocomplete="off"></label><label class="f">Повтори кода<input class="ui-in" type="password" id="rkC2" autocomplete="off"></label></div>`,
   actions:[{label:"Отказ"},{label:"Запази кода",cls:"primary",act:async m=>{
