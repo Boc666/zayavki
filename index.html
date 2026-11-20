@@ -2018,7 +2018,17 @@ async function sb(path,{method="GET",body,headers={},raw}={}){
     else if(/records_invoice_number_uq/.test(m))m="Този номер на фактура вече е издаден. Изтрийте номера (ще се даде следващият свободен) или въведете друг.";
     throw new Error(m)}
   if(raw)return r;const tx=await r.text();return tx?JSON.parse(tx):null}
-const rpc=(fn,args={})=>sb("/rest/v1/rpc/"+fn,{method:"POST",body:args});
+// защита от изтекли пароли: проверка в HaveIBeenPwned по метода „k-анонимност“ — излизат само първите 5 знака от SHA-1 отпечатъка, никога самата парола.
+// Ако услугата не отговори до 4 сек., не спираме човека (проверката е допълнителна защита, не условие за работа).
+async function pwLeaked(pw){if(!pw||!crypto.subtle)return 0;
+  try{const h=[...new Uint8Array(await crypto.subtle.digest("SHA-1",new TextEncoder().encode(pw)))].map(b=>b.toString(16).padStart(2,"0")).join("").toUpperCase();
+    const ac=new AbortController(),t=setTimeout(()=>ac.abort(),4000);
+    const r=await fetch("https://api.pwnedpasswords.com/range/"+h.slice(0,5),{signal:ac.signal,headers:{"Add-Padding":"true"}});clearTimeout(t);if(!r.ok)return 0;
+    for(const ln of (await r.text()).split("\n")){const [suf,n]=ln.trim().split(":");if(suf===h.slice(5))return +n||0}return 0}catch(e){return 0}}
+async function pwGuard(pw){const n=await pwLeaked(pw);
+  if(n>0)throw new Error(`Тази парола е изтекла при чужди пробиви (среща се ${n.toLocaleString("bg-BG")} пъти) и лесно се отгатва. Изберете друга — напр. 3–4 несвързани думи.`)}
+const PW_ARG={setup_first_admin:"p_password",self_signup:"p_admin_password",recover_admin:"p_password",platform_reset_password:"p_password",platform_create_agency:"p_admin_password",change_my_password:"p_new",admin_create_user:"p_password",admin_update_user:"p_password"};
+const rpc=async(fn,args={})=>{const k=PW_ARG[fn];if(k&&args[k])await pwGuard(args[k]);return sb("/rest/v1/rpc/"+fn,{method:"POST",body:args})};
 const enc_=encodeURIComponent,DOC_BLOBS=new WeakSet(); // Word файлове, които вече са в хранилището
 if(CLOUD)Object.assign(DB,{
   async open(){},
@@ -2082,6 +2092,7 @@ async function cloudContext(){
 // вход в облака: връща потребителя, null при грешна парола; грешка, ако е спрян / няма връзка
 async function cloudLogin(code,u,p){
   try{await sbLogin(code,u,p)}catch(e){if(e.bad)return null;throw e}
+  pwLeaked(p).then(n=>{if(n>0)setTimeout(()=>toast("Паролата ви е изтекла при чужди пробиви в интернет и лесно се отгатва. Сменете я от менюто долу вляво (иконата с ключ).",true),2500)});
   try{localStorage.setItem(AG_KEY,normUser(code))}catch(e){}
   if(!normUser(code))await rpc("platform_leave_agency").catch(()=>{}); // нов вход на собственика → винаги в панела
   return cloudContext()}
@@ -5732,7 +5743,7 @@ async function pwHash(pw,salt){
   return btoa(String.fromCharCode(...new Uint8Array(b)));
 }
 const newSalt=()=>{const a=new Uint8Array(16);crypto.getRandomValues(a);return btoa(String.fromCharCode(...a))};
-async function setPw(u,pw){if((pw||"").length<6)throw new Error("Паролата трябва да е поне 6 знака.");u.salt=newSalt();u.hash=await pwHash(pw,u.salt)}
+async function setPw(u,pw){if((pw||"").length<6)throw new Error("Паролата трябва да е поне 6 знака.");await pwGuard(pw);u.salt=newSalt();u.hash=await pwHash(pw,u.salt)}
 const saveUsers=()=>setMeta("users",USERS);
 const normUser=s=>(s||"").trim().toLowerCase();
 
@@ -6178,11 +6189,12 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="10"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="11"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
   {v:"1.0",d:"19.11.2026",items:[
+    "Защита от изтекли пароли: нова парола, която вече е изтекла при чужди пробиви в интернет, не се приема. Ако сегашната ви парола е такава, програмата ви подсказва да я смените. Проверката праща навън само първите 5 знака от отпечатъка на паролата — никога самата парола.",
     "Инвентар стана единен каталог: всеки артикул е „на склад“ (брои се и се изписва) или „купува се при нужда“ (само цена и разход, без наличност). Изглед „Карти“ със снимка, цена, разход и марж; отметка „В каталога за клиенти“ — артикулът се появява сам в QR каталога, в раздел по категория.",
     "Образци на заявки: запазете услугите и цените на заявка като образец (напр. „Стандартно погребение“) и попълвайте нова заявка от него с едно натискане — бутони „★ Образци“ в заявката и „★ По образец“ в списъка.",
     "Финанси: нов блок „Парите в периода“ — получени плащания и сторно по дата на плащане, фактурирано по дата на фактурата; графика на оборота и разходите за последните 6 месеца.",
