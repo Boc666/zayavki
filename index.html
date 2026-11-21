@@ -190,6 +190,7 @@ body.plat-mode #modalWrap{z-index:170}body.plat-mode #toast{z-index:180;left:50%
 .auth-link{align-self:center;background:none;border:0;color:var(--text2);font:12.5px var(--ui);cursor:pointer;text-decoration:underline;text-underline-offset:3px}@media(hover:hover) and (pointer:fine){.auth-link:hover{color:var(--text)}}
 .auth-link.auth-small{font-size:11.5px;color:var(--text3);margin-top:6px;text-decoration:none;border-top:1px solid var(--border-soft);padding-top:12px;align-self:stretch}
 .auth-note{font-size:12.5px;color:var(--text2);line-height:1.55;margin:0}
+.tr-perks{display:grid;gap:8px}.tr-perk{display:grid;grid-template-columns:auto 1fr;column-gap:12px;row-gap:2px;padding:11px 14px;border-radius:var(--r);background:var(--ok-soft);border:1px solid var(--border-soft)}.tr-perk i{grid-row:span 2;align-self:center;font-style:normal;font-weight:700;color:var(--ok);font-size:17px;line-height:1}.tr-perk b{font:600 14.5px/1.3 var(--ui);color:var(--text)}.tr-perk span{font-size:12.5px;color:var(--text2);line-height:1.45}.tr-perk a{color:var(--text);font-weight:700;font-size:14px;white-space:nowrap;text-underline-offset:3px}
 .auth-legal{font-size:11.5px;color:var(--text3);line-height:1.5;margin:-2px 0 0;text-align:center}.auth-legal a,.auth-chk a{color:var(--text2);text-underline-offset:3px}
 .auth-chk{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5;color:var(--text);cursor:pointer}.auth-chk input{margin-top:3px;flex:none;width:16px;height:16px;accent-color:var(--accent,currentColor)}
 .auth-pin{font:600 28px/1 var(--mono,ui-monospace,monospace);letter-spacing:.35em;text-align:center}
@@ -5856,7 +5857,8 @@ function authShow(mode,opt={}){
   }
   else if(mode==="trial"){$("#authSub").textContent="14 дни безплатно";$("#authTitle").textContent="Нова агенция";
     B.innerHTML=`<form class="auth-form" id="fTrial" autocomplete="on">
-      <p class="auth-note">Създайте акаунт за вашата агенция — <b>14 дни безплатно, без банкова карта</b>. Ще ви изпратим линк за потвърждение на имейла.</p>
+      <div class="tr-perks" role="list"><div class="tr-perk" role="listitem"><i aria-hidden="true">✓</i><b>14 дни безплатен достъп</b><span>Цялата програма, без банкова карта</span></div><div class="tr-perk" role="listitem"><i aria-hidden="true">✓</i><b>Безплатна консултация</b><span>Обадете се: <a href="tel:+359893008182">+359 893 008 182</a></span></div><div class="tr-perk" role="listitem"><i aria-hidden="true">✓</i><b>Безплатна демонстрация</b><span>Ще ви покажем как работи програмата</span></div></div>
+      <p class="auth-note">Създайте акаунт за вашата агенция. Ще ви изпратим линк за потвърждение на имейла.</p>
       <label class="f">Име на агенцията<input class="ui-in" id="trN" autocomplete="organization" required placeholder="напр. Погребална агенция Мир"></label>
       <label class="f">Код за вход<input class="ui-in" id="trC" autocapitalize="none" spellcheck="false" placeholder="напр. mir" required><span class="auth-note" style="display:block;font-size:12px;margin-top:4px">Малки латински букви, цифри и тире. Този код пишат служителите при вход.</span></label>
       <label class="f">Вашето име и фамилия<input class="ui-in" id="trAN" autocomplete="name" required></label>
@@ -6255,11 +6257,12 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="13"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="14"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
   {v:"1.0",d:"19.11.2026",items:[
+    "Страницата за пробен период показва на видно място: 14 дни безплатен достъп, безплатна консултация по телефона и безплатна демонстрация.",
     "По-чисто меню: долу вляво остават само номерът на версията и бутонът за тъмна/светла тема.",
     "Имейл на администратора: при нова регистрация влизате след потвърждение на имейла; „Забравена парола“ праща линк за нова парола на потвърдения имейл (важи 1 час). Кодът за възстановяване вече не се ползва — добавете имейл от „Потребители → Имейл за възстановяване“.",
     "Защита от изтекли пароли: нова парола, която вече е изтекла при чужди пробиви в интернет, не се приема. Ако сегашната ви парола е такава, програмата ви подсказва да я смените. Проверката праща навън само първите 5 знака от отпечатъка на паролата — никога самата парола.",
