@@ -1337,7 +1337,7 @@ main>section.mx-enter .mx-axis .ev{animation:mxGrow .55s cubic-bezier(.2,.8,.2,1
     <button class="btn ghost small ico" id="suPw" title="Смени паролата си"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg></button>
     <button class="btn ghost small ico" id="suOut" title="Изход"><svg viewBox="0 0 24 24"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 16l-4-4 4-4M6 12h11"/></svg></button>
   </div>
-  <div class="side-foot"><span id="sideWhere">Данните са само на този компютър</span><br><b id="sideBackup">—</b><br><button type="button" class="appver" id="appVer" title="Какво ново — история на версиите"></button><br><button type="button" class="appver" id="suTheme" title="Светла / тъмна тема"></button><br><button class="side-install hidden" id="pwaBtn" type="button">Инсталирай като приложение</button></div>
+  <div class="side-foot"><span id="sideWhere" class="hidden"></span><b id="sideBackup" class="hidden"></b><button type="button" class="appver" id="appVer" title="Какво ново — история на версиите"></button><br><button type="button" class="appver" id="suTheme" title="Светла / тъмна тема"></button><br><button class="side-install hidden" id="pwaBtn" type="button">Инсталирай като приложение</button></div>
 </aside>
 
 <div id="app">
@@ -6255,11 +6255,12 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="12"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="13"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
   {v:"1.0",d:"19.11.2026",items:[
+    "По-чисто меню: долу вляво остават само номерът на версията и бутонът за тъмна/светла тема.",
     "Имейл на администратора: при нова регистрация влизате след потвърждение на имейла; „Забравена парола“ праща линк за нова парола на потвърдения имейл (важи 1 час). Кодът за възстановяване вече не се ползва — добавете имейл от „Потребители → Имейл за възстановяване“.",
     "Защита от изтекли пароли: нова парола, която вече е изтекла при чужди пробиви в интернет, не се приема. Ако сегашната ви парола е такава, програмата ви подсказва да я смените. Проверката праща навън само първите 5 знака от отпечатъка на паролата — никога самата парола.",
     "Инвентар стана единен каталог: всеки артикул е „на склад“ (брои се и се изписва) или „купува се при нужда“ (само цена и разход, без наличност). Изглед „Карти“ със снимка, цена, разход и марж; отметка „В каталога за клиенти“ — артикулът се появява сам в QR каталога, в раздел по категория.",
@@ -6369,7 +6370,7 @@ function themeNow(){return document.documentElement.getAttribute("data-theme")==
 function applyThemeMeta(){const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=themeNow()==="dark"?"#121110":"#F6F4F0";const b=$("#suTheme");if(b)b.textContent=themeNow()==="dark"?"☀ Светла тема":"☾ Тъмна тема"}
 applyThemeMeta();
 $("#suTheme").onclick=()=>{const t=themeNow()==="dark"?"light":"dark";document.documentElement.setAttribute("data-theme",t);try{localStorage.setItem("mx-theme",t)}catch(e){}applyThemeMeta();toast(t==="dark"?"Тъмна тема":"Светла тема")};
-function showVersion(){const v=$("#appVer");if(v){v.textContent="Версия "+APP_VERSION+" · обновена "+APP_DATE;v.onclick=()=>showWhatsNew(true)}
+function showVersion(){const v=$("#appVer");if(v){v.textContent="Версия "+APP_VERSION;v.onclick=()=>showWhatsNew(true)}
   const a=$("#auth .auth-box");if(a&&!a.querySelector(".appver")){const e=document.createElement("div");e.className="appver auth-ver";e.textContent="Версия "+APP_VERSION+" · обновена "+APP_DATE;a.appendChild(e)}}
 let NEWER=null;
 async function checkUpdate(){
