@@ -1337,7 +1337,7 @@ main>section.mx-enter .mx-axis .ev{animation:mxGrow .55s cubic-bezier(.2,.8,.2,1
     <button class="btn ghost small ico" id="suPw" title="Смени паролата си"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg></button>
     <button class="btn ghost small ico" id="suOut" title="Изход"><svg viewBox="0 0 24 24"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 16l-4-4 4-4M6 12h11"/></svg></button>
   </div>
-  <div class="side-foot"><span id="sideWhere" class="hidden"></span><b id="sideBackup" class="hidden"></b><button type="button" class="appver" id="appVer" title="Какво ново — история на версиите"></button><br><button type="button" class="appver" id="suTheme" title="Светла / тъмна тема"></button><br><button class="side-install hidden" id="pwaBtn" type="button">Инсталирай като приложение</button></div>
+  <div class="side-foot"><span id="sideWhere" class="hidden"></span><b id="sideBackup" class="hidden"></b><span class="appver" id="appVer"></span><br><button type="button" class="appver" id="suTheme" title="Светла / тъмна тема"></button><br><button class="side-install hidden" id="pwaBtn" type="button">Инсталирай като приложение</button></div>
 </aside>
 
 <div id="app">
@@ -6255,11 +6255,12 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="13"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="14"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
   {v:"1.0",d:"19.11.2026",items:[
+    "Историята на версиите вече не се показва в програмата; долу вляво остава само номерът на версията.",
     "По-чисто меню: долу вляво остават само номерът на версията и бутонът за тъмна/светла тема.",
     "Имейл на администратора: при нова регистрация влизате след потвърждение на имейла; „Забравена парола“ праща линк за нова парола на потвърдения имейл (важи 1 час). Кодът за възстановяване вече не се ползва — добавете имейл от „Потребители → Имейл за възстановяване“.",
     "Защита от изтекли пароли: нова парола, която вече е изтекла при чужди пробиви в интернет, не се приема. Ако сегашната ви парола е такава, програмата ви подсказва да я смените. Проверката праща навън само първите 5 знака от отпечатъка на паролата — никога самата парола.",
@@ -6339,19 +6340,6 @@ const CHANGELOG=[
     "Линк към клиента: оферта в телефона му и отзив.",
     "Програмата се инсталира като приложение и се отваря по-бързо.",
     "Ново оформление."]}];
-const WN_KEY="zayavki-seen-ver";
-function whatsNewHtml(list){const k=list.findIndex(e=>e.v==="1.0");return list.map((e,i)=>(k>=0&&i===k+1?`<div class="wn-old">Преди Memoriox 1.0 — стара номерация</div>`:"")+`<div class="wn-v"><div class="wn-h"><b>Версия ${esc(e.v)}</b><span>${esc(e.d)}</span></div><ul>${e.items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`).join("")}
-function showWhatsNew(all){
-  let seen=null;try{seen=localStorage.getItem(WN_KEY)}catch(e){}
-  let list=CHANGELOG;
-  if(!all){const i=CHANGELOG.findIndex(e=>e.v===seen);list=CHANGELOG.slice(0,i>0?i:1)}
-  openModal({title:all?"История на версиите":"Какво ново",body:`<div class="wn">${whatsNewHtml(list)}</div>`+(all?"":`<p class="muted" style="margin:12px 0 0;font-size:13px">Цялата история — с натискане на версията долу в менюто.</p>`),actions:[{label:"Разбрах",cls:"primary"}]});
-  try{localStorage.setItem(WN_KEY,APP_VERSION)}catch(e){}}
-function whatsNewOnLogin(){let seen=null;try{seen=localStorage.getItem(WN_KEY)}catch(e){}
-  if(seen===APP_VERSION)return;
-  if(seen===null){try{localStorage.setItem(WN_KEY,APP_VERSION)}catch(e){}return} // нов потребител/устройство: няма „предишна версия“, с която да сравнява
-  if($("#modalWrap")||!$("#auth").classList.contains("hidden")){try{localStorage.setItem(WN_KEY,APP_VERSION)}catch(e){}return}
-  showWhatsNew(false)} // сменя се при всяко публикуване: 1-ва цифра — голяма промяна, 2-ра — нова възможност/етап, 3-та — дребна поправка
 /* ---------- инсталиране като приложение (иконка на телефона / компютъра) ---------- */
 let PWA_EV=null;
 const PWA_STANDALONE=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
@@ -6370,8 +6358,8 @@ function themeNow(){return document.documentElement.getAttribute("data-theme")==
 function applyThemeMeta(){const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=themeNow()==="dark"?"#121110":"#F6F4F0";const b=$("#suTheme");if(b)b.textContent=themeNow()==="dark"?"☀ Светла тема":"☾ Тъмна тема"}
 applyThemeMeta();
 $("#suTheme").onclick=()=>{const t=themeNow()==="dark"?"light":"dark";document.documentElement.setAttribute("data-theme",t);try{localStorage.setItem("mx-theme",t)}catch(e){}applyThemeMeta();toast(t==="dark"?"Тъмна тема":"Светла тема")};
-function showVersion(){const v=$("#appVer");if(v){v.textContent="Версия "+APP_VERSION;v.onclick=()=>showWhatsNew(true)}
-  const a=$("#auth .auth-box");if(a&&!a.querySelector(".appver")){const e=document.createElement("div");e.className="appver auth-ver";e.textContent="Версия "+APP_VERSION+" · обновена "+APP_DATE;a.appendChild(e)}}
+function showVersion(){const v=$("#appVer");if(v){v.textContent="Версия "+APP_VERSION}
+  const a=$("#auth .auth-box");if(a&&!a.querySelector(".appver")){const e=document.createElement("div");e.className="appver auth-ver";e.textContent="Версия "+APP_VERSION;a.appendChild(e)}}
 let NEWER=null;
 async function checkUpdate(){
   if(NEWER||!/^https?:$/.test(location.protocol))return;
@@ -6417,7 +6405,6 @@ async function loginAs(u,why){
   let _nt=null;try{_nt=localStorage.getItem("memoriox-newtour")}catch(e){}
   if(_nt)setTimeout(()=>startTour(()=>{if(needsOnboarding())openOnboarding(0)}),500);
   else if(needsOnboarding()&&!sessionStorage.getItem("zayavki-ob-later"))setTimeout(()=>openOnboarding(0),500);
-  else setTimeout(whatsNewOnLogin,1200);
 }
 function applyUser(){
   $("#sideUser").classList.remove("hidden");$("#suName").textContent=ME.name;$("#suRole").textContent=isAdmin()?"Администратор":"Служител";
