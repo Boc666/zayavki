@@ -4123,6 +4123,13 @@ function srMatches(name){
   if(W.length){const cats=new Set(pool.filter(i=>i.cat&&srHit(W,i.cat)).map(i=>i.cat));
     list=pool.filter(i=>cats.has(i.cat)||srHit(W,i.name+" "+(i.sku||""),4))}
   return list.sort((a,b)=>(a.cat||"яяя").localeCompare(b.cat||"яяя","bg")||a.name.localeCompare(b.name,"bg"))}
+/* за статистиката: приход = сумата по разписката; разход = покупната цена на изписаните артикули
+   (реално изписаното; ако още не е отпечатана — по текущата средна покупна цена). Без покупна цена → разход 0. */
+function srCalc(x){const income=srTotal(x);let expenses=0;
+  (x.lines||[]).forEach(l=>{if(l.issued&&l.issued.qty>0)expenses+=l.issued.cost||0;
+    else if(x.stock&&l.item){const it=itemById(l.item);if(it)expenses+=(it.avgCost||it.lastCost||0)*(num(l.qty)??1)}});
+  expenses=r2(expenses);return{income,expenses,profit:r2(income-expenses)}}
+async function srForStats(){try{await srFlush();const v=await getMeta("receipts",null);return Object.values((v&&v.items)||{}).map(srNorm).filter(x=>x.stats&&x.date)}catch(e){return[]}}
 const srIssuedAny=x=>x.lines.some(l=>l.issued&&l.issued.qty>0)||x.orphans.length>0;
 async function renderSr(){await srFlush();await srLoad();
   if(SRID&&!SR.items[SRID])SRID=null;
@@ -4134,12 +4141,12 @@ async function renderSr(){await srFlush();await srLoad();
   const L=srList();
   $("#srBody").innerHTML=`<div class="card"><table class="list"><thead><tr><th style="width:70px">№</th><th style="width:110px">Дата</th><th>Получател</th><th>Пера</th><th style="text-align:right;width:120px">Сума</th></tr></thead>
     <tbody>${L.map(x=>`<tr class="click" data-open="${esc(x.id)}" style="cursor:pointer"><td><b>${esc(x.number||"—")}</b></td><td>${bgDate(x.date)}</td><td>${esc(x.buyerName||"")}${x.brand?"":` <span class="tag">без лого</span>`}</td>
-      <td class="muted">${esc((x.lines||[]).map(l=>l.name).filter(Boolean).join(", ").slice(0,80))}${srIssuedAny(x)?` <span class="tag ok">от склада</span>`:""}</td><td style="text-align:right"><b>${eur(srTotal(x))}</b></td></tr>`).join("")
+      <td class="muted">${esc((x.lines||[]).map(l=>l.name).filter(Boolean).join(", ").slice(0,80))}${srIssuedAny(x)?` <span class="tag ok">от склада</span>`:""}${x.stats?` <span class="tag">в статистиката</span>`:""}</td><td style="text-align:right"><b>${eur(srTotal(x))}</b></td></tr>`).join("")
       ||`<tr><td colspan="5" class="empty">Още няма стокови разписки.${ed?" Натиснете „+ Нова разписка“.":""}</td></tr>`}</tbody></table></div>`;
 }
 $("#srNew").onclick=async()=>{if(!needEdit("docs","издаване на стокови разписки"))return;await srLoad();
   const last=srList()[0]; // новата разписка взима настройките на последната
-  const id=uid(),x=srNorm({id,number:srNextNo(),date:todayISO(),buyerName:"",author:ME&&ME.name||"",brand:last?last.brand!==false:true,stock:last?!!last.stock:false,lines:[{name:"",price:null,item:"",qty:1}],created:new Date().toISOString()});
+  const id=uid(),x=srNorm({id,number:srNextNo(),date:todayISO(),buyerName:"",author:ME&&ME.name||"",brand:last?last.brand!==false:true,stock:last?!!last.stock:false,stats:last?!!last.stats:false,lines:[{name:"",price:null,item:"",qty:1}],created:new Date().toISOString()});
   SR.items[id]=x;SRID=id;srPending=true;await srFlush();renderSr();setTimeout(()=>{const i=$('#srBody [data-f="name"]');if(i)i.focus()},50)};
 $("#srBack").onclick=async()=>{await srFlush();SRID=null;renderSr()};
 $("#srBody").addEventListener("click",e=>{const tr=e.target.closest("[data-open]");if(tr){SRID=tr.dataset.open;renderSr();return}
@@ -4176,6 +4183,7 @@ function srEditor(){
   <div class="row" style="gap:22px;flex-wrap:wrap;margin-bottom:14px">
     <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" data-t="brand" ${x.brand?"checked":""} ${dis}><span><b>С данните на агенцията</b><br><span class="muted" style="font-size:12px">лого горе и „Доставчик“ на разписката</span></span></label>
     <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" data-t="stock" ${x.stock?"checked":""} ${dis}><span><b>Изписва от склада</b><br><span class="muted" style="font-size:12px">стоката се вади от „Инвентар“ при печат</span></span></label>
+    <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" data-t="stats" ${x.stats?"checked":""} ${dis}><span><b>Влиза в статистиката</b><br><span class="muted" style="font-size:12px">приход и печалба в „Отчети“ и „Статистика“</span></span></label>
   </div>
   <div class="grid">
     ${iT("number","Номер")}${iT("date","Дата","","","date")}
@@ -4188,14 +4196,16 @@ function srEditor(){
     ${x.stock?`<td><input class="ui-in" data-l="${i}" data-f="qty" value="${l.item?numIn(l.qty??1):""}" ${l.item?"":"disabled"} inputmode="decimal" style="text-align:right" ${dis}></td>`:""}
     <td><input class="ui-in" data-l="${i}" data-f="price" value="${numIn(l.price)}" placeholder="0,00" inputmode="decimal" style="text-align:right" ${dis}></td>
     <td>${ed?`<button type="button" class="btn small ghost" data-del="${i}" title="Махни перото">✕</button>`:""}</td></tr>`).join("")||`<tr><td colspan="${x.stock?5:4}" class="empty">Още няма пера.</td></tr>`}</tbody>
-  <tfoot><tr><td></td><td ${x.stock?'colspan="2"':""} style="text-align:right"><b>Общо:</b></td><td style="text-align:right"><b id="srSum">${eur(srTotal(x))}</b></td><td></td></tr></tfoot></table>
+  <tfoot><tr><td></td><td ${x.stock?'colspan="2"':""} style="text-align:right"><b>Общо:</b></td><td style="text-align:right"><b id="srSum">${eur(srTotal(x))}</b></td><td></td></tr>
+  ${x.stats?`<tr><td></td><td ${x.stock?'colspan="2"':""} style="text-align:right" class="muted">Покупна цена / печалба:</td><td style="text-align:right" class="muted" id="srProfit">${srProfitTxt(x)}</td><td></td></tr>`:""}</tfoot></table>
   ${ed?`<div class="row" style="margin-top:10px;gap:10px;flex-wrap:wrap"><button type="button" class="btn primary small" id="srAdd">+ Добави перо</button><span class="muted" style="font-size:12px">Enter в полето за цена добавя нов ред</span></div>`:""}
   ${pend?`<div class="notice" style="margin-top:12px">Има складови промени, които ще се запишат при „Печат разписка“.</div>`:""}
   </div>`;
   const a=$("#srAdd");if(a)a.onclick=()=>{x.lines.push({name:"",price:null,item:"",qty:1});srEditor();const ins=$$('#srBody [data-f="name"]');if(ins.length)ins[ins.length-1].focus();srSaveSoon()};
   srPreview();
 }
-function srPreview(){const x=SR.items[SRID];if(!x)return;$("#srPrev").innerHTML=buildSrPrint(x);const t=$("#srSum");if(t)t.textContent=eur(srTotal(x))}
+const srProfitTxt=x=>{const c=srCalc(x);return `${eur(c.expenses)} / <b class="${c.profit<0?"neg":"pos"}">${eur(c.profit)}</b>`};
+function srPreview(){const x=SR.items[SRID];if(!x)return;$("#srPrev").innerHTML=buildSrPrint(x);const t=$("#srSum");if(t)t.textContent=eur(srTotal(x));const p=$("#srProfit");if(p)p.innerHTML=srProfitTxt(x)}
 $("#srBody").addEventListener("input",e=>{const el=e.target,x=SR.items[SRID];if(!x||el.tagName==="SELECT"||el.type==="checkbox")return;
   if(el.dataset.s){x[el.dataset.s]=el.value;if(el.dataset.s==="number")$("#srTitle").textContent="Стокова разписка № "+el.value}
   else if(el.dataset.l!=null){const l=x.lines[+el.dataset.l];if(!l)return;const f=el.dataset.f;l[f]=f==="price"||f==="qty"?num(el.value):el.value;
@@ -4270,21 +4280,24 @@ async function renderStats(){
   const sel=$("#stYear"),prev=sel.value;
   sel.innerHTML=years.map(y=>`<option ${y===(prev||cy)?"selected":""}>${y}</option>`).join("");
   const Y=sel.value;
-  const m=MONTHS.map(()=>({n:0,income:0,expenses:0,profit:0,noWs:0}));
+  const m=MONTHS.map(()=>({n:0,sr:0,income:0,expenses:0,profit:0,noWs:0}));
   all.filter(r=>yearOf(r)===Y).forEach(r=>{const mi=+(r.reqDate||r.created).slice(5,7)-1,w=wsCalc(r),x=m[mi];
     x.n++;x.income=r2(x.income+w.income);x.expenses=r2(x.expenses+w.expenses);x.profit=r2(x.profit+w.profit);if(!w.has)x.noWs++});
+  (await srForStats()).filter(s=>s.date.slice(0,4)===Y).forEach(s=>{const c=srCalc(s),x=m[+s.date.slice(5,7)-1]; // стоковите разписки с отметка „Влиза в статистиката“
+    x.sr++;x.income=r2(x.income+c.income);x.expenses=r2(x.expenses+c.expenses);x.profit=r2(x.profit+c.profit)});
   m.forEach((x,i)=>{const ym=Y+"-"+String(i+1).padStart(2,"0"),last=new Date(+Y,i+1,0).getDate();x.oh=costsTotal([ym+"-01",ym+"-"+last]);x.net=r2(x.profit-x.oh)});
-  const T=m.reduce((a,x)=>({n:a.n+x.n,income:r2(a.income+x.income),expenses:r2(a.expenses+x.expenses),profit:r2(a.profit+x.profit),noWs:a.noWs+x.noWs,oh:r2(a.oh+x.oh),net:r2(a.net+x.net)}),{n:0,income:0,expenses:0,profit:0,noWs:0,oh:0,net:0});
-  $("#stTiles").innerHTML=[["Заявки през "+Y,T.n],["Приходи",eur(T.income)],["Разходи по заявки",eur(T.expenses)],["Печалба от заявките",`<span class="${T.profit<0?"neg":"pos"}">${eur(T.profit)}</span>`],
+  const T=m.reduce((a,x)=>({n:a.n+x.n,sr:a.sr+x.sr,income:r2(a.income+x.income),expenses:r2(a.expenses+x.expenses),profit:r2(a.profit+x.profit),noWs:a.noWs+x.noWs,oh:r2(a.oh+x.oh),net:r2(a.net+x.net)}),{n:0,sr:0,income:0,expenses:0,profit:0,noWs:0,oh:0,net:0});
+  $("#stTiles").innerHTML=[["Заявки през "+Y,T.n],...(T.sr?[["Стокови разписки",T.sr]]:[]),["Приходи",eur(T.income)],["Разходи по заявки",eur(T.expenses)],["Печалба от заявките",`<span class="${T.profit<0?"neg":"pos"}">${eur(T.profit)}</span>`],
     ["Общи разходи",eur(T.oh)],["Чиста печалба",`<span class="${T.net<0?"neg":"pos"}">${eur(T.net)}</span>`],
     ["Средна печалба на заявка",T.n?eur(r2(T.profit/T.n)):"—"]].map(([k,v])=>`<div class="tile"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
   renderChart(m);
-  $("#stTable").innerHTML=`<thead><tr><th>Месец</th><th class="money">Заявки</th><th class="money">Приходи</th><th class="money">Разходи по заявки</th><th class="money">Печалба от заявките</th><th class="money">Общи разходи</th><th class="money">Чиста печалба</th><th class="money">Без работен лист</th></tr></thead>
-    <tbody>${m.map((x,i)=>{const any=x.n||x.oh;return `<tr><td>${MONTHS[i]}</td><td class="money">${x.n||"–"}</td><td class="money">${x.n?eur(x.income):"–"}</td><td class="money">${x.n?eur(x.expenses):"–"}</td>
-      <td class="money ${x.profit<0?"neg":x.n?"pos":""}">${x.n?eur(x.profit):"–"}</td><td class="money">${x.oh?eur(x.oh):"–"}</td>
+  $("#stTable").innerHTML=`<thead><tr><th>Месец</th><th class="money">Заявки</th>${T.sr?`<th class="money">Ст. разписки</th>`:""}<th class="money">Приходи</th><th class="money">Разходи по заявки</th><th class="money">Печалба от заявките</th><th class="money">Общи разходи</th><th class="money">Чиста печалба</th><th class="money">Без работен лист</th></tr></thead>
+    <tbody>${m.map((x,i)=>{const has=x.n||x.sr,any=has||x.oh;return `<tr><td>${MONTHS[i]}</td><td class="money">${x.n||"–"}</td>${T.sr?`<td class="money">${x.sr||"–"}</td>`:""}<td class="money">${has?eur(x.income):"–"}</td><td class="money">${has?eur(x.expenses):"–"}</td>
+      <td class="money ${x.profit<0?"neg":has?"pos":""}">${has?eur(x.profit):"–"}</td><td class="money">${x.oh?eur(x.oh):"–"}</td>
       <td class="money ${x.net<0?"neg":any?"pos":""}" style="font-weight:600">${any?eur(x.net):"–"}</td><td class="money ${x.noWs?"neg":"muted"}">${x.noWs||"–"}</td></tr>`}).join("")}</tbody>
-    <tfoot><tr><td>Общо ${Y}</td><td class="money">${T.n}</td><td class="money">${eur(T.income)}</td><td class="money">${eur(T.expenses)}</td><td class="money ${T.profit<0?"neg":"pos"}">${eur(T.profit)}</td><td class="money">${eur(T.oh)}</td><td class="money ${T.net<0?"neg":"pos"}">${eur(T.net)}</td><td class="money">${T.noWs||"–"}</td></tr></tfoot>`;
+    <tfoot><tr><td>Общо ${Y}</td><td class="money">${T.n}</td>${T.sr?`<td class="money">${T.sr}</td>`:""}<td class="money">${eur(T.income)}</td><td class="money">${eur(T.expenses)}</td><td class="money ${T.profit<0?"neg":"pos"}">${eur(T.profit)}</td><td class="money">${eur(T.oh)}</td><td class="money ${T.net<0?"neg":"pos"}">${eur(T.net)}</td><td class="money">${T.noWs||"–"}</td></tr></tfoot>`;
   $("#stNote").innerHTML=`Месецът се определя по <b>датата на заявката</b>. Приход = обща сума по заявката (след отстъпка). Разходи по заявки = от работния лист. Общи разходи = от „Разходи“ (заплати, наем, автомобили…). Чиста печалба = печалбата от заявките − общите разходи.`+
+    (T.sr?` Включени са и ${T.sr} стокови разписки (по датата на разписката): приход = сумата им, разход = покупната цена на изписаните артикули.`:"")+
     (T.noWs?` <span class="neg">⚠ ${T.noWs} заявки нямат попълнен работен лист — разходите им се броят за 0 и печалбата им е завишена.</span>`:"")+
     (inclS?"":" Примерните заявки не са включени.");
 }
@@ -5248,9 +5261,10 @@ async function renderFin(){
   const all=(await allReqs()).filter(r=>$("#finSamples").checked||!r.sample),rg=finRange();
   const list=all.filter(r=>!rg||(reqDay(r)>=rg[0]&&reqDay(r)<=rg[1])).sort((a,b)=>reqDay(b).localeCompare(reqDay(a)));
   $("#finRange").textContent=rg?(FINP==="custom"&&!$("#finFrom").value&&!$("#finTo").value?"Изберете начална и крайна дата":`Период ${bgDate(rg[0])||"…"} – ${bgDate(rg[1])||"…"} · по дата на заявката`):"Всички записи";
-  const inc=sumBy(list,r=>calc(r).total),exp=sumBy(list,r=>wsCalc(r).expenses),pr=r2(inc-exp),un=list.filter(r=>!r.paid&&calc(r).rest>0),noWs=list.filter(r=>!wsCalc(r).has).length;
-  $("#finKpis").innerHTML=kpi("Оборот",eur(inc),`${list.length} ${list.length===1?"заявка":"заявки"}`,"lead")+kpi("Разходи",eur(exp),noWs?`<span style="color:var(--caution)">${noWs} без работен лист</span>`:"от работните листове")
-    +kpi("Печалба от заявките",`<span class="${pr<0?"neg":"pos"}">${eur(pr)}</span>`,inc?`марж ${Math.round(pr/inc*100)} %`:"")
+  const srs=(await srForStats()).filter(x=>!rg||(x.date>=rg[0]&&x.date<=rg[1])).sort((a,b)=>b.date.localeCompare(a.date));
+  const inc=r2(sumBy(list,r=>calc(r).total)+sumBy(srs,x=>srCalc(x).income)),exp=r2(sumBy(list,r=>wsCalc(r).expenses)+sumBy(srs,x=>srCalc(x).expenses)),pr=r2(inc-exp),un=list.filter(r=>!r.paid&&calc(r).rest>0),noWs=list.filter(r=>!wsCalc(r).has).length;
+  $("#finKpis").innerHTML=kpi("Оборот",eur(inc),`${list.length} ${list.length===1?"заявка":"заявки"}${srs.length?` · ${srs.length} ст. ${srs.length===1?"разписка":"разписки"}`:""}`,"lead")+kpi("Разходи",eur(exp),noWs?`<span style="color:var(--caution)">${noWs} без работен лист</span>`:srs.length?"работни листове + покупна цена по разписките":"от работните листове")
+    +kpi(srs.length?"Печалба (заявки и разписки)":"Печалба от заявките",`<span class="${pr<0?"neg":"pos"}">${eur(pr)}</span>`,inc?`марж ${Math.round(pr/inc*100)} %`:"")
     +(()=>{const oh=costsTotal(rg),net=r2(pr-oh);return kpi("Общи разходи",eur(oh),`<a href="#" data-gocosts>от „Разходи“</a>`)+kpi("Чиста печалба",`<span class="${net<0?"neg":"pos"}">${eur(net)}</span>`,"след общите разходи")})()+kpi("Неплатено за периода",`<span style="color:${un.length?"var(--caution)":"inherit"}">${eur(sumBy(un,r=>calc(r).rest))}</span>`,`${un.length} ${un.length===1?"заявка":"заявки"}`);
   const allUn=all.filter(r=>!r.paid&&calc(r).rest>0).sort((a,b)=>(a.ritDate||reqDay(a)).localeCompare(b.ritDate||reqDay(b)));
   mxFinMoney(all,rg);mxFinChart(all);
@@ -5258,10 +5272,13 @@ async function renderFin(){
     allUn.map(r=>{const c=calc(r);return `<tr class="click" data-id="${r.id}"><td><b>${esc(r.number)}</b>${sampleTag(r)}</td><td>${esc(r.appName)||"—"}</td><td class="num muted">${esc(r.appPhone)||""}</td><td class="num">${bgDate(r.ritDate)||"—"}</td>
       <td class="money">${eur(c.total)}</td><td class="money muted">${eur(c.advance)}</td><td class="money" style="color:var(--caution);font-weight:600">${eur(c.rest)}</td></tr>`}).join("")}</tbody>
     <tfoot><tr><td colspan="6">Общо неплатено</td><td class="money" style="color:var(--caution)">${eur(sumBy(allUn,r=>calc(r).rest))}</td></tr></tfoot></table>`:`<div class="empty">Няма неплатени суми.</div>`;
-  $("#finList").innerHTML=list.length?`<table class="list"><thead><tr><th>№</th><th>Дата</th><th>Заявител</th><th>Плащане</th><th class="money">Оборот</th><th class="money">Разходи</th><th class="money">Печалба</th></tr></thead><tbody>${
+  $("#finList").innerHTML=list.length||srs.length?`<table class="list"><thead><tr><th>№</th><th>Дата</th><th>Заявител</th><th>Плащане</th><th class="money">Оборот</th><th class="money">Разходи</th><th class="money">Печалба</th></tr></thead><tbody>${
     list.map(r=>{const c=calc(r),w=wsCalc(r);return `<tr class="click" data-id="${r.id}"><td><b>${esc(r.number)}</b>${sampleTag(r)}</td><td class="num">${bgDate(reqDay(r))}</td><td>${esc(r.appName)||"—"}</td><td>${payTag(r,c)}</td>
-      <td class="money">${eur(c.total)}</td><td class="money ${w.has?"":"muted"}">${w.has?eur(w.expenses):"—"}</td><td class="money ${w.profit<0?"neg":"pos"}" style="font-weight:600">${eur(w.profit)}</td></tr>`}).join("")}</tbody>
+      <td class="money">${eur(c.total)}</td><td class="money ${w.has?"":"muted"}">${w.has?eur(w.expenses):"—"}</td><td class="money ${w.profit<0?"neg":"pos"}" style="font-weight:600">${eur(w.profit)}</td></tr>`}).join("")}${
+    srs.map(x=>{const c=srCalc(x);return `<tr class="click" data-sr="${esc(x.id)}"><td><b>Ст. р. ${esc(x.number)}</b></td><td class="num">${bgDate(x.date)}</td><td>${esc(x.buyerName)||"—"}</td><td><span class="tag">стокова разписка</span></td>
+      <td class="money">${eur(c.income)}</td><td class="money">${eur(c.expenses)}</td><td class="money ${c.profit<0?"neg":"pos"}" style="font-weight:600">${eur(c.profit)}</td></tr>`}).join("")}</tbody>
     <tfoot><tr><td colspan="4">Общо</td><td class="money">${eur(inc)}</td><td class="money">${eur(exp)}</td><td class="money ${pr<0?"neg":"pos"}">${eur(pr)}</td></tr></tfoot></table>`:`<div class="empty">Няма заявки за избрания период.</div>`;
+  $$("#finList [data-sr]").forEach(tr=>tr.onclick=e=>{e.stopPropagation();SRID=tr.dataset.sr;showTab("sr")});
 }
 $$("#finSeg button").forEach(b=>b.onclick=()=>{FINP=b.dataset.p;renderFin()});
 // „Парите в периода“: какво реално е влязло (плащания по дата на плащане) и какво е фактурирано (по дата на фактурата)
@@ -6476,7 +6493,7 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="17"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="18"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
