@@ -381,6 +381,9 @@ table.list td.money,table.list td.num{white-space:nowrap}
   main{padding:12px 12px calc(28px + env(safe-area-inset-bottom))}
   .toolbar{position:static;margin:-12px -12px 12px;padding:10px 12px;flex-wrap:wrap;gap:8px}
   .toolbar .spacer{display:none}
+  .seg{flex-wrap:wrap;max-width:100%}.filters,.filters>*{max-width:100%} /* превключвателите („Този месец… Период“) минават на нов ред, вместо да излизат от екрана */
+  table.cat{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #srPrev,#invPrev{overflow-x:auto;-webkit-overflow-scrolling:touch} /* прегледът (лист А4) се превърта, страницата остава в екрана */
   .btn{min-height:40px}
   .ui-in,#auth input,.modal input,.modal select,.modal textarea{font-size:16px!important} /* иначе iPhone увеличава екрана при писане */
   .kpis{grid-template-columns:1fr 1fr}
@@ -395,6 +398,7 @@ table.list td.money,table.list td.num{white-space:nowrap}
   .modal .mb{flex:1 1 auto;min-height:0}
   .modal header,.modal footer{flex:none}
   .modal footer{flex-wrap:wrap}
+  .lines-pick{grid-template-columns:1fr 1fr}.lines-pick label{min-width:0;align-items:flex-start}
   #auth{padding:12px}
 }
 
