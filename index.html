@@ -1323,6 +1323,7 @@ main>section.mx-enter .mx-axis .ev{animation:mxGrow .55s cubic-bezier(.2,.8,.2,1
     <button data-tab="days40"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="1.5"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8.5 15h2M13.5 15h2M8.5 18h2"/></svg>Помени</button>
     <div class="nsec">Документи и склад</div>
     <button data-tab="files"><svg viewBox="0 0 24 24"><path d="M3 6.5a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>Документи</button>
+    <button data-tab="sr"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Стокови разписки</button>
     <button data-tab="stock"><svg viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg>Инвентар</button>
     <button data-tab="fridge"><svg viewBox="0 0 24 24"><path d="M12 3v18M5.1 7.5l13.8 9M18.9 7.5l-13.8 9"/></svg>Хладилна камера</button>
     <button data-tab="catalog"><svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/></svg>Услуги и цени</button>
@@ -1703,6 +1704,20 @@ main>section.mx-enter .mx-axis .ev{animation:mxGrow .55s cubic-bezier(.2,.8,.2,1
 </section>
 
 <!-- ================= НЕКРОЛОЗИ ================= -->
+<section id="tab-sr" class="hidden">
+  <div class="toolbar">
+    <button class="btn ghost hidden" id="srBack"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Всички разписки</button>
+    <b id="srTitle" class="tb-title">Стокови разписки</b>
+    <span id="srState" class="status hidden">Запазено ✓</span>
+    <span class="spacer"></span>
+    <button class="btn primary" id="srNew">+ Нова разписка</button>
+    <button class="btn ghost hidden" id="srDel">Изтрий</button>
+    <button class="btn dark hidden" id="srPrint"><svg viewBox="0 0 24 24"><path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="1"/><path d="M7 14h10v7H7z"/></svg>Печат разписка</button>
+  </div>
+  <div id="srBody"></div>
+  <div class="card hidden" id="srPrevCard"><h2>Преглед — точно така ще се отпечата</h2><div id="srPrev"></div></div>
+</section>
+
 <section id="tab-necro" class="hidden">
   <div class="toolbar">
     <b class="tb-title">Некролози</b>
@@ -2860,12 +2875,12 @@ function showTab(name){
   const navOf={edit:"list",inv:"list",ws:"wsl",stats:"fin",costs:"fin"};
   $$("[data-sub]").forEach(b=>b.classList.toggle("on",b.dataset.sub===name)); // вътрешните екрани светят като своя раздел в менюто
   $$("nav.tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===(navOf[name]||name)));
-  if(name!=="ws")wsFlush();if(name!=="inv")invFlush();
+  if(name!=="ws")wsFlush();if(name!=="inv")invFlush();if(name!=="sr")srFlush();
   closeModal();
-  ["dash","list","wsl","clients","partners","fin","edit","catalog","stock","stats","costs","fridge","showcase","settings","ws","inv","necro","users","files","days40","cal"].forEach(t=>$("#tab-"+t).classList.toggle("hidden",t!==name));
+  ["dash","list","wsl","clients","partners","fin","edit","catalog","stock","stats","costs","fridge","showcase","settings","ws","inv","sr","necro","users","files","days40","cal"].forEach(t=>$("#tab-"+t).classList.toggle("hidden",t!==name));
   if(name==="files")renderDocs();if(name==="days40"){renderDays40();renderPomeni()}if(name==="cal")renderCal();if(name==="partners")renderPartners();
   if(name==="stock")renderStock();if(name==="users")renderUsers();
-  if(name==="stats")renderStats();if(name==="costs")renderCosts();if(name==="fridge")renderFridge();if(name==="showcase")renderShowcase();if(name==="necro")renderNecro();
+  if(name==="stats")renderStats();if(name==="costs")renderCosts();if(name==="fridge")renderFridge();if(name==="showcase")renderShowcase();if(name==="necro")renderNecro();if(name==="sr")renderSr();
   if(name==="dash")renderDash();if(name==="wsl")renderWsl();if(name==="clients")renderClients();if(name==="fin")renderFin();
   if(name==="list")renderList();if(name==="catalog")renderCatalog();if(name==="settings")renderSettings();
   if(name==="edit"&&!CURRENT)openRequest(newRequest(),true);
@@ -4032,6 +4047,96 @@ function buildInvPrint(r){
     ${I.vat?"":`<div class="inv-note">Основание за неначисляване на ДДС: чл. 113, ал. 9 от ЗДДС — доставчикът не е регистриран по ЗДДС.</div>`}
     <div class="inv-note"><b>Начин на плащане:</b> ${esc(I.payment)}${I.payment==="по банков път"&&S.invIban?` · IBAN ${esc(S.invIban)}${S.invBank?" · "+esc(S.invBank):""}`:""}</div>
     <div class="inv-foot"><span>Получател:<span class="sl"></span></span><span>Съставил:<span class="sl"></span><small>${esc(I.author)}</small></span></div>
+  </div>`;
+}
+
+/* =====================================================================
+   СТОКОВИ РАЗПИСКИ — отделно от заявките. Празна разписка; агенцията
+   сама добавя пера и цени. Пазят се в meta "receipts" → {items:{id:{…}}}
+   (по ключ, за да не се губят разписки, добавени едновременно от двама).
+   ===================================================================== */
+let SR={items:{}},SRID=null,srTimer=null,srPending=false;
+const srTotal=x=>r2((x.lines||[]).reduce((a,l)=>a+(num(l.price)||0),0));
+const srList=()=>Object.values(SR.items||{}).sort((a,b)=>(parseInt(b.number,10)||0)-(parseInt(a.number,10)||0)||String(b.created||"").localeCompare(String(a.created||"")));
+const srNextNo=()=>String(Object.values(SR.items||{}).reduce((m,x)=>Math.max(m,parseInt(x.number,10)||0),0)+1);
+async function srLoad(){try{const v=await getMeta("receipts",null);SR=Object.assign({items:{}},v||{});if(!SR.items||typeof SR.items!=="object")SR.items={}}catch(e){toast("Разписките не се заредиха: "+e.message,true)}}
+async function renderSr(){await srFlush();await srLoad();
+  if(SRID&&!SR.items[SRID])SRID=null;
+  const ed=can("docs","edit"),one=!!SRID;
+  $("#srBack").classList.toggle("hidden",!one);$("#srState").classList.toggle("hidden",!one);$("#srPrint").classList.toggle("hidden",!one);
+  $("#srDel").classList.toggle("hidden",!one||!ed);$("#srNew").classList.toggle("hidden",one||!ed);$("#srPrevCard").classList.toggle("hidden",!one);
+  if(one){srEditor();return}
+  $("#srTitle").textContent="Стокови разписки";
+  const L=srList();
+  $("#srBody").innerHTML=`<div class="card"><table class="list"><thead><tr><th style="width:70px">№</th><th style="width:110px">Дата</th><th>Получател</th><th>Пера</th><th style="text-align:right;width:120px">Сума</th></tr></thead>
+    <tbody>${L.map(x=>`<tr class="click" data-open="${esc(x.id)}" style="cursor:pointer"><td><b>${esc(x.number||"—")}</b></td><td>${bgDate(x.date)}</td><td>${esc(x.buyerName||"")}</td>
+      <td class="muted">${esc((x.lines||[]).map(l=>l.name).filter(Boolean).join(", ").slice(0,80))}</td><td style="text-align:right"><b>${eur(srTotal(x))}</b></td></tr>`).join("")
+      ||`<tr><td colspan="5" class="empty">Още няма стокови разписки.${ed?" Натиснете „+ Нова разписка“.":""}</td></tr>`}</tbody></table></div>`;
+}
+$("#srNew").onclick=async()=>{if(!needEdit("docs","издаване на стокови разписки"))return;await srLoad();
+  const id=uid(),x={id,number:srNextNo(),date:todayISO(),buyerName:"",author:ME&&ME.name||"",lines:[{name:"",price:null}],created:new Date().toISOString()};
+  SR.items[id]=x;SRID=id;srPending=true;await srFlush();renderSr();setTimeout(()=>{const i=$('#srBody [data-f="name"]');if(i)i.focus()},50)};
+$("#srBack").onclick=async()=>{await srFlush();SRID=null;renderSr()};
+$("#srBody").addEventListener("click",e=>{const tr=e.target.closest("[data-open]");if(tr){SRID=tr.dataset.open;renderSr();return}
+  const b=e.target.closest("[data-del]");if(b&&SRID){SR.items[SRID].lines.splice(+b.dataset.del,1);srEditor();srSaveSoon()}});
+$("#srDel").onclick=async()=>{if(!SRID||!needEdit("docs","изтриване на стокови разписки"))return;const x=SR.items[SRID];
+  if(!confirm(`Да изтрия ли стокова разписка № ${x.number}? Това не може да се върне.`))return;
+  delete SR.items[SRID];SRID=null;srPending=true;await srFlush();audit("Изтрита стокова разписка","№ "+x.number+" · "+eur(srTotal(x)));renderSr()};
+$("#srPrint").onclick=async()=>{if(!SRID||!needEdit("docs","издаване на стокови разписки"))return;const x=SR.items[SRID];
+  x.lines=x.lines.filter(l=>String(l.name||"").trim()||num(l.price));
+  if(!x.lines.length){toast("Добавете поне едно перо с цена.",true);x.lines=[{name:"",price:null}];srEditor();return}
+  x.number=String(x.number||"").trim()||srNextNo();
+  const dup=Object.values(SR.items).find(o=>o.id!==x.id&&String(o.number).trim()===x.number);
+  if(dup&&!confirm(`Вече има стокова разписка № ${x.number}. Да продължа ли?`))return;
+  srPending=true;await srFlush();srEditor();
+  $("#printArea").innerHTML=buildSrPrint(x);
+  audit("Печат на стокова разписка","№ "+x.number+" · "+eur(srTotal(x)));
+  const old=document.title;document.title=`Стокова_разписка_${x.number}`;printNow(()=>{document.title=old})};
+function srEditor(){
+  const x=SR.items[SRID],ed=can("docs","edit");if(!x)return;
+  $("#srTitle").textContent="Стокова разписка № "+(x.number||"");
+  const iT=(k,label,ph="",cls="",type="text")=>`<label class="f ${cls}">${label}<input class="ui-in" type="${type}" data-s="${k}" value="${esc(x[k]??"")}" placeholder="${esc(ph)}" ${ed?"":"disabled"}></label>`;
+  $("#srBody").innerHTML=`<div class="card"><div class="grid">
+    ${iT("number","Номер")}${iT("date","Дата","","","date")}
+    ${iT("buyerName","Получател","име или фирма","full")}${iT("author","Предал")}
+  </div>
+  <h3>Пера</h3>
+  <table class="list"><thead><tr><th style="width:36px">№</th><th>Наименование</th><th style="width:150px;text-align:right">Цена (€)</th><th style="width:44px"></th></tr></thead>
+  <tbody>${x.lines.map((l,i)=>`<tr><td class="muted">${i+1}</td>
+    <td><input class="ui-in" data-l="${i}" data-f="name" value="${esc(l.name||"")}" placeholder="напр. Маса" ${ed?"":"disabled"}></td>
+    <td><input class="ui-in" data-l="${i}" data-f="price" value="${numIn(l.price)}" placeholder="0,00" inputmode="decimal" style="text-align:right" ${ed?"":"disabled"}></td>
+    <td>${ed?`<button type="button" class="btn small ghost" data-del="${i}" title="Махни перото">✕</button>`:""}</td></tr>`).join("")||`<tr><td colspan="4" class="empty">Още няма пера.</td></tr>`}</tbody>
+  <tfoot><tr><td></td><td style="text-align:right"><b>Общо:</b></td><td style="text-align:right"><b id="srSum">${eur(srTotal(x))}</b></td><td></td></tr></tfoot></table>
+  ${ed?`<div class="row" style="margin-top:10px"><button type="button" class="btn primary small" id="srAdd">+ Добави перо</button><span class="muted" style="margin-left:10px;font-size:12px">Enter в полето за цена добавя нов ред</span></div>`:""}
+  </div>`;
+  const a=$("#srAdd");if(a)a.onclick=()=>{x.lines.push({name:"",price:null});srEditor();const ins=$$('#srBody [data-f="name"]');if(ins.length)ins[ins.length-1].focus();srSaveSoon()};
+  srPreview();
+}
+function srPreview(){const x=SR.items[SRID];if(!x)return;$("#srPrev").innerHTML=buildSrPrint(x);const t=$("#srSum");if(t)t.textContent=eur(srTotal(x))}
+$("#srBody").addEventListener("input",e=>{const el=e.target,x=SR.items[SRID];if(!x)return;
+  if(el.dataset.s){x[el.dataset.s]=el.value;if(el.dataset.s==="number")$("#srTitle").textContent="Стокова разписка № "+el.value}
+  else if(el.dataset.l!=null){const l=x.lines[+el.dataset.l];if(!l)return;l[el.dataset.f]=el.dataset.f==="price"?num(el.value):el.value}
+  else return;srPreview();srSaveSoon()});
+$("#srBody").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset.f==="price"){e.preventDefault();const a=$("#srAdd");if(a)a.click()}});
+function srSaveSoon(){srPending=true;const s=$("#srState");s.textContent="Записване…";s.classList.add("dirty");clearTimeout(srTimer);srTimer=setTimeout(srFlush,500)}
+async function srFlush(){clearTimeout(srTimer);if(!srPending)return;srPending=false;
+  try{await setMeta("receipts",SR)}catch(e){srPending=true;toast("Разписката НЕ е записана: "+e.message,true);return}
+  auditThrottled("sr","Промени в стокови разписки",SRID&&SR.items[SRID]?"№ "+SR.items[SRID].number:"");
+  const s=$("#srState");s.textContent="Запазено ✓";s.classList.remove("dirty")}
+function buildSrPrint(x){
+  const A=SETTINGS,L=(x.lines||[]).filter(l=>String(l.name||"").trim()||num(l.price)),tot=srTotal({lines:L});
+  return `<div class="sheet invp">${headHTML()}
+    <div class="inv-title">СТОКОВА РАЗПИСКА</div>
+    <div class="inv-sub">№ <b>${esc(x.number||"")}</b> от ${bgDate(x.date)}</div>
+    <div class="inv-parties" style="margin-top:5mm">
+      <div class="inv-party"><h4>ПОЛУЧАТЕЛ</h4><div class="nm">${esc(x.buyerName)||"&nbsp;"}</div></div>
+      <div class="inv-party"><h4>ДОСТАВЧИК</h4><div class="nm">${esc(A.invName||A.agency||"")}</div>${(A.invAddr||A.addr)?`<div><span class="k">Адрес:</span> ${esc(A.invAddr||A.addr)}</div>`:""}${A.invEik?`<div><span class="k">ЕИК:</span> ${esc(A.invEik)}</div>`:""}</div>
+    </div>
+    <table class="inv-t"><thead><tr><th style="width:10mm">№</th><th>Наименование</th><th class="m" style="width:32mm">Цена</th></tr></thead>
+      <tbody>${L.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.name||"")}</td><td class="m">${fmt(num(l.price)||0)} €</td></tr>`).join("")||`<tr><td></td><td>&nbsp;</td><td></td></tr>`}</tbody></table>
+    <table class="inv-sum"><tr class="tot"><td>ОБЩО:</td><td class="m">${fmt(tot)} €</td></tr></table>
+    <div class="inv-words"><b>Словом:</b> ${amountWords(tot)}</div>
+    <div class="inv-foot"><span>Получил:<span class="sl"></span></span><span>Предал:<span class="sl"></span><small>${esc(x.author||"")}</small></span></div>
   </div>`;
 }
 
@@ -5704,7 +5809,7 @@ const AREAS=[ // раздел: [етикет, възможни нива]
 const FLAGS=[["reqdel","Може да изтрива заявки"],["stockadj","Може да прави складови корекции"]];
 const LVL={none:"Няма достъп",view:"Вижда",edit:"Редактира"};
 const DEFAULT_PERMS={dash:"view",req:"edit",ws:"edit",docs:"edit",clients:"view",necro:"edit",stock:"view",files:"view",catalog:"view",fin:"none",reqdel:false,stockadj:false};
-const TAB_AREA={showcase:"admin",partners:"req",cal:"req",dash:"dash",list:"req",edit:"req",wsl:"ws",ws:"ws",inv:"docs",clients:"clients",necro:"necro",stock:"stock",files:"files",catalog:"catalog",fin:"fin",stats:"fin",costs:"fin",fridge:"req",settings:"admin",users:"admin"};
+const TAB_AREA={showcase:"admin",partners:"req",cal:"req",dash:"dash",list:"req",edit:"req",wsl:"ws",ws:"ws",inv:"docs",sr:"docs",clients:"clients",necro:"necro",stock:"stock",files:"files",catalog:"catalog",fin:"fin",stats:"fin",costs:"fin",fridge:"req",settings:"admin",users:"admin"};
 const isAdmin=()=>!!ME&&ME.role==="admin";
 function can(area,lvl="view"){
   if(!ME)return false;if(ME.role==="admin")return true;
@@ -6255,7 +6360,7 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="14"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="15"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
