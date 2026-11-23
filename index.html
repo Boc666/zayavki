@@ -577,6 +577,7 @@ table.wsp-t .d{color:#4b5a8a;font-style:italic;font-size:9.5pt}
 .sr-ac .o{display:flex;justify-content:space-between;gap:12px;padding:8px 10px;border-radius:6px;cursor:pointer}
 .sr-ac .o span{color:var(--text2);font-size:12px;white-space:nowrap}
 .sr-ac .o:hover,.sr-ac .o.on{background:var(--bronze-soft)}
+.sr-ac .g{padding:8px 10px 3px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--bronze-hi,var(--bronze));font-weight:600}
 .sr-ac .h{padding:7px 10px 5px;color:var(--text3);font-size:11.5px;border-top:1px solid var(--border-soft);margin-top:2px}
 .sr-ac .h:first-child{border-top:0;margin-top:0}
 .sr-link{font-size:11.5px;margin-top:4px;color:var(--ok)}
@@ -4111,11 +4112,17 @@ async function srStockSync(x,why,ask=true){
     toast(`Складът е обновен: ${out.length} ${out.length===1?"движение":"движения"}.`+(low.length?" Под минимума: "+low.map(z=>z.name).join(", "):""),!!low.length);return true}
   catch(e){alert("Складът НЕ е променен: "+e.message);return false}}
 /* артикулите от склада, които отговарят на написаното перо („ковчег“ → само ковчезите) */
-const srWords=t=>String(t||"").toLowerCase().split(/[^0-9a-zа-яѐ-ӿ]+/i).filter(w=>w.length>=3).map(w=>w.slice(0,Math.min(w.length,5)));
-function srMatches(name,cur){
-  const pool=INVD.items.filter(i=>i.status==="active"&&!i.onDemand).sort((a,b)=>a.name.localeCompare(b.name,"bg"));
-  const W=srWords(name);if(!W.length)return pool;
-  return pool.filter(i=>{const h=(i.name+" "+(i.cat||"")+" "+(i.sku||"")).toLowerCase();return W.some(w=>h.includes(w))})}
+/* „ковчег“ ↔ „Ковчези“, „венец“ ↔ „Венци“: думите съвпадат, ако имат общо начало (поне 3 букви и 60% от по-късата) */
+const srWords=t=>String(t||"").toLowerCase().split(/[^0-9a-zа-яѐ-ӿ]+/i).filter(w=>w.length>=3);
+const srSame=(a,b,m=3)=>{let k=0;while(k<a.length&&k<b.length&&a[k]===b[k])k++;return k>=Math.min(m,a.length,b.length)&&k>=3&&k>=Math.ceil(.6*Math.min(a.length,b.length))};
+const srHit=(W,txt,m)=>{const H=srWords(txt);return W.some(w=>H.some(h=>srSame(w,h,m)))}; // m: минимум общи букви (категория — 3, име — 4)
+/* артикулите за падащото меню: ако написаното отговаря на категория — цялата категория; иначе по име */
+function srMatches(name){
+  const pool=INVD.items.filter(i=>i.status==="active"&&!i.onDemand);
+  const W=srWords(name);let list=pool;
+  if(W.length){const cats=new Set(pool.filter(i=>i.cat&&srHit(W,i.cat)).map(i=>i.cat));
+    list=pool.filter(i=>cats.has(i.cat)||srHit(W,i.name+" "+(i.sku||""),4))}
+  return list.sort((a,b)=>(a.cat||"яяя").localeCompare(b.cat||"яяя","bg")||a.name.localeCompare(b.name,"bg"))}
 const srIssuedAny=x=>x.lines.some(l=>l.issued&&l.issued.qty>0)||x.orphans.length>0;
 async function renderSr(){await srFlush();await srLoad();
   if(SRID&&!SR.items[SRID])SRID=null;
@@ -4213,16 +4220,19 @@ function srLinkTag(l,ed){const it=itemById(l.item);
   return `<div class="sr-link">📦 от склада${it?` · налични ${numIn(it.stock)} ${esc(it.unit)}`:""}${ed?` <button type="button" class="lnk" data-unlink="${esc(l.item)}" title="Перото да не е от склада">махни връзката</button>`:""}</div>`}
 function srAcHide(){const b=$("#srAc");if(b)b.classList.add("hidden")}
 function srAcShow(inp){const x=SR.items[SRID];if(!x||!x.stock||inp.disabled){srAcHide();return}
-  const i=+inp.dataset.l,l=x.lines[i];if(!l)return;const M=srMatches(l.name).slice(0,40),typed=!!String(l.name||"").trim();
+  const i=+inp.dataset.l,l=x.lines[i];if(!l)return;const M=srMatches(l.name).slice(0,60),typed=!!String(l.name||"").trim();
   let box=$("#srAc");if(!box){box=document.createElement("div");box.id="srAc";box.className="sr-ac hidden";document.body.appendChild(box);
     box.addEventListener("mousedown",e=>{e.preventDefault();const o=e.target.closest("[data-pick]");if(o)srPick(+box.dataset.l,o.dataset.pick)})}
   box.dataset.l=i;
-  box.innerHTML=M.map((it,k)=>`<div class="o${k===0&&typed&&!l.item?" on":""}" data-pick="${esc(it.id)}"><b>${esc(it.name)}</b><span>налични ${numIn(it.stock)} ${esc(it.unit)}${it.salePrice!=null?" · "+eur(it.salePrice):""}</span></div>`).join("")+
+  let prev=null;
+  box.innerHTML=M.map((it,k)=>{const c=it.cat||"Без категория",hd=c!==prev?`<div class="g">${esc(c)}</div>`:"";prev=c;
+    return hd+`<div class="o${k===0&&typed&&!l.item?" on":""}" data-pick="${esc(it.id)}"><b>${esc(it.name)}</b><span>налични ${numIn(it.stock)} ${esc(it.unit)}${it.salePrice!=null?" · "+eur(it.salePrice):""}</span></div>`}).join("")+
     `<div class="h">${M.length?(typed?"Изберете от склада — или продължете да пишете, ако перото не е от склада.":"Изберете артикул от склада или напишете перо на ръка."):"Няма такъв артикул в склада — перото ще е без склад."}</div>`;
   const r=inp.getBoundingClientRect();box.style.left=Math.max(8,Math.min(r.left,innerWidth-Math.max(r.width,300)-8))+"px";box.style.top=(r.bottom+4)+"px";box.style.width=Math.max(r.width,300)+"px";
   box.classList.remove("hidden")}
 function srPick(i,id){const x=SR.items[SRID],l=x&&x.lines[i],it=itemById(id);if(!l||!it)return;
-  l.item=it.id;l.name=it.name;if(!(num(l.qty)>0))l.qty=1;if(it.salePrice!=null)l.price=r2(it.salePrice*l.qty);
+  const ty=String(l.name||"").trim(); // „ковчег“ + „Модел Класик“ → „Ковчег Модел Класик“ (на разписката да личи какво е)
+  l.item=it.id;l.name=ty&&!srHit(srWords(ty),it.name,4)?ty.charAt(0).toUpperCase()+ty.slice(1)+" "+it.name:it.name;if(!(num(l.qty)>0))l.qty=1;if(it.salePrice!=null)l.price=r2(it.salePrice*l.qty);
   srAcHide();srEditor();srSaveSoon();const q=$(`#srBody [data-f="qty"][data-l="${i}"]`);if(q){q.focus();q.select()}}
 function srSaveSoon(){srPending=true;const s=$("#srState");s.textContent="Записване…";s.classList.add("dirty");clearTimeout(srTimer);srTimer=setTimeout(srFlush,500)}
 async function srFlush(){clearTimeout(srTimer);if(!srPending)return;srPending=false;
