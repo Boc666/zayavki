@@ -704,7 +704,7 @@ table.list td.money,table.list td.num,.kpi b,.chip b{font-variant-numeric:tabula
 
 /* ---------- break-ui: дълги имена, големи суми, телефон ---------- */
 /* името на агенцията горе — най-много 2 реда (цялото е в подсказката) */
-#appTitle{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+#appTitle{display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 @media(max-width:760px){
   /* сумите в плочките на таблото се побират и при 6-цифрени суми */
   .kpi .v,.kpi.lead .v{font-size:min(26px,5.2vw);white-space:nowrap}
@@ -4668,8 +4668,14 @@ $("#stkTable").addEventListener("click",e=>{const s=e.target.closest("[data-sort
 $("#stkNew").onclick=()=>itemModal(null);$("#stkDel").onclick=()=>deliveryModal(null);$("#stkAdj").onclick=()=>adjustModal(null);
 $("#stkMovesBtn").onclick=()=>{const c=$("#stkMovesCard");c.classList.toggle("hidden");$("#stkMovesBtn").classList.toggle("on",!c.classList.contains("hidden"));if(!c.classList.contains("hidden")){renderMoves();c.scrollIntoView({behavior:"smooth",block:"start"})}};
 
-function itemOpts(sel,onlyActive=true,stockOnly=false){return INVD.items.filter(i=>(!onlyActive||i.status==="active")&&(!stockOnly||!i.onDemand)).sort((a,b)=>a.name.localeCompare(b.name,"bg"))
-  .map(i=>`<option value="${i.id}" ${i.id===sel?"selected":""}>${esc(i.name)}${i.sku?" ["+esc(i.sku)+"]":""} — налични ${numIn(i.stock)} ${esc(i.unit)}</option>`).join("")}
+/* артикулите в падащите менюта — групирани по категория (както в „Инвентар“); без категория най-отдолу */
+function itemOpts(sel,onlyActive=true,stockOnly=false){const C=i=>String(i.cat||"").trim();
+  const L=INVD.items.filter(i=>(!onlyActive||i.status==="active")&&(!stockOnly||!i.onDemand))
+    .sort((a,b)=>(!C(a))-(!C(b))||C(a).localeCompare(C(b),"bg")||a.name.localeCompare(b.name,"bg"));
+  const grp=L.some(C);let out="",prev=null;
+  L.forEach(i=>{const c=C(i);if(grp&&c!==prev){out+=(prev!==null?"</optgroup>":"")+`<optgroup label="${esc(c||"Без категория")}">`;prev=c}
+    out+=`<option value="${i.id}" ${i.id===sel?"selected":""}>${esc(i.name)}${i.sku?" ["+esc(i.sku)+"]":""} — налични ${numIn(i.stock)} ${esc(i.unit)}</option>`});
+  return out+(grp&&prev!==null?"</optgroup>":"")}
 
 function itemModal(id){
   const it=id?itemById(id):null,v=k=>it?it[k]??"":"",isNew=!it;
@@ -6502,7 +6508,7 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="19"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="20"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
