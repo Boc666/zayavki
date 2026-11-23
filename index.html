@@ -389,7 +389,12 @@ table.list td.money,table.list td.num{white-space:nowrap}
   table.list{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap}
   #sheets,#previewPages,.inv-wrap,.ws-paper,.docscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-left:-12px;margin-right:-12px;padding:0 12px}
   .sheet{margin-left:0;margin-right:0}
-  .modal{width:calc(100vw - 20px)!important;max-height:calc(100dvh - 30px)}
+  /* телефон: прозорецът се събира в екрана, бутоните долу винаги се виждат, превърта се само средата */
+  #modalWrap,#modalWrapOut{padding:max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom));align-items:center}
+  .modal{width:calc(100vw - 20px)!important;max-height:calc(100vh - 20px);max-height:calc(100dvh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+  .modal .mb{flex:1 1 auto;min-height:0}
+  .modal header,.modal footer{flex:none}
+  .modal footer{flex-wrap:wrap}
   #auth{padding:12px}
 }
 
@@ -6493,7 +6498,7 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="18"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="19"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
