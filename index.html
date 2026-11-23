@@ -4054,12 +4054,55 @@ function buildInvPrint(r){
    СТОКОВИ РАЗПИСКИ — отделно от заявките. Празна разписка; агенцията
    сама добавя пера и цени. Пазят се в meta "receipts" → {items:{id:{…}}}
    (по ключ, за да не се губят разписки, добавени едновременно от двама).
+   x.brand — с лого и данни на агенцията (доставчик) или без тях.
+   x.stock — редовете могат да се свържат със складов артикул; при печат
+   се изписват (l.issued = реално изписаното), при промяна/изтриване се връщат.
    ===================================================================== */
 let SR={items:{}},SRID=null,srTimer=null,srPending=false;
 const srTotal=x=>r2((x.lines||[]).reduce((a,l)=>a+(num(l.price)||0),0));
 const srList=()=>Object.values(SR.items||{}).sort((a,b)=>(parseInt(b.number,10)||0)-(parseInt(a.number,10)||0)||String(b.created||"").localeCompare(String(a.created||"")));
 const srNextNo=()=>String(Object.values(SR.items||{}).reduce((m,x)=>Math.max(m,parseInt(x.number,10)||0),0)+1);
-async function srLoad(){try{const v=await getMeta("receipts",null);SR=Object.assign({items:{}},v||{});if(!SR.items||typeof SR.items!=="object")SR.items={}}catch(e){toast("Разписките не се заредиха: "+e.message,true)}}
+const srNorm=x=>{if(x.brand===undefined)x.brand=true;if(x.stock===undefined)x.stock=false;if(!Array.isArray(x.lines))x.lines=[];if(!Array.isArray(x.orphans))x.orphans=[];return x};
+async function srLoad(){try{const v=await getMeta("receipts",null);SR=Object.assign({items:{}},v||{});if(!SR.items||typeof SR.items!=="object")SR.items={};Object.values(SR.items).forEach(srNorm)}catch(e){toast("Разписките не се заредиха: "+e.message,true)}
+  if((SRV||CLOUD)&&!INV_BUSY)try{INVD=migrateInvd(await getMeta("inventory",null))}catch(e){}}
+/* складови движения: какво е изписано (l.issued) срещу какво се иска сега */
+function srPlan(x){const ops=[];
+  x.orphans.forEach((iss,k)=>{if(iss&&iss.qty>0)ops.push({o:k,itemId:iss.itemId,kind:"return",qty:iss.qty,full:true})});
+  x.lines.forEach((l,i)=>{const iss=l.issued&&l.issued.qty>0?l.issued:null,it=l.item?itemById(l.item):null,
+      want=x.stock&&l.item&&!(it&&it.onDemand)?{itemId:l.item,qty:qn(num(l.qty)??1)}:null;let base=0;
+    if(iss&&(!want||want.itemId!==iss.itemId))ops.push({i,itemId:iss.itemId,kind:"return",qty:iss.qty,full:true});else if(iss)base=iss.qty;
+    if(want){const dq=qn(want.qty-base);if(dq>0)ops.push({i,itemId:want.itemId,kind:"sale",qty:dq});if(dq<0)ops.push({i,itemId:want.itemId,kind:"return",qty:-dq})}});
+  return ops}
+function srApply(d,x,why){const moves=[],plan=srPlan(x),tag={srId:x.id,srNo:x.number};
+  for(const o of plan.filter(o=>o.kind==="return")){const l=o.i!=null?x.lines[o.i]:null,iss=l?l.issued:x.orphans[o.o],it=d.items.find(z=>z.id===o.itemId);if(!iss)continue;
+    if(it){const uc=iss.qty?iss.cost/iss.qty:0,b=stkIn(it,o.qty,uc);
+      moves.push(addMove(d,{type:o.full?"storno":"return",itemId:it.id,itemName:it.name,qty:o.qty,before:b,after:it.stock,unitCost:uc,total:r2(o.qty*uc),...tag,note:why||"Стокова разписка № "+x.number+(o.full?" — премахнат ред":" — намалено количество")}))}
+    const uc=iss.qty?iss.cost/iss.qty:0;iss.qty=qn(iss.qty-o.qty);iss.cost=r2(iss.cost-o.qty*uc);
+    if(iss.qty<=0){if(l)l.issued=null;else x.orphans[o.o]=null}}
+  x.orphans=x.orphans.filter(Boolean);
+  for(const o of plan.filter(o=>o.kind==="sale")){const l=x.lines[o.i],it=d.items.find(z=>z.id===o.itemId);if(!it)throw new Error("Артикулът не е намерен в склада.");
+    if(o.qty>it.stock+1e-9)throw new Error(`Няма достатъчно наличност от „${it.name}“: нужни ${numIn(o.qty)}, налични ${numIn(it.stock)} ${it.unit}.`);
+    const uc=it.avgCost||it.lastCost||0,b=stkOut(it,o.qty),prev=l.issued&&l.issued.itemId===it.id?l.issued:{qty:0,cost:0};
+    moves.push(addMove(d,{type:"sale",itemId:it.id,itemName:it.name,qty:-o.qty,before:b,after:it.stock,unitCost:uc,total:r2(o.qty*uc),...tag,unitPrice:num(l.price)||0,note:why||"Стокова разписка № "+x.number}));
+    const q=qn(prev.qty+o.qty);l.issued={itemId:it.id,itemName:it.name,qty:q,cost:r2(prev.cost+o.qty*uc),at:new Date().toISOString()}}
+  return moves}
+/* показва движенията, пита и ги записва; true ако всичко е наред (или няма какво) */
+async function srStockSync(x,why,ask=true){
+  const plan=srPlan(x);if(!plan.length)return true;
+  const nm=id=>{const it=itemById(id);return it?it.name:"(изтрит артикул)"},un=id=>{const it=itemById(id);return it?it.unit:""};
+  const need={};plan.forEach(o=>{need[o.itemId]=(need[o.itemId]||0)+(o.kind==="sale"?o.qty:-o.qty)});
+  const sh=Object.entries(need).map(([id,n])=>{const it=itemById(id);return{it,n}}).filter(z=>z.n>0&&(!z.it||z.n>z.it.stock+1e-9));
+  if(sh.length){alert("Няма достатъчно наличност — нищо не е изписано:\n\n"+sh.map(z=>`• ${z.it?z.it.name:"(липсващ артикул)"}: нужни ${numIn(z.n)}, налични ${numIn(z.it?z.it.stock:0)} ${z.it?z.it.unit:""}`).join("\n")+"\n\nЗаредете стока в раздел „Инвентар“ или махнете връзката със склада.");return false}
+  const txt=plan.map(o=>`${o.kind==="sale"?"−  Изписване":"+  Връщане в склада"}: ${nm(o.itemId)} × ${numIn(o.qty)} ${un(o.itemId)}`).join("\n");
+  if(ask&&!confirm("Складови движения по стокова разписка № "+x.number+":\n\n"+txt+"\n\nПотвърждавате ли?"))return false;
+  let xr;
+  try{const{out}=await invCommit(d=>{xr=srNorm(structuredClone(x));return srApply(d,xr,why)});
+    Object.assign(x,xr);srPending=true;await srFlush();
+    audit("Складови движения по стокова разписка","№ "+x.number+": "+txt.replace(/\n/g,"; "));
+    const low=[...new Set(out.map(m=>m.itemId))].map(itemById).filter(it=>it&&it.stock<(it.minStock||0));
+    toast(`Складът е обновен: ${out.length} ${out.length===1?"движение":"движения"}.`+(low.length?" Под минимума: "+low.map(z=>z.name).join(", "):""),!!low.length);return true}
+  catch(e){alert("Складът НЕ е променен: "+e.message);return false}}
+const srIssuedAny=x=>x.lines.some(l=>l.issued&&l.issued.qty>0)||x.orphans.length>0;
 async function renderSr(){await srFlush();await srLoad();
   if(SRID&&!SR.items[SRID])SRID=null;
   const ed=can("docs","edit"),one=!!SRID;
@@ -4069,54 +4112,79 @@ async function renderSr(){await srFlush();await srLoad();
   $("#srTitle").textContent="Стокови разписки";
   const L=srList();
   $("#srBody").innerHTML=`<div class="card"><table class="list"><thead><tr><th style="width:70px">№</th><th style="width:110px">Дата</th><th>Получател</th><th>Пера</th><th style="text-align:right;width:120px">Сума</th></tr></thead>
-    <tbody>${L.map(x=>`<tr class="click" data-open="${esc(x.id)}" style="cursor:pointer"><td><b>${esc(x.number||"—")}</b></td><td>${bgDate(x.date)}</td><td>${esc(x.buyerName||"")}</td>
-      <td class="muted">${esc((x.lines||[]).map(l=>l.name).filter(Boolean).join(", ").slice(0,80))}</td><td style="text-align:right"><b>${eur(srTotal(x))}</b></td></tr>`).join("")
+    <tbody>${L.map(x=>`<tr class="click" data-open="${esc(x.id)}" style="cursor:pointer"><td><b>${esc(x.number||"—")}</b></td><td>${bgDate(x.date)}</td><td>${esc(x.buyerName||"")}${x.brand?"":` <span class="tag">без лого</span>`}</td>
+      <td class="muted">${esc((x.lines||[]).map(l=>l.name).filter(Boolean).join(", ").slice(0,80))}${srIssuedAny(x)?` <span class="tag ok">от склада</span>`:""}</td><td style="text-align:right"><b>${eur(srTotal(x))}</b></td></tr>`).join("")
       ||`<tr><td colspan="5" class="empty">Още няма стокови разписки.${ed?" Натиснете „+ Нова разписка“.":""}</td></tr>`}</tbody></table></div>`;
 }
 $("#srNew").onclick=async()=>{if(!needEdit("docs","издаване на стокови разписки"))return;await srLoad();
-  const id=uid(),x={id,number:srNextNo(),date:todayISO(),buyerName:"",author:ME&&ME.name||"",lines:[{name:"",price:null}],created:new Date().toISOString()};
+  const last=srList()[0]; // новата разписка взима настройките на последната
+  const id=uid(),x=srNorm({id,number:srNextNo(),date:todayISO(),buyerName:"",author:ME&&ME.name||"",brand:last?last.brand!==false:true,stock:last?!!last.stock:false,lines:[{name:"",price:null,item:"",qty:1}],created:new Date().toISOString()});
   SR.items[id]=x;SRID=id;srPending=true;await srFlush();renderSr();setTimeout(()=>{const i=$('#srBody [data-f="name"]');if(i)i.focus()},50)};
 $("#srBack").onclick=async()=>{await srFlush();SRID=null;renderSr()};
 $("#srBody").addEventListener("click",e=>{const tr=e.target.closest("[data-open]");if(tr){SRID=tr.dataset.open;renderSr();return}
-  const b=e.target.closest("[data-del]");if(b&&SRID){SR.items[SRID].lines.splice(+b.dataset.del,1);srEditor();srSaveSoon()}});
+  const b=e.target.closest("[data-del]");if(b&&SRID){const x=SR.items[SRID],l=x.lines.splice(+b.dataset.del,1)[0];
+    if(l&&l.issued&&l.issued.qty>0)x.orphans.push(l.issued); // изписаното се връща при следващия печат
+    srEditor();srSaveSoon()}});
 $("#srDel").onclick=async()=>{if(!SRID||!needEdit("docs","изтриване на стокови разписки"))return;const x=SR.items[SRID];
-  if(!confirm(`Да изтрия ли стокова разписка № ${x.number}? Това не може да се върне.`))return;
+  const back=srIssuedAny(x);
+  if(!confirm(`Да изтрия ли стокова разписка № ${x.number}? Това не може да се върне.`+(back?"\n\nИзписаната по нея стока ще бъде върната в склада.":"")))return;
+  if(back){const y=srNorm(structuredClone(x));y.stock=false;if(!(await srStockSync(y,"Изтрита стокова разписка № "+x.number,false)))return}
   delete SR.items[SRID];SRID=null;srPending=true;await srFlush();audit("Изтрита стокова разписка","№ "+x.number+" · "+eur(srTotal(x)));renderSr()};
 $("#srPrint").onclick=async()=>{if(!SRID||!needEdit("docs","издаване на стокови разписки"))return;const x=SR.items[SRID];
-  x.lines=x.lines.filter(l=>String(l.name||"").trim()||num(l.price));
-  if(!x.lines.length){toast("Добавете поне едно перо с цена.",true);x.lines=[{name:"",price:null}];srEditor();return}
+  x.lines.forEach(l=>{if(!(String(l.name||"").trim()||num(l.price)||l.item)&&l.issued&&l.issued.qty>0)x.orphans.push(l.issued)});
+  x.lines=x.lines.filter(l=>String(l.name||"").trim()||num(l.price)||l.item);
+  if(!x.lines.length){toast("Добавете поне едно перо с цена.",true);x.lines=[{name:"",price:null,item:"",qty:1}];srEditor();return}
+  if(x.stock){const bad=x.lines.findIndex(l=>l.item&&!(num(l.qty)>0));if(bad>=0){alert("Невалидно количество на ред "+(bad+1)+".");return}}
   x.number=String(x.number||"").trim()||srNextNo();
   const dup=Object.values(SR.items).find(o=>o.id!==x.id&&String(o.number).trim()===x.number);
   if(dup&&!confirm(`Вече има стокова разписка № ${x.number}. Да продължа ли?`))return;
+  if(!(await srStockSync(x)))return;
   srPending=true;await srFlush();srEditor();
   $("#printArea").innerHTML=buildSrPrint(x);
   audit("Печат на стокова разписка","№ "+x.number+" · "+eur(srTotal(x)));
   const old=document.title;document.title=`Стокова_разписка_${x.number}`;printNow(()=>{document.title=old})};
 function srEditor(){
-  const x=SR.items[SRID],ed=can("docs","edit");if(!x)return;
+  const x=SR.items[SRID],ed=can("docs","edit");if(!x)return;srNorm(x);
   $("#srTitle").textContent="Стокова разписка № "+(x.number||"");
-  const iT=(k,label,ph="",cls="",type="text")=>`<label class="f ${cls}">${label}<input class="ui-in" type="${type}" data-s="${k}" value="${esc(x[k]??"")}" placeholder="${esc(ph)}" ${ed?"":"disabled"}></label>`;
-  $("#srBody").innerHTML=`<div class="card"><div class="grid">
+  const dis=ed?"":"disabled";
+  const iT=(k,label,ph="",cls="",type="text")=>`<label class="f ${cls}">${label}<input class="ui-in" type="${type}" data-s="${k}" value="${esc(x[k]??"")}" placeholder="${esc(ph)}" ${dis}></label>`;
+  const pend=srPlan(x).length;
+  const opts=l=>`<option value="">— не е от склада —</option>`+itemOpts(l.item,true,true)+(l.item&&!INVD.items.some(i=>i.id===l.item&&i.status==="active"&&!i.onDemand)?`<option value="${esc(l.item)}" selected>${esc((itemById(l.item)||l.issued||{}).name||l.item)}</option>`:"");
+  const st=l=>l.issued&&l.issued.qty>0?`<div class="muted" style="font-size:11.5px;margin-top:3px">✔ изписани ${numIn(l.issued.qty)} ${esc((itemById(l.issued.itemId)||{}).unit||"")}</div>`:"";
+  $("#srBody").innerHTML=`<div class="card">
+  <div class="row" style="gap:22px;flex-wrap:wrap;margin-bottom:14px">
+    <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" data-t="brand" ${x.brand?"checked":""} ${dis}><span><b>С данните на агенцията</b><br><span class="muted" style="font-size:12px">лого горе и „Доставчик“ на разписката</span></span></label>
+    <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" data-t="stock" ${x.stock?"checked":""} ${dis}><span><b>Изписва от склада</b><br><span class="muted" style="font-size:12px">стоката се вади от „Инвентар“ при печат</span></span></label>
+  </div>
+  <div class="grid">
     ${iT("number","Номер")}${iT("date","Дата","","","date")}
     ${iT("buyerName","Получател","име или фирма","full")}${iT("author","Предал")}
   </div>
   <h3>Пера</h3>
-  <table class="list"><thead><tr><th style="width:36px">№</th><th>Наименование</th><th style="width:150px;text-align:right">Цена (€)</th><th style="width:44px"></th></tr></thead>
+  <table class="list"><thead><tr><th style="width:36px">№</th><th>Наименование</th>${x.stock?`<th style="width:30%">Артикул от склада</th><th style="width:80px;text-align:right">К-во</th>`:""}<th style="width:140px;text-align:right">Цена (€)</th><th style="width:44px"></th></tr></thead>
   <tbody>${x.lines.map((l,i)=>`<tr><td class="muted">${i+1}</td>
-    <td><input class="ui-in" data-l="${i}" data-f="name" value="${esc(l.name||"")}" placeholder="напр. Маса" ${ed?"":"disabled"}></td>
-    <td><input class="ui-in" data-l="${i}" data-f="price" value="${numIn(l.price)}" placeholder="0,00" inputmode="decimal" style="text-align:right" ${ed?"":"disabled"}></td>
-    <td>${ed?`<button type="button" class="btn small ghost" data-del="${i}" title="Махни перото">✕</button>`:""}</td></tr>`).join("")||`<tr><td colspan="4" class="empty">Още няма пера.</td></tr>`}</tbody>
-  <tfoot><tr><td></td><td style="text-align:right"><b>Общо:</b></td><td style="text-align:right"><b id="srSum">${eur(srTotal(x))}</b></td><td></td></tr></tfoot></table>
-  ${ed?`<div class="row" style="margin-top:10px"><button type="button" class="btn primary small" id="srAdd">+ Добави перо</button><span class="muted" style="margin-left:10px;font-size:12px">Enter в полето за цена добавя нов ред</span></div>`:""}
+    <td><input class="ui-in" data-l="${i}" data-f="name" value="${esc(l.name||"")}" placeholder="напр. Маса" ${dis}>${x.stock?"":st(l)}</td>
+    ${x.stock?`<td><select class="ui-in" data-l="${i}" data-f="item" ${dis}>${opts(l)}</select>${st(l)}</td>
+    <td><input class="ui-in" data-l="${i}" data-f="qty" value="${l.item?numIn(l.qty??1):""}" ${l.item?"":"disabled"} inputmode="decimal" style="text-align:right" ${dis}></td>`:""}
+    <td><input class="ui-in" data-l="${i}" data-f="price" value="${numIn(l.price)}" placeholder="0,00" inputmode="decimal" style="text-align:right" ${dis}></td>
+    <td>${ed?`<button type="button" class="btn small ghost" data-del="${i}" title="Махни перото">✕</button>`:""}</td></tr>`).join("")||`<tr><td colspan="${x.stock?6:4}" class="empty">Още няма пера.</td></tr>`}</tbody>
+  <tfoot><tr><td></td><td ${x.stock?'colspan="3"':""} style="text-align:right"><b>Общо:</b></td><td style="text-align:right"><b id="srSum">${eur(srTotal(x))}</b></td><td></td></tr></tfoot></table>
+  ${ed?`<div class="row" style="margin-top:10px;gap:10px;flex-wrap:wrap"><button type="button" class="btn primary small" id="srAdd">+ Добави перо</button><span class="muted" style="font-size:12px">Enter в полето за цена добавя нов ред</span></div>`:""}
+  ${pend?`<div class="notice" style="margin-top:12px">Има складови промени, които ще се запишат при „Печат разписка“.</div>`:""}
   </div>`;
-  const a=$("#srAdd");if(a)a.onclick=()=>{x.lines.push({name:"",price:null});srEditor();const ins=$$('#srBody [data-f="name"]');if(ins.length)ins[ins.length-1].focus();srSaveSoon()};
+  const a=$("#srAdd");if(a)a.onclick=()=>{x.lines.push({name:"",price:null,item:"",qty:1});srEditor();const ins=$$('#srBody [data-f="name"]');if(ins.length)ins[ins.length-1].focus();srSaveSoon()};
   srPreview();
 }
 function srPreview(){const x=SR.items[SRID];if(!x)return;$("#srPrev").innerHTML=buildSrPrint(x);const t=$("#srSum");if(t)t.textContent=eur(srTotal(x))}
-$("#srBody").addEventListener("input",e=>{const el=e.target,x=SR.items[SRID];if(!x)return;
+$("#srBody").addEventListener("input",e=>{const el=e.target,x=SR.items[SRID];if(!x||el.tagName==="SELECT"||el.type==="checkbox")return;
   if(el.dataset.s){x[el.dataset.s]=el.value;if(el.dataset.s==="number")$("#srTitle").textContent="Стокова разписка № "+el.value}
-  else if(el.dataset.l!=null){const l=x.lines[+el.dataset.l];if(!l)return;l[el.dataset.f]=el.dataset.f==="price"?num(el.value):el.value}
+  else if(el.dataset.l!=null){const l=x.lines[+el.dataset.l];if(!l)return;const f=el.dataset.f;l[f]=f==="price"||f==="qty"?num(el.value):el.value}
   else return;srPreview();srSaveSoon()});
+$("#srBody").addEventListener("change",e=>{const el=e.target,x=SR.items[SRID];if(!x)return;
+  if(el.dataset.t){x[el.dataset.t]=el.checked;srEditor();srSaveSoon();return}
+  if(el.tagName==="SELECT"&&el.dataset.f==="item"){const l=x.lines[+el.dataset.l];if(!l)return;l.item=el.value;const it=itemById(el.value);
+    if(it){if(!(num(l.qty)>0))l.qty=1;if(!String(l.name||"").trim())l.name=it.name;if(l.price==null&&it.salePrice!=null)l.price=r2(it.salePrice*l.qty)}
+    srEditor();srSaveSoon()}});
 $("#srBody").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset.f==="price"){e.preventDefault();const a=$("#srAdd");if(a)a.click()}});
 function srSaveSoon(){srPending=true;const s=$("#srState");s.textContent="Записване…";s.classList.add("dirty");clearTimeout(srTimer);srTimer=setTimeout(srFlush,500)}
 async function srFlush(){clearTimeout(srTimer);if(!srPending)return;srPending=false;
@@ -4124,16 +4192,16 @@ async function srFlush(){clearTimeout(srTimer);if(!srPending)return;srPending=fa
   auditThrottled("sr","Промени в стокови разписки",SRID&&SR.items[SRID]?"№ "+SR.items[SRID].number:"");
   const s=$("#srState");s.textContent="Запазено ✓";s.classList.remove("dirty")}
 function buildSrPrint(x){
-  const A=SETTINGS,L=(x.lines||[]).filter(l=>String(l.name||"").trim()||num(l.price)),tot=srTotal({lines:L});
-  return `<div class="sheet invp">${headHTML()}
+  const A=SETTINGS,L=(x.lines||[]).filter(l=>String(l.name||"").trim()||num(l.price)),tot=srTotal({lines:L}),br=x.brand!==false;
+  return `<div class="sheet invp">${br?headHTML():`<div style="height:10mm"></div>`}
     <div class="inv-title">СТОКОВА РАЗПИСКА</div>
     <div class="inv-sub">№ <b>${esc(x.number||"")}</b> от ${bgDate(x.date)}</div>
-    <div class="inv-parties" style="margin-top:5mm">
+    <div class="inv-parties" style="margin-top:5mm;${br?"":"grid-template-columns:1fr"}">
       <div class="inv-party"><h4>ПОЛУЧАТЕЛ</h4><div class="nm">${esc(x.buyerName)||"&nbsp;"}</div></div>
-      <div class="inv-party"><h4>ДОСТАВЧИК</h4><div class="nm">${esc(A.invName||A.agency||"")}</div>${(A.invAddr||A.addr)?`<div><span class="k">Адрес:</span> ${esc(A.invAddr||A.addr)}</div>`:""}${A.invEik?`<div><span class="k">ЕИК:</span> ${esc(A.invEik)}</div>`:""}</div>
+      ${br?`<div class="inv-party"><h4>ДОСТАВЧИК</h4><div class="nm">${esc(A.invName||A.agency||"")}</div>${(A.invAddr||A.addr)?`<div><span class="k">Адрес:</span> ${esc(A.invAddr||A.addr)}</div>`:""}${A.invEik?`<div><span class="k">ЕИК:</span> ${esc(A.invEik)}</div>`:""}</div>`:""}
     </div>
     <table class="inv-t"><thead><tr><th style="width:10mm">№</th><th>Наименование</th><th class="m" style="width:32mm">Цена</th></tr></thead>
-      <tbody>${L.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.name||"")}</td><td class="m">${fmt(num(l.price)||0)} €</td></tr>`).join("")||`<tr><td></td><td>&nbsp;</td><td></td></tr>`}</tbody></table>
+      <tbody>${L.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.name||"")}${l.item&&x.stock&&num(l.qty)>1?` × ${numIn(l.qty)}`:""}</td><td class="m">${fmt(num(l.price)||0)} €</td></tr>`).join("")||`<tr><td></td><td>&nbsp;</td><td></td></tr>`}</tbody></table>
     <table class="inv-sum"><tr class="tot"><td>ОБЩО:</td><td class="m">${fmt(tot)} €</td></tr></table>
     <div class="inv-words"><b>Словом:</b> ${amountWords(tot)}</div>
     <div class="inv-foot"><span>Получил:<span class="sl"></span></span><span>Предал:<span class="sl"></span><small>${esc(x.author||"")}</small></span></div>
@@ -4643,7 +4711,7 @@ function movesTable(list){
     list.map(x=>{const d=new Date(x.ts);return `<tr><td class="num">${d.toLocaleDateString("bg-BG")} <span class="muted">${d.toLocaleTimeString("bg-BG",{hour:"2-digit",minute:"2-digit"})}</span>${x.date&&x.date!==x.ts.slice(0,10)?`<div class="muted">покупка ${bgDate(x.date)}</div>`:""}</td>
       <td>${esc(x.itemName)}</td><td><span class="tag ${MOVE_CLS[x.type]||""}">${MOVE_T[x.type]||x.type}</span></td>
       <td class="money" style="font-weight:600;color:${x.qty<0?"var(--err)":"var(--ok)"}">${x.qty>0?"+":""}${numIn(x.qty)}</td><td class="money muted">${numIn(x.before)}</td><td class="money">${numIn(x.after)}</td>
-      <td class="money">${x.unitCost!=null?eur(x.unitCost):"—"}</td><td>${x.reqNo?"№ "+esc(x.reqNo):"—"}</td>
+      <td class="money">${x.unitCost!=null?eur(x.unitCost):"—"}</td><td>${x.reqNo?"№ "+esc(x.reqNo):x.srNo?"Ст. разписка № "+esc(x.srNo):"—"}</td>
       <td class="muted">${esc([x.supplier,x.doc?"док. "+x.doc:"",x.note].filter(Boolean).join(" · "))}</td></tr>`}).join("")||`<tr><td colspan="9" class="empty">Няма движения.</td></tr>`}</tbody></table>`;
 }
 function renderMoves(){
