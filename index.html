@@ -4102,6 +4102,18 @@ async function srStockSync(x,why,ask=true){
     const low=[...new Set(out.map(m=>m.itemId))].map(itemById).filter(it=>it&&it.stock<(it.minStock||0));
     toast(`Складът е обновен: ${out.length} ${out.length===1?"движение":"движения"}.`+(low.length?" Под минимума: "+low.map(z=>z.name).join(", "):""),!!low.length);return true}
   catch(e){alert("Складът НЕ е променен: "+e.message);return false}}
+/* артикулите от склада, които отговарят на написаното перо („ковчег“ → само ковчезите) */
+const srWords=t=>String(t||"").toLowerCase().split(/[^0-9a-zа-яѐ-ӿ]+/i).filter(w=>w.length>=3).map(w=>w.slice(0,Math.min(w.length,5)));
+function srOpts(l){
+  const pool=INVD.items.filter(i=>i.status==="active"&&!i.onDemand).sort((a,b)=>a.name.localeCompare(b.name,"bg"));
+  const W=srWords(l.name),hit=i=>{const h=(i.name+" "+(i.cat||"")+" "+(i.sku||"")).toLowerCase();return W.some(w=>h.includes(w))};
+  const list=l.all||!W.length?pool:pool.filter(i=>hit(i)||i.id===l.item),hidden=pool.length-list.length;
+  const o=i=>`<option value="${i.id}" ${i.id===l.item?"selected":""}>${esc(i.name)}${i.sku?" ["+esc(i.sku)+"]":""} — налични ${numIn(i.stock)} ${esc(i.unit)}</option>`;
+  return `<option value="">— не е от склада —</option>`+
+    (W.length&&!l.all&&!list.length?`<option value="" disabled>Няма артикул „${esc(String(l.name).trim())}“ в склада</option>`:"")+
+    list.map(o).join("")+
+    (l.item&&!pool.some(i=>i.id===l.item)?`<option value="${esc(l.item)}" selected>${esc((itemById(l.item)||l.issued||{}).name||l.item)}</option>`:"")+
+    (hidden>0?`<option value="__all">Покажи всички артикули (${pool.length})</option>`:"")}
 const srIssuedAny=x=>x.lines.some(l=>l.issued&&l.issued.qty>0)||x.orphans.length>0;
 async function renderSr(){await srFlush();await srLoad();
   if(SRID&&!SR.items[SRID])SRID=null;
@@ -4149,7 +4161,7 @@ function srEditor(){
   const dis=ed?"":"disabled";
   const iT=(k,label,ph="",cls="",type="text")=>`<label class="f ${cls}">${label}<input class="ui-in" type="${type}" data-s="${k}" value="${esc(x[k]??"")}" placeholder="${esc(ph)}" ${dis}></label>`;
   const pend=srPlan(x).length;
-  const opts=l=>`<option value="">— не е от склада —</option>`+itemOpts(l.item,true,true)+(l.item&&!INVD.items.some(i=>i.id===l.item&&i.status==="active"&&!i.onDemand)?`<option value="${esc(l.item)}" selected>${esc((itemById(l.item)||l.issued||{}).name||l.item)}</option>`:"");
+  const opts=srOpts;
   const st=l=>l.issued&&l.issued.qty>0?`<div class="muted" style="font-size:11.5px;margin-top:3px">✔ изписани ${numIn(l.issued.qty)} ${esc((itemById(l.issued.itemId)||{}).unit||"")}</div>`:"";
   $("#srBody").innerHTML=`<div class="card">
   <div class="row" style="gap:22px;flex-wrap:wrap;margin-bottom:14px">
@@ -4178,11 +4190,14 @@ function srEditor(){
 function srPreview(){const x=SR.items[SRID];if(!x)return;$("#srPrev").innerHTML=buildSrPrint(x);const t=$("#srSum");if(t)t.textContent=eur(srTotal(x))}
 $("#srBody").addEventListener("input",e=>{const el=e.target,x=SR.items[SRID];if(!x||el.tagName==="SELECT"||el.type==="checkbox")return;
   if(el.dataset.s){x[el.dataset.s]=el.value;if(el.dataset.s==="number")$("#srTitle").textContent="Стокова разписка № "+el.value}
-  else if(el.dataset.l!=null){const l=x.lines[+el.dataset.l];if(!l)return;const f=el.dataset.f;l[f]=f==="price"||f==="qty"?num(el.value):el.value}
+  else if(el.dataset.l!=null){const l=x.lines[+el.dataset.l];if(!l)return;const f=el.dataset.f;l[f]=f==="price"||f==="qty"?num(el.value):el.value;
+    if(f==="name"&&x.stock){l.all=false;const sel=$(`#srBody select[data-l="${el.dataset.l}"]`);if(sel)sel.innerHTML=srOpts(l)}}
   else return;srPreview();srSaveSoon()});
 $("#srBody").addEventListener("change",e=>{const el=e.target,x=SR.items[SRID];if(!x)return;
   if(el.dataset.t){x[el.dataset.t]=el.checked;srEditor();srSaveSoon();return}
-  if(el.tagName==="SELECT"&&el.dataset.f==="item"){const l=x.lines[+el.dataset.l];if(!l)return;l.item=el.value;const it=itemById(el.value);
+  if(el.tagName==="SELECT"&&el.dataset.f==="item"){const l=x.lines[+el.dataset.l];if(!l)return;
+    if(el.value==="__all"){l.all=true;el.innerHTML=srOpts(l);el.value=l.item||"";try{el.showPicker&&el.showPicker()}catch(e){}return}
+    l.item=el.value;const it=itemById(el.value);
     if(it){if(!(num(l.qty)>0))l.qty=1;if(!String(l.name||"").trim())l.name=it.name;if(l.price==null&&it.salePrice!=null)l.price=r2(it.salePrice*l.qty)}
     srEditor();srSaveSoon()}});
 $("#srBody").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset.f==="price"){e.preventDefault();const a=$("#srAdd");if(a)a.click()}});
@@ -6428,7 +6443,7 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="15"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="16"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
