@@ -4231,8 +4231,8 @@ function srAcShow(inp){const x=SR.items[SRID];if(!x||!x.stock||inp.disabled){srA
   const r=inp.getBoundingClientRect();box.style.left=Math.max(8,Math.min(r.left,innerWidth-Math.max(r.width,300)-8))+"px";box.style.top=(r.bottom+4)+"px";box.style.width=Math.max(r.width,300)+"px";
   box.classList.remove("hidden")}
 function srPick(i,id){const x=SR.items[SRID],l=x&&x.lines[i],it=itemById(id);if(!l||!it)return;
-  const ty=String(l.name||"").trim(); // „ковчег“ + „Модел Класик“ → „Ковчег Модел Класик“ (на разписката да личи какво е)
-  l.item=it.id;l.name=ty&&!srHit(srWords(ty),it.name,4)?ty.charAt(0).toUpperCase()+ty.slice(1)+" "+it.name:it.name;if(!(num(l.qty)>0))l.qty=1;if(it.salePrice!=null)l.price=r2(it.salePrice*l.qty);
+  // на разписката — както е в „Инвентар“: „Категория - Име“ („Ковчег - 00“); ако името вече съдържа категорията — само името
+  const cat=String(it.cat||"").trim();l.item=it.id;l.name=cat&&!srHit(srWords(cat),it.name,4)?cat+" - "+it.name:it.name;if(!(num(l.qty)>0))l.qty=1;if(it.salePrice!=null)l.price=r2(it.salePrice*l.qty);
   srAcHide();srEditor();srSaveSoon();const q=$(`#srBody [data-f="qty"][data-l="${i}"]`);if(q){q.focus();q.select()}}
 function srSaveSoon(){srPending=true;const s=$("#srState");s.textContent="Записване…";s.classList.add("dirty");clearTimeout(srTimer);srTimer=setTimeout(srFlush,500)}
 async function srFlush(){clearTimeout(srTimer);if(!srPending)return;srPending=false;
@@ -6476,7 +6476,7 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="16"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="17"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
