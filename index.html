@@ -171,6 +171,8 @@ td.acts{text-align:right;white-space:nowrap;width:1%}
 .plat-scroll{overflow-x:auto}.plat-scroll code{font-size:12.5px}
 .nbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-radius:var(--r);margin-bottom:12px;font-size:13.5px;border:1px solid var(--border);line-height:1.5}
 .nbar>span{flex:1;min-width:200px}.nbar.own{background:var(--bronze-soft);border-color:transparent}
+.nbar .own-tabs{display:flex;gap:6px;flex-wrap:wrap}.nbar .own-tabs .on{background:var(--text);color:var(--bg);border-color:var(--text)}
+body.own-focus .tabs .nsec,body.own-focus .tabs button[data-tab]:not([data-tab=settings]):not([data-tab=catalog]):not([data-tab=users]){display:none}
 .nbar.warn{background:rgba(214,138,48,.16);border-color:rgba(214,138,48,.55)}.nbar.info{background:rgba(90,150,230,.13);border-color:rgba(90,150,230,.4)}
 .plat-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--border-soft);margin:0 0 4px}
 .plat-tabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--text2);font:500 13.5px var(--ui);padding:8px 12px;cursor:pointer}
@@ -2147,7 +2149,7 @@ async function cloudStart(){
       if(urlAg){const c=await rpc("my_context");if(!c||c.kind!=="agency"||c.code!==urlAg){sbSave(null);DB.db=null;authShow("login");return}}
       const u=await cloudContext();
       if(u.platform){platformShow(u);return}
-      ME=u;await loadShared();lastAct=Date.now();applyUser();showTab(firstTab());agencyBars();if(startNote)setTimeout(()=>toast(startNote),600);return}catch(e){if(e.net)throw e;
+      ME=u;await loadShared();lastAct=Date.now();applyUser();showTab(startTab());agencyBars();if(startNote)setTimeout(()=>toast(startNote),600);return}catch(e){if(e.net)throw e;
         if(e.confirm){authShow("confirm",{email:e.email,msg:startMsg});return}startMsg=e.message}
       sbSave(null);DB.db=null}
     authShow(new URLSearchParams(location.search).has("trial")?"trial":((await rpc("needs_setup"))?"setup":"login"),{msg:startMsg,note:startNote,admin:new URLSearchParams(location.search).has("admin")});
@@ -5965,6 +5967,13 @@ function can(area,lvl="view"){
   if(area==="admin")return false;const v=p[area]||"none";return lvl==="edit"?v==="edit":v!=="none";
 }
 const canTab=t=>t==="days40"||can(TAB_AREA[t]||"admin"); // калкулаторът за помени — за всички
+/* собственик: „Настройки на агенцията“ от панела — отваря само нужния раздел, с бутон обратно към детайлите на агенцията */
+const OWN_KEY="mx-own",OWN_T=[["data","Данни и лого"],["tpl","Шаблон на заявката"],["catalog","Услуги и цени"],["users","Потребители и права"]];
+function ownFocus(){if(!(CLOUD&&AG&&AG.owner))return null;try{const o=JSON.parse(sessionStorage.getItem(OWN_KEY)||"null");return o&&o.ag===AG.id?o:null}catch(e){return null}}
+function ownGo(t){const o=ownFocus();if(!o)return;o.t=t;try{sessionStorage.setItem(OWN_KEY,JSON.stringify(o))}catch(e){}
+  agencyBars();showTab(t==="tpl"||t==="data"?"settings":t);if(t==="tpl")setTimeout(openTplEditor,150);else window.scrollTo(0,0)}
+function startTab(){const o=ownFocus();if(!o)return firstTab();document.body.classList.add("own-focus");
+  if(o.t==="tpl")setTimeout(openTplEditor,400);return o.t==="tpl"||o.t==="data"?"settings":o.t}
 const firstTab=()=>["dash","list","wsl","clients","necro","files","stock","catalog","fin","stats"].find(canTab)||(canTab("settings")?"settings":"days40");
 
 /* --- пароли --- */
@@ -6283,13 +6292,19 @@ function platformShow(P){
       if(a.active&&!confirm(`Да спра ли достъпа на „${a.name}“?\n\nНикой от агенцията няма да може да влезе, докато не я пуснете отново. Данните остават.`))return;
       try{await rpc("platform_set_agency_active",{p_agency:a.id,p_active:!a.active});toast(a.active?"Агенцията е спряна":"Агенцията е пусната ✔");loadAgencies()}catch(e){alert(e.message)}});
     $$("#plView [data-open]").forEach(b=>b.onclick=async()=>{const a=LIST[+b.dataset.open];
+      try{sessionStorage.removeItem(OWN_KEY)}catch(e){}
       try{await rpc("platform_enter_agency",{p_agency:a.id});reloadKeep(location.pathname)}catch(e){alert(e.message)}});
+    const back=(()=>{try{const v=sessionStorage.getItem("mx-back");sessionStorage.removeItem("mx-back");return v}catch(e){return null}})();
+    if(back){const b=LIST.find(x=>x.id===back);if(b)details(b)}
     $$("#plView [data-det]").forEach(b=>b.onclick=()=>details(LIST[+b.dataset.det]));
   }
   async function details(a){
     let D,INVS=[];try{D=await rpc("platform_agency_detail",{p_agency:a.id});INVS=await rpc("platform_invoices_list",{p_agency:a.id}).catch(()=>[])}catch(e){alert(e.message);return}
     const ext=(m,d,l)=>`<button class="btn small" data-ext="${m},${d}">${l}</button>`;
     const m=openModal({title:a.name+" ("+a.code+")",wide:true,body:`
+      <div class="pd-sec">Настройки на агенцията</div>
+      <div class="pd-btns">${OWN_T.map(([k,l])=>`<button class="btn small" data-own="${k}">${l}</button>`).join("")}</div>
+      <p class="muted" style="font-size:12.5px;margin:6px 0 0">Отваря само този раздел на агенцията. С „← Обратно към панела“ се връщате тук. Промените се записват в историята на агенцията.</p>
       <div class="pd-sec">Срок на достъпа</div>
       <p style="margin:0 0 8px">Сега: <b>${accCell(a)}</b></p>
       <div class="pd-btns">Удължи: ${ext(0,14,"+2 седмици")}${ext(1,0,"+1 месец")}${ext(3,0,"+3 месеца")}${ext(12,0,"+1 година")}</div>
@@ -6330,6 +6345,9 @@ function platformShow(P){
     m.q("#pdSetUntil").onclick=()=>{const v=m.q("#pdUntil").value;if(!v){m.err("Изберете дата.");return}
       run(()=>rpc("platform_set_access",{p_agency:a.id,p_until:new Date(v+"T23:59:59").toISOString(),p_note:""}))};
     m.q("#pdNoLimit").onclick=()=>run(()=>rpc("platform_set_access",{p_agency:a.id,p_until:null,p_note:""}));
+    m.el.querySelectorAll("[data-own]").forEach(b=>b.onclick=async()=>{b.disabled=true;
+      try{sessionStorage.setItem(OWN_KEY,JSON.stringify({t:b.dataset.own,ag:a.id}))}catch(e){}
+      try{await rpc("platform_enter_agency",{p_agency:a.id});reloadKeep(location.pathname)}catch(e){b.disabled=false;m.err(e.message)}});
     m.q("#pdExport").onclick=async()=>{const b=m.q("#pdExport");b.disabled=true;b.textContent="Подготвям…";
       try{const X=await rpc("platform_export_agency",{p_agency:a.id}),by=st=>X.records.filter(r=>r.store===st).map(r=>r.value),meta=k=>{const r=X.records.find(r=>r.store==="meta"&&r.key===k);return r?r.value.value:null};
         // същият формат като „Свали архив“ в агенцията — връща се с „Възстанови от архив“
@@ -6508,7 +6526,7 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="20"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="21"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
@@ -6636,14 +6654,17 @@ async function agencyBars(){
   if(!CLOUD||!AG)return;let box=$("#noteBars");
   if(!box){box=document.createElement("div");box.id="noteBars";$("main").prepend(box)}
   const bars=[];
-  if(AG.owner)bars.push(`<div class="nbar own"><span>Вие сте в агенция <b>${esc(AG.name)}</b> като собственик — виждате и променяте всичко като администратор.</span><button class="btn small" id="nbBack">← Към панела на собственика</button></div>`);
+  const OF=AG.owner?ownFocus():null;
+  if(OF)bars.push(`<div class="nbar own"><span>Настройвате агенция <b>${esc(AG.name)}</b> от панела на собственика.</span><div class="own-tabs">${OWN_T.map(([k,l])=>`<button class="btn small${OF.t===k?" on":""}" data-own="${k}">${l}</button>`).join("")}</div><button class="btn small dark" id="nbBack">← Обратно към панела</button></div>`);
+  else if(AG.owner)bars.push(`<div class="nbar own"><span>Вие сте в агенция <b>${esc(AG.name)}</b> като собственик — виждате и променяте всичко като администратор.</span><button class="btn small" id="nbBack">← Към панела на собственика</button></div>`);
   else if(AG.until&&!(await billActiveSub())){const d=Math.ceil((new Date(AG.until)-Date.now())/864e5);
     if(d<=(AG.warn??5))bars.push(`<div class="nbar warn"><span>Достъпът ви до системата изтича на <b>${new Date(AG.until).toLocaleDateString("bg-BG")}</b>${d>0?` (след ${d} ${d===1?"ден":"дни"})`:""}. ${isAdmin()&&billPayButtons(BILL_CACHE)?"":` За удължаване: тел. <b>${esc(AG.phone||"")}</b>`}</span>${isAdmin()&&billPayButtons(BILL_CACHE)?`<button class="btn small primary" id="nbPay" type="button">Плати с карта</button>`:""}</div>`)}
   if(!AG.owner)try{let seen=[];try{seen=JSON.parse(sessionStorage.getItem("zayavki-seen")||"[]")}catch(e){}
     for(const n of await rpc("my_announcements"))if(!seen.includes(n.id))bars.push(`<div class="nbar info"><span>${esc(n.text)}</span><button class="btn small ghost" data-nx="${n.id}" title="Скрий">✕</button></div>`)}catch(e){}
   box.innerHTML=bars.join("");
   const nbp=$("#nbPay");if(nbp)nbp.onclick=()=>{showTab("settings");setTimeout(()=>$("#billCard").scrollIntoView({behavior:"smooth",block:"start"}),80)};
-  const bb=$("#nbBack");if(bb)bb.onclick=async()=>{try{await rpc("platform_leave_agency")}catch(e){}reloadKeep(location.pathname)};
+  const bb=$("#nbBack");if(bb)bb.onclick=async()=>{try{sessionStorage.removeItem(OWN_KEY);if(OF)sessionStorage.setItem("mx-back",AG.id)}catch(e){}try{await rpc("platform_leave_agency")}catch(e){}reloadKeep(location.pathname)};
+  $$("#noteBars [data-own]").forEach(b=>b.onclick=()=>ownGo(b.dataset.own));
   $$("#noteBars [data-nx]").forEach(b=>b.onclick=()=>{try{const s=JSON.parse(sessionStorage.getItem("zayavki-seen")||"[]");s.push(+b.dataset.nx);sessionStorage.setItem("zayavki-seen",JSON.stringify(s))}catch(e){}b.closest(".nbar").style.display="none"});
 }
 const playIntro=()=>{document.body.classList.add("intro");setTimeout(()=>document.body.classList.remove("intro"),900)};
