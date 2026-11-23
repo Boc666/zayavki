@@ -573,6 +573,14 @@ table.wsp-t .d{color:#4b5a8a;font-style:italic;font-size:9.5pt}
 
 /* ---------- фактура ---------- */
 .sheet.invp{min-height:297mm;font-size:10pt}
+.sr-ac{position:fixed;z-index:60;max-height:280px;overflow:auto;background:var(--panel);border:1px solid var(--border-strong,var(--border));border-radius:var(--r-sm);box-shadow:var(--sh-pop,0 12px 32px rgba(0,0,0,.35));padding:4px}
+.sr-ac .o{display:flex;justify-content:space-between;gap:12px;padding:8px 10px;border-radius:6px;cursor:pointer}
+.sr-ac .o span{color:var(--text2);font-size:12px;white-space:nowrap}
+.sr-ac .o:hover,.sr-ac .o.on{background:var(--bronze-soft)}
+.sr-ac .h{padding:7px 10px 5px;color:var(--text3);font-size:11.5px;border-top:1px solid var(--border-soft);margin-top:2px}
+.sr-ac .h:first-child{border-top:0;margin-top:0}
+.sr-link{font-size:11.5px;margin-top:4px;color:var(--ok)}
+.sr-link .lnk{background:none;border:0;padding:0;margin-left:6px;color:var(--text2);text-decoration:underline;cursor:pointer;font:inherit}
 .inv-title{text-align:center;font-weight:700;font-size:20pt;letter-spacing:5pt;margin:4mm 0 .5mm}
 .inv-sub{text-align:center;font-size:11pt;margin-bottom:1mm}
 .inv-orig{text-align:center;font-size:9pt;letter-spacing:2pt;color:#5d564d;margin-bottom:3mm}
@@ -4104,16 +4112,10 @@ async function srStockSync(x,why,ask=true){
   catch(e){alert("Складът НЕ е променен: "+e.message);return false}}
 /* артикулите от склада, които отговарят на написаното перо („ковчег“ → само ковчезите) */
 const srWords=t=>String(t||"").toLowerCase().split(/[^0-9a-zа-яѐ-ӿ]+/i).filter(w=>w.length>=3).map(w=>w.slice(0,Math.min(w.length,5)));
-function srOpts(l){
+function srMatches(name,cur){
   const pool=INVD.items.filter(i=>i.status==="active"&&!i.onDemand).sort((a,b)=>a.name.localeCompare(b.name,"bg"));
-  const W=srWords(l.name),hit=i=>{const h=(i.name+" "+(i.cat||"")+" "+(i.sku||"")).toLowerCase();return W.some(w=>h.includes(w))};
-  const list=l.all||!W.length?pool:pool.filter(i=>hit(i)||i.id===l.item),hidden=pool.length-list.length;
-  const o=i=>`<option value="${i.id}" ${i.id===l.item?"selected":""}>${esc(i.name)}${i.sku?" ["+esc(i.sku)+"]":""} — налични ${numIn(i.stock)} ${esc(i.unit)}</option>`;
-  return `<option value="">— не е от склада —</option>`+
-    (W.length&&!l.all&&!list.length?`<option value="" disabled>Няма артикул „${esc(String(l.name).trim())}“ в склада</option>`:"")+
-    list.map(o).join("")+
-    (l.item&&!pool.some(i=>i.id===l.item)?`<option value="${esc(l.item)}" selected>${esc((itemById(l.item)||l.issued||{}).name||l.item)}</option>`:"")+
-    (hidden>0?`<option value="__all">Покажи всички артикули (${pool.length})</option>`:"")}
+  const W=srWords(name);if(!W.length)return pool;
+  return pool.filter(i=>{const h=(i.name+" "+(i.cat||"")+" "+(i.sku||"")).toLowerCase();return W.some(w=>h.includes(w))})}
 const srIssuedAny=x=>x.lines.some(l=>l.issued&&l.issued.qty>0)||x.orphans.length>0;
 async function renderSr(){await srFlush();await srLoad();
   if(SRID&&!SR.items[SRID])SRID=null;
@@ -4134,6 +4136,7 @@ $("#srNew").onclick=async()=>{if(!needEdit("docs","издаване на сто�
   SR.items[id]=x;SRID=id;srPending=true;await srFlush();renderSr();setTimeout(()=>{const i=$('#srBody [data-f="name"]');if(i)i.focus()},50)};
 $("#srBack").onclick=async()=>{await srFlush();SRID=null;renderSr()};
 $("#srBody").addEventListener("click",e=>{const tr=e.target.closest("[data-open]");if(tr){SRID=tr.dataset.open;renderSr();return}
+  const u=e.target.closest("[data-unlink]");if(u&&SRID){const tr2=u.closest("tr"),inp=tr2&&tr2.querySelector('[data-f="name"]');const l=inp&&SR.items[SRID].lines[+inp.dataset.l];if(l){l.item="";srEditor();srSaveSoon()}return}
   const b=e.target.closest("[data-del]");if(b&&SRID){const x=SR.items[SRID],l=x.lines.splice(+b.dataset.del,1)[0];
     if(l&&l.issued&&l.issued.qty>0)x.orphans.push(l.issued); // изписаното се връща при следващия печат
     srEditor();srSaveSoon()}});
@@ -4161,7 +4164,6 @@ function srEditor(){
   const dis=ed?"":"disabled";
   const iT=(k,label,ph="",cls="",type="text")=>`<label class="f ${cls}">${label}<input class="ui-in" type="${type}" data-s="${k}" value="${esc(x[k]??"")}" placeholder="${esc(ph)}" ${dis}></label>`;
   const pend=srPlan(x).length;
-  const opts=srOpts;
   const st=l=>l.issued&&l.issued.qty>0?`<div class="muted" style="font-size:11.5px;margin-top:3px">✔ изписани ${numIn(l.issued.qty)} ${esc((itemById(l.issued.itemId)||{}).unit||"")}</div>`:"";
   $("#srBody").innerHTML=`<div class="card">
   <div class="row" style="gap:22px;flex-wrap:wrap;margin-bottom:14px">
@@ -4173,14 +4175,13 @@ function srEditor(){
     ${iT("buyerName","Получател","име или фирма","full")}${iT("author","Предал")}
   </div>
   <h3>Пера</h3>
-  <table class="list"><thead><tr><th style="width:36px">№</th><th>Наименование</th>${x.stock?`<th style="width:30%">Артикул от склада</th><th style="width:80px;text-align:right">К-во</th>`:""}<th style="width:140px;text-align:right">Цена (€)</th><th style="width:44px"></th></tr></thead>
+  <table class="list"><thead><tr><th style="width:36px">№</th><th>Наименование${x.stock?` <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">— пишете или изберете от склада</span>`:""}</th>${x.stock?`<th style="width:80px;text-align:right">К-во</th>`:""}<th style="width:140px;text-align:right">Цена (€)</th><th style="width:44px"></th></tr></thead>
   <tbody>${x.lines.map((l,i)=>`<tr><td class="muted">${i+1}</td>
-    <td><input class="ui-in" data-l="${i}" data-f="name" value="${esc(l.name||"")}" placeholder="напр. Маса" ${dis}>${x.stock?"":st(l)}</td>
-    ${x.stock?`<td><select class="ui-in" data-l="${i}" data-f="item" ${dis}>${opts(l)}</select>${st(l)}</td>
-    <td><input class="ui-in" data-l="${i}" data-f="qty" value="${l.item?numIn(l.qty??1):""}" ${l.item?"":"disabled"} inputmode="decimal" style="text-align:right" ${dis}></td>`:""}
+    <td><input class="ui-in" data-l="${i}" data-f="name" value="${esc(l.name||"")}" placeholder="${x.stock?"напр. Ковчег или Маса":"напр. Маса"}" autocomplete="off" ${dis}>${x.stock&&l.item?srLinkTag(l,ed):""}${st(l)}</td>
+    ${x.stock?`<td><input class="ui-in" data-l="${i}" data-f="qty" value="${l.item?numIn(l.qty??1):""}" ${l.item?"":"disabled"} inputmode="decimal" style="text-align:right" ${dis}></td>`:""}
     <td><input class="ui-in" data-l="${i}" data-f="price" value="${numIn(l.price)}" placeholder="0,00" inputmode="decimal" style="text-align:right" ${dis}></td>
-    <td>${ed?`<button type="button" class="btn small ghost" data-del="${i}" title="Махни перото">✕</button>`:""}</td></tr>`).join("")||`<tr><td colspan="${x.stock?6:4}" class="empty">Още няма пера.</td></tr>`}</tbody>
-  <tfoot><tr><td></td><td ${x.stock?'colspan="3"':""} style="text-align:right"><b>Общо:</b></td><td style="text-align:right"><b id="srSum">${eur(srTotal(x))}</b></td><td></td></tr></tfoot></table>
+    <td>${ed?`<button type="button" class="btn small ghost" data-del="${i}" title="Махни перото">✕</button>`:""}</td></tr>`).join("")||`<tr><td colspan="${x.stock?5:4}" class="empty">Още няма пера.</td></tr>`}</tbody>
+  <tfoot><tr><td></td><td ${x.stock?'colspan="2"':""} style="text-align:right"><b>Общо:</b></td><td style="text-align:right"><b id="srSum">${eur(srTotal(x))}</b></td><td></td></tr></tfoot></table>
   ${ed?`<div class="row" style="margin-top:10px;gap:10px;flex-wrap:wrap"><button type="button" class="btn primary small" id="srAdd">+ Добави перо</button><span class="muted" style="font-size:12px">Enter в полето за цена добавя нов ред</span></div>`:""}
   ${pend?`<div class="notice" style="margin-top:12px">Има складови промени, които ще се запишат при „Печат разписка“.</div>`:""}
   </div>`;
@@ -4191,16 +4192,38 @@ function srPreview(){const x=SR.items[SRID];if(!x)return;$("#srPrev").innerHTML=
 $("#srBody").addEventListener("input",e=>{const el=e.target,x=SR.items[SRID];if(!x||el.tagName==="SELECT"||el.type==="checkbox")return;
   if(el.dataset.s){x[el.dataset.s]=el.value;if(el.dataset.s==="number")$("#srTitle").textContent="Стокова разписка № "+el.value}
   else if(el.dataset.l!=null){const l=x.lines[+el.dataset.l];if(!l)return;const f=el.dataset.f;l[f]=f==="price"||f==="qty"?num(el.value):el.value;
-    if(f==="name"&&x.stock){l.all=false;const sel=$(`#srBody select[data-l="${el.dataset.l}"]`);if(sel)sel.innerHTML=srOpts(l)}}
+    if(f==="name"&&x.stock){if(l.item){l.item="";const t=el.parentNode.querySelector(".sr-link");if(t)t.remove();const q=$(`#srBody [data-f="qty"][data-l="${el.dataset.l}"]`);if(q){q.value="";q.disabled=true}}srAcShow(el)}}
   else return;srPreview();srSaveSoon()});
 $("#srBody").addEventListener("change",e=>{const el=e.target,x=SR.items[SRID];if(!x)return;
   if(el.dataset.t){x[el.dataset.t]=el.checked;srEditor();srSaveSoon();return}
-  if(el.tagName==="SELECT"&&el.dataset.f==="item"){const l=x.lines[+el.dataset.l];if(!l)return;
-    if(el.value==="__all"){l.all=true;el.innerHTML=srOpts(l);el.value=l.item||"";try{el.showPicker&&el.showPicker()}catch(e){}return}
-    l.item=el.value;const it=itemById(el.value);
-    if(it){if(!(num(l.qty)>0))l.qty=1;if(!String(l.name||"").trim())l.name=it.name;if(l.price==null&&it.salePrice!=null)l.price=r2(it.salePrice*l.qty)}
-    srEditor();srSaveSoon()}});
-$("#srBody").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset.f==="price"){e.preventDefault();const a=$("#srAdd");if(a)a.click()}});
+});
+$("#srBody").addEventListener("keydown",e=>{const el=e.target;
+  if(el.dataset.f==="name"){const box=$("#srAc"),open=box&&!box.classList.contains("hidden");
+    if(open&&(e.key==="ArrowDown"||e.key==="ArrowUp")){e.preventDefault();const o=[...box.querySelectorAll("[data-pick]")];if(!o.length)return;let k=o.findIndex(z=>z.classList.contains("on"));
+      o.forEach(z=>z.classList.remove("on"));k=e.key==="ArrowDown"?(k+1)%o.length:(k<=0?o.length-1:k-1);o[k].classList.add("on");o[k].scrollIntoView({block:"nearest"});return}
+    if(e.key==="Escape"&&open){srAcHide();return}
+    if(e.key==="Enter"){e.preventDefault();const on=open&&box.querySelector("[data-pick].on");if(on){srPick(+el.dataset.l,on.dataset.pick);return}
+      srAcHide();const pr=$(`#srBody [data-f="price"][data-l="${el.dataset.l}"]`);if(pr)pr.focus();return}}
+  if(e.key==="Enter"&&el.dataset.f==="price"){e.preventDefault();const a=$("#srAdd");if(a)a.click()}});
+$("#srBody").addEventListener("focusin",e=>{const el=e.target;if(el.dataset&&el.dataset.f==="name")srAcShow(el);else srAcHide()});
+$("#srBody").addEventListener("focusout",e=>{if(e.target.dataset&&e.target.dataset.f==="name")setTimeout(()=>{const a=document.activeElement;if(!a||a.dataset.f!=="name")srAcHide()},120)});
+window.addEventListener("scroll",()=>srAcHide(),true);
+/* падащо меню под „Наименование“: артикулите от склада, които отговарят на написаното */
+function srLinkTag(l,ed){const it=itemById(l.item);
+  return `<div class="sr-link">📦 от склада${it?` · налични ${numIn(it.stock)} ${esc(it.unit)}`:""}${ed?` <button type="button" class="lnk" data-unlink="${esc(l.item)}" title="Перото да не е от склада">махни връзката</button>`:""}</div>`}
+function srAcHide(){const b=$("#srAc");if(b)b.classList.add("hidden")}
+function srAcShow(inp){const x=SR.items[SRID];if(!x||!x.stock||inp.disabled){srAcHide();return}
+  const i=+inp.dataset.l,l=x.lines[i];if(!l)return;const M=srMatches(l.name).slice(0,40),typed=!!String(l.name||"").trim();
+  let box=$("#srAc");if(!box){box=document.createElement("div");box.id="srAc";box.className="sr-ac hidden";document.body.appendChild(box);
+    box.addEventListener("mousedown",e=>{e.preventDefault();const o=e.target.closest("[data-pick]");if(o)srPick(+box.dataset.l,o.dataset.pick)})}
+  box.dataset.l=i;
+  box.innerHTML=M.map((it,k)=>`<div class="o${k===0&&typed&&!l.item?" on":""}" data-pick="${esc(it.id)}"><b>${esc(it.name)}</b><span>налични ${numIn(it.stock)} ${esc(it.unit)}${it.salePrice!=null?" · "+eur(it.salePrice):""}</span></div>`).join("")+
+    `<div class="h">${M.length?(typed?"Изберете от склада — или продължете да пишете, ако перото не е от склада.":"Изберете артикул от склада или напишете перо на ръка."):"Няма такъв артикул в склада — перото ще е без склад."}</div>`;
+  const r=inp.getBoundingClientRect();box.style.left=Math.max(8,Math.min(r.left,innerWidth-Math.max(r.width,300)-8))+"px";box.style.top=(r.bottom+4)+"px";box.style.width=Math.max(r.width,300)+"px";
+  box.classList.remove("hidden")}
+function srPick(i,id){const x=SR.items[SRID],l=x&&x.lines[i],it=itemById(id);if(!l||!it)return;
+  l.item=it.id;l.name=it.name;if(!(num(l.qty)>0))l.qty=1;if(it.salePrice!=null)l.price=r2(it.salePrice*l.qty);
+  srAcHide();srEditor();srSaveSoon();const q=$(`#srBody [data-f="qty"][data-l="${i}"]`);if(q){q.focus();q.select()}}
 function srSaveSoon(){srPending=true;const s=$("#srState");s.textContent="Записване…";s.classList.add("dirty");clearTimeout(srTimer);srTimer=setTimeout(srFlush,500)}
 async function srFlush(){clearTimeout(srTimer);if(!srPending)return;srPending=false;
   try{await setMeta("receipts",SR)}catch(e){srPending=true;toast("Разписката НЕ е записана: "+e.message,true);return}
