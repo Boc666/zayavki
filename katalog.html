@@ -44,6 +44,7 @@ footer a{color:#a79e8f}
 const SB={url:"https://tdgsyvqfpebexycjnwal.supabase.co",key:"sb_publishable_pEzUKVrv1P-ysyaBBC5KZA_LoDmnEkU"};
 try{const t=JSON.parse(localStorage.getItem("zayavki-sb-test")||"null");if(t&&t.url&&t.key){SB.url=t.url;SB.key=t.key}}catch(e){}
 const $=s=>document.querySelector(s);
+const cssUrl=u=>String(u==null?"":u).replace(/['()\\\s]/g,c=>"%"+c.charCodeAt(0).toString(16).toUpperCase().padStart(2,"0")); // адрес в url('…') без кавички/скоби
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const code=(new URLSearchParams(location.search).get("a")||"").toLowerCase().trim();
 const imgUrl=p=>p?(p.indexOf("http")===0?p:SB.url+"/storage/v1/object/public/showcase/"+p):"";
@@ -74,7 +75,7 @@ function telHref(p){const n=(p||"").replace(/[^\d+]/g,"");return n?"tel:"+n:""}
   secs.forEach(s=>{
     html+=`<div class="sec"><h2>${esc(s.title||"")}</h2><div class="grid">`+
       s.items.map(it=>`<div class="item">
-        <div class="ph" ${it.img?`style="background-image:url('${esc(imgUrl(it.img))}')"`:""}>${it.img?"":"снимка"}</div>
+        <div class="ph" ${it.img?`style="background-image:url('${esc(cssUrl(imgUrl(it.img)))}')"`:""}>${it.img?"":"снимка"}</div>
         <div class="b"><div class="nm">${esc(it.name||"")}</div>${it.price?`<div class="pr">${esc(it.price)}</div>`:""}${it.desc?`<div class="ds">${esc(it.desc)}</div>`:""}</div>
       </div>`).join("")+`</div></div>`;
   });

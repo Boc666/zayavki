@@ -2983,14 +2983,19 @@ async function renderList(){
     tr.querySelector("[data-a=copy]").onclick=()=>{const n=newRequest();n.lines=structuredClone(r.lines).map(l=>({...l,note:l.item&&itemById(l.item)?itemById(l.item).name:"",issued:null}));/* изписванията не се копират */n.orgFee=r.orgFee;n.doctorOn=r.doctorOn;n.doctorFee=r.doctorFee;n.kind=r.kind;n.ritual=r.ritual;
       openRequest(n,true);showTab("edit");toast("Копирани са само услугите и цените. Личните данни са празни.")};
     tr.querySelector("[data-a=del]").onclick=async()=>{if(!can("reqdel")){toast("Нямате права да изтривате заявки.",true);return}
-      const iss=r.lines.filter(l=>l.issued&&l.issued.qty>0);
+      const iss=r.lines.filter(l=>l.issued&&l.issued.qty>0);let back=null;
       if(iss.length){ // изписаните артикули първо се връщат в склада (сторно), историята остава
         if(!confirm(`Заявка № ${r.number} има изписани складови артикули:\n\n${iss.map(l=>`• ${l.issued.itemName} × ${numIn(l.issued.qty)}`).join("\n")}\n\nПри изтриване те ще бъдат ВЪРНАТИ в склада със сторно движение. Да продължа ли?`))return;
         try{const rq=structuredClone(raw);rq.lines.forEach(l=>{l.used=false;l.item=null});
-          await invCommit((d,x)=>applyPlan(d,x,"Изтрита заявка № "+r.number),normalizeRequest(rq))}
+          back=(await invCommit((d,x)=>applyPlan(d,x,"Изтрита заявка № "+r.number),normalizeRequest(rq))).req}
         catch(e){alert("Заявката НЕ е изтрита: "+e.message);return}}
       else if(!confirm(`Да изтрия ли заявка № ${r.number}?`))return;
-      await DB.del("requests",r.id);audit("Изтрита заявка","№ "+r.number+(r.decName?", "+r.decName:""),r.id);if(CURRENT&&CURRENT.id===r.id){CURRENT=null;setDirty(false)}renderList();toast("Заявката е изтрита.")};
+      try{await DB.del("requests",r.id)}
+      catch(e){let m="Заявката НЕ е изтрита: "+e.message;
+        if(back){try{const rq=structuredClone(back);rq.lines.forEach((l,i)=>{const o=raw.lines[i];if(o){l.used=o.used;l.item=o.item}});
+            await invCommit((d,x)=>applyPlan(d,x,"Отменено изтриване на заявка № "+r.number),normalizeRequest(rq));m+="\nАртикулите ѝ са изписани отново, заявката е както преди."}
+          catch(e2){m+="\nВНИМАНИЕ: артикулите бяха върнати в склада, но не можаха да се изпишат отново ("+e2.message+"). Отворете заявката и натиснете „Изпиши от склада“."}}
+        alert(m);renderList();return}audit("Изтрита заявка","№ "+r.number+(r.decName?", "+r.decName:""),r.id);if(CURRENT&&CURRENT.id===r.id){CURRENT=null;setDirty(false)}renderList();toast("Заявката е изтрита.")};
     tb.appendChild(tr)}permLock();
   const n=$("#backupNotice"),real=(await DB.all("requests")).filter(r=>!r.sample).length;
   const last=SETTINGS.lastBackup?new Date(SETTINGS.lastBackup):null,days=last?Math.floor((Date.now()-last)/864e5):null;
@@ -4549,8 +4554,17 @@ async function invCommit(mut,req){
   finally{INV_BUSY=false}
 }
 const addMove=(d,m)=>{m.id=uid();m.ts=new Date().toISOString();d.moves.push(m);return m};
+/* история: потребителят и часът, записани от сървъра (браузърът може да подаде каквото си иска) */
+function auditWho(x){const u=x&&x.serverUid&&Array.isArray(USERS)?USERS.find(z=>z.id===x.serverUid):null;return u&&u.name?u.name:(x&&x.user)||""}
+function auditTime(x){return new Date((x&&(x.serverTs||x.ts))||0)}
 function stkIn(it,q,uc){const b=it.stock;it.stock=qn(b+q);it.avgCost=b>0?(b*(it.avgCost||0)+q*uc)/(b+q):uc;return b}
 function stkOut(it,q){const b=it.stock;it.stock=qn(b-q);return b}
+/* корекция до точно въведената наличност — разликата се смята от склада, прочетен току-що (друго устройство може да е изписало) */
+function adjustStockTo(d,itemId,nq,why){const x=d.items.find(i=>i.id===itemId);if(!x)throw new Error("Артикулът не е намерен.");
+  const dq=qn(nq-x.stock);if(!dq)return{dq:0,before:x.stock,after:x.stock};
+  const uc=x.avgCost||x.lastCost||0,b=dq>0?stkIn(x,dq,uc):stkOut(x,-dq);
+  addMove(d,{type:"adjust",itemId,itemName:x.name,qty:dq,before:b,after:x.stock,unitCost:uc,total:r2(Math.abs(dq)*uc),note:why});
+  return{dq,before:b,after:x.stock}}
 function doDelivery(d,o){const it=d.items.find(x=>x.id===o.itemId);if(!it)throw new Error("Артикулът не е намерен.");
   const b=stkIn(it,o.qty,o.price);if(!it.lastBuy||o.date>=it.lastBuy){it.lastCost=o.price;it.lastBuy=o.date}
   return addMove(d,{type:"delivery",itemId:it.id,itemName:it.name,qty:o.qty,before:b,after:it.stock,unitCost:o.price,total:r2(o.qty*o.price),date:o.date,supplier:o.supplier||"",doc:o.doc||"",note:o.note||""})}
@@ -4795,9 +4809,9 @@ function adjustModal(id){
       if(SETTINGS.stockPin&&m.q("#faPin").value!==SETTINGS.stockPin)throw new Error("Грешен ПИН.");
       const dq=qn(nq-it.stock);if(!dq)throw new Error("Новата наличност е същата като сегашната.");
       if(!confirm(`Корекция на „${it.name}“: ${numIn(it.stock)} → ${numIn(nq)} ${it.unit} (${dq>0?"+":""}${numIn(dq)}).\nПричина: ${why}\n\nДа запиша ли?`))return false;
-      await invCommit(d=>{const x=d.items.find(i=>i.id===itemId),uc=x.avgCost||x.lastCost||0,b=dq>0?stkIn(x,dq,uc):stkOut(x,-dq);
-        addMove(d,{type:"adjust",itemId,itemName:x.name,qty:dq,before:b,after:x.stock,unitCost:uc,total:r2(Math.abs(dq)*uc),note:why})});
-      audit("Корекция на наличност",it.name+": "+numIn(it.stock)+" → "+numIn(nq)+" · причина: "+why);renderStock();toast("Корекцията е записана.")}}]});
+      const res=await invCommit(d=>adjustStockTo(d,itemId,nq,why)),a=res.out;
+      if(!a.dq){renderStock();toast("Междувременно наличността вече е "+numIn(nq)+". Нищо не е променено.");return}
+      audit("Корекция на наличност",it.name+": "+numIn(a.before)+" → "+numIn(a.after)+" · причина: "+why);renderStock();toast("Корекцията е записана.")}}]});
   const upd=()=>{const it=itemById($("#faItem").value),n=num($("#faQty").value);$("#faDiff").textContent=it&&n!=null?`${numIn(it.stock)} → ${numIn(n)} (${n-it.stock>0?"+":""}${numIn(qn(n-it.stock))})`:"—"};
   $("#faItem").onchange=upd;$("#faQty").oninput=upd;
 }
@@ -5553,7 +5567,7 @@ $("#importFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;e.tar
     if(d.inventory){INVD=migrateInvd(d.inventory);await setMeta("inventory",INVD)}
     if(d.settings){const lb=SETTINGS.lastBackup;SETTINGS=migrateSettings(d.settings);SETTINGS.lastBackup=lb;await setMeta("settings",SETTINGS)}
     if(Array.isArray(d.audit)){if(CLOUD){for(let i=0;i<d.audit.length;i+=300)await DB.putAtomic(d.audit.slice(i,i+300).map(v=>({store:"audit",value:v})))}else for(const x of d.audit)await DB.put("audit",x)}
-    if(Array.isArray(d.docs))for(const x of d.docs){if(!x.file)continue; // износът от панела не съдържа самите Word файлове (остават в хранилището)
+    if(Array.isArray(d.docs))for(const x of d.docs){if(typeof x.file!=="string"||!x.file.startsWith("data:"))continue; // износът от панела не съдържа самите Word файлове (остават в хранилището)
       await DB.put("docs",{...x,file:await (await fetch(x.file)).blob()})}
     for(const st of ["clients","events","partners"])if(Array.isArray(d[st])&&d[st].length){ // клиентски профили и събития от календара (архиви след 11.2026)
       if(CLOUD){for(let i=0;i<d[st].length;i+=100)await DB.putAtomic(d[st].slice(i,i+100).map(v=>({store:st,value:v})))}else for(const x of d[st])await DB.put(st,x).catch(()=>{})}
@@ -6559,7 +6573,7 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="24"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="25"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
@@ -6854,8 +6868,8 @@ async function renderLog(){
   list=list.filter(x=>(!us.value||x.userId===us.value)&&(!f||String(x.ts||"").slice(0,10)>=f)&&(!t||String(x.ts||"").slice(0,10)<=t)&&(!q||[x.action,x.details,x.user].join(" ").toLowerCase().includes(q)));
   $("#lgCount").textContent=more?"показани най-новите 500. Стеснете периода, за да видите по-старите":list.length>500?`показани 500 от ${list.length}`:`${list.length} записа`;
   $("#lgBody").innerHTML=`<table class="list"><thead><tr><th>Дата и час</th><th>Потребител</th><th>Действие</th><th>Подробности</th></tr></thead><tbody>${
-    list.slice(0,500).map(x=>{const d=new Date(x.ts||x.serverTs||0);return `<tr><td class="num" style="white-space:nowrap">${d.toLocaleDateString("bg-BG")} <span class="muted">${d.toLocaleTimeString("bg-BG")}</span></td>
-      <td style="white-space:nowrap">${esc(x.user)}</td><td><b>${esc(x.action)}</b></td><td class="muted">${esc(x.details)}</td></tr>`}).join("")||`<tr><td colspan="4" class="empty">Няма записи.</td></tr>`}</tbody></table>`;
+    list.slice(0,500).map(x=>{const d=auditTime(x);return `<tr><td class="num" style="white-space:nowrap">${d.toLocaleDateString("bg-BG")} <span class="muted">${d.toLocaleTimeString("bg-BG")}</span></td>
+      <td style="white-space:nowrap">${esc(auditWho(x))}</td><td><b>${esc(x.action)}</b></td><td class="muted">${esc(x.details)}</td></tr>`}).join("")||`<tr><td colspan="4" class="empty">Няма записи.</td></tr>`}</tbody></table>`;
 }
 $("#lgUser").onchange=$("#lgFrom").onchange=$("#lgTo").onchange=renderLog;$("#lgQ").oninput=renderLog;
 

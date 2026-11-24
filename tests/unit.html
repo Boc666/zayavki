@@ -143,6 +143,17 @@ function run(){
   T("размерите на листа са само числа",()=>{const p=E(`safeDoc(${BADDOC}).page`);return Object.values(p).every(v=>typeof v==="number"&&isFinite(v))?true:{info:JSON.stringify(p)}});
   T("документ без размери получава A4",()=>eq(E(`safeDoc({html:"",base:""}).page`),{w:210,h:297,t:25,r:25,b:25,l:25}));
 
+  G("Склад: корекция на наличност");
+  T("крайната наличност е въведената, дори друг да е изписал междувременно",()=>eq(E(`(()=>{const d=migrateInvd({items:[{id:"i1",name:"Ковчег",unit:"бр.",stock:8,avgCost:10,status:"active"}]});
+      const r=adjustStockTo(d,"i1",10,"инвентаризация");return [d.items[0].stock,r.dq,r.before,d.moves.length,d.moves[0]&&d.moves[0].qty]})()`),[10,2,8,1,2]));
+  T("ако наличността вече е същата, нищо не се записва",()=>eq(E(`(()=>{const d=migrateInvd({items:[{id:"i1",name:"Ковчег",unit:"бр.",stock:10,avgCost:10,status:"active"}]});
+      const r=adjustStockTo(d,"i1",10,"x");return [r.dq,d.moves.length]})()`),[0,0]));
+
+  G("История: кой и кога според сървъра");
+  T("показва потребителя, записан от сървъра, а не написаното от браузъра",()=>eq(E(`(()=>{const o=USERS;USERS=[{id:"u1",name:"Иван"}];try{return auditWho({user:"Мария",serverUid:"u1"})}finally{USERS=o}})()`),"Иван"));
+  T("стар запис без сървърни данни: показва записаното",()=>eq(E(`(()=>{const o=USERS;USERS=[];try{return auditWho({user:"Мария"})}finally{USERS=o}})()`),"Мария"));
+  T("часът е от сървъра, когато го има",()=>eq(E(`auditTime({ts:"2020-01-01T00:00:00Z",serverTs:"2026-05-05T10:00:00Z"}).toISOString()`),"2026-05-05T10:00:00.000Z"));
+
   G("Печат: всеки лист се събира на една страница A4");
   // мери като при печат: смалява дългите текстове (както печатът) и проверява, че нищо не е отрязано и листът е A4
   const measure=code=>E(`(()=>{const box=document.createElement("div");box.style.cssText="position:absolute;left:-5000px;top:0";
