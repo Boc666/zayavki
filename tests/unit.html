@@ -134,6 +134,15 @@ function run(){
   T("истинско лого (data:image) се показва",()=>{const s=E(`(()=>{const s=SETTINGS;SETTINGS=migrateSettings({logoMode:"custom",logo:"data:image/png;base64,iVBORw0KGgo="});try{return headHTML()}finally{SETTINGS=s}})()`);return s.includes('src="data:image/png;base64,iVBORw0KGgo="')?true:{info:s.slice(0,200)}});
   T("ключ с непозволени знаци отпада от шаблона",()=>eq(E(`(()=>{const t=defaultTemplate();t.p1.push({t:"row",f:[{k:${JSON.stringify(XSS)},l:"А"}]});return migrateTemplate(t).p1.flatMap(b=>b.t==="row"?b.f.map(f=>f.k):[]).some(k=>k&&!/^[A-Za-z0-9_]+$/.test(k))})()`),false));
 
+  G("Сигурност: документите се почистват, преди да се покажат");
+  const BADDOC=`{name:"д",html:'<p>Текст</p><img src="x" onerror="window.__pwn=1"><svg><a href="javascript:alert(1)"><text>x</text></a></svg><a href="javascript:alert(1)">в</a><b onclick="x()">б</b>',base:'font-size:11pt" onmouseover="window.__pwn=1',page:{w:'210mm" onx="1',h:297,t:25,r:25,b:25,l:25}}`;
+  T("вмъкнат код в текста на документа отпада",()=>{W.__H=E(`safeDoc(${BADDOC}).html`);const a=onAttrs();return a.length?{info:"вмъкнати: "+a.join(", ")}:true});
+  T("javascript: връзки и svg отпадат",()=>{const h=E(`safeDoc(${BADDOC}).html`);return /javascript:|<svg/i.test(h)?{info:h}:true});
+  T("обикновеният текст на документа остава",()=>{const h=E(`safeDoc(${BADDOC}).html`);return h.includes("<p>Текст</p>")&&h.includes("<b>б</b>")?true:{info:h}});
+  T("основният стил не може да излезе от style=\"…\"",()=>{const b=E(`safeDoc(${BADDOC}).base`);return /["<>]/.test(b)?{info:b}:true});
+  T("размерите на листа са само числа",()=>{const p=E(`safeDoc(${BADDOC}).page`);return Object.values(p).every(v=>typeof v==="number"&&isFinite(v))?true:{info:JSON.stringify(p)}});
+  T("документ без размери получава A4",()=>eq(E(`safeDoc({html:"",base:""}).page`),{w:210,h:297,t:25,r:25,b:25,l:25}));
+
   G("Печат: всеки лист се събира на една страница A4");
   // мери като при печат: смалява дългите текстове (както печатът) и проверява, че нищо не е отрязано и листът е A4
   const measure=code=>E(`(()=>{const box=document.createElement("div");box.style.cssText="position:absolute;left:-5000px;top:0";
@@ -152,7 +161,31 @@ function run(){
   fit("заявка с много дълги имена и бележка от няколко реда",`page1(Object.assign(sampleRequests()[0],{appName:"Генерал-лейтенант о.з. Христо Тодоров Христов-Бояджиев-Николаев-Стоянов",decName:"Анастасия Христова Тодорова-Бояджиева-Лазарова-Попова",notes:"Близките молят за кратка панихида в 11 ч. и венец от семейството. ".repeat(3)}),"print")`);
   T("прекалено дълга бележка: печатът предупреждава (не отрязва безшумно)",()=>{const v=measure(`page1(Object.assign(sampleRequests()[0],{notes:"Много дълга бележка. ".repeat(60)}),"print")`);return v.clipped.length>0?true:{info:"не е отчетено отрязване"}});
 
-  show();
+  ownerTabs().then(show);
+}
+// асинхронни тестове: мрежата е подменена (нищо не излиза навън)
+async function TA(name,fn){let ok=false,info="";try{const r=await fn();ok=r===true;if(!ok)info=r&&r.info!==undefined?r.info:JSON.stringify(r)}catch(e){info="грешка: "+e.message}
+  results.push({group,name,ok,info});
+  out.insertAdjacentHTML("beforeend",`<div class="t ${ok?"ok":"bad"}"><b>${ok?"✔":"✗"}</b><div>${name.replace(/</g,"&lt;")}${ok?"":`<small>${String(info).replace(/</g,"&lt;")}</small>`}</div></div>`)}
+async function ownerTabs(){
+  const W=document.getElementById("app").contentWindow,E=c=>W.eval(c),orig=W.fetch,calls=[];let acting="A";
+  W.fetch=async(url,o={})=>{calls.push((o.method||"GET")+" "+String(url).replace(/^https?:\/\/[^/]+/,""));
+    const body=/rpc\/my_context/.test(url)?{kind:"platform",name:"Собственик",acting:{agency_id:acting,code:acting,agency_name:"Агенция "+acting}}:[];
+    return new Response(JSON.stringify(body),{status:200,headers:{"Content-Type":"application/json"}})};
+  W.confirm=()=>false; // без прозорци по време на теста
+  E(`SBS={access:"t",refresh:"r",exp:Date.now()+3600e3,uid:"u"};AG={id:"A",code:"A",name:"Агенция A",owner:true}`);
+  G("Собственик с два раздела (таба): записът не отива в чужда агенция");
+  try{
+    await TA("същата агенция: записът минава",async()=>{calls.length=0;acting="A";await E(`sb("/rest/v1/records",{method:"POST",body:{}})`);
+      return calls.some(c=>c==="POST /rest/v1/records")?true:{info:calls.join(" | ")}});
+    await TA("в друг раздел е отворена друга агенция: записът спира",async()=>{calls.length=0;acting="B";E(`OWN_CHK=0`);let err="";
+      try{await E(`sb("/rest/v1/records",{method:"POST",body:{}})`)}catch(e){err=e.message}
+      return !calls.some(c=>c==="POST /rest/v1/records")&&/друг/.test(err)?true:{info:"грешка: "+err+" / заявки: "+calls.join(" | ")}});
+    await TA("четенето не се спира (без излишни проверки)",async()=>{calls.length=0;acting="B";await E(`sb("/rest/v1/records?store=eq.x")`);
+      return calls.length===1?true:{info:calls.join(" | ")}});
+    await TA("„Обратно към панела“ работи и от стария раздел",async()=>{calls.length=0;acting="B";E(`OWN_CHK=0`);await E(`rpc("platform_leave_agency")`);
+      return calls.some(c=>/platform_leave_agency/.test(c))?true:{info:calls.join(" | ")}});
+  }finally{W.fetch=orig;E(`SBS=null;AG=null`)}
 }
 </script>
 </body>

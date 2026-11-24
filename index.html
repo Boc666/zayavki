@@ -2044,7 +2044,21 @@ async function sbToken(){if(!SBS)return null;
   if(Date.now()>SBS.exp-90e3){try{await sbAuth("refresh_token",{refresh_token:SBS.refresh})}catch(e){if(!e.net)sbSave(null);throw e}}
   return SBS&&SBS.access}
 async function sbLogout(){const t=SBS&&SBS.access;sbSave(null);if(t)try{await fetch(SB.url+"/auth/v1/logout",{method:"POST",headers:{apikey:SB.key,Authorization:"Bearer "+t}})}catch(e){}}
+/* собственик: агенцията, в която „е влязъл“, се пази на сървъра (една за всичките му раздели в браузъра).
+   Ако в друг раздел е отворил друга агенция, този раздел вече не е за нея — преди всеки запис проверяваме и спираме,
+   за да не отиде нищо в чуждата агенция. Проверката се помни 2 сек., за да не забавя поредица от записи. */
+var OWN_CHK=0;const OWN_FREE=/\/rpc\/(my_context|touch_login|platform_[a-z_]+)$/;
+async function ownerWriteGuard(path,method){
+  if(method==="GET"||!AG||!AG.owner||OWN_FREE.test(path)||Date.now()-OWN_CHK<2000)return;
+  const c=await sb("/rest/v1/rpc/my_context",{method:"POST",body:{}});
+  const now=c&&c.kind==="platform"&&c.acting?c.acting:null;
+  if(!now||now.agency_id!==AG.id){OWN_CHK=0;
+    const m="В друг раздел на браузъра сте "+(now?"отворили агенция „"+now.agency_name+"“":"излезли от агенцията")+". Този раздел е за „"+AG.name+"“ и нищо не е записано, за да не отиде на грешното място. Презаредете страницата.";
+    setTimeout(()=>{if(confirm(m+"\n\nДа презаредя ли сега?"))location.reload()},0);
+    throw new Error(m)}
+  OWN_CHK=Date.now()}
 async function sb(path,{method="GET",body,headers={},raw}={}){
+  await ownerWriteGuard(path,method);
   const t=await sbToken(),h={apikey:SB.key,...headers};if(t)h.Authorization="Bearer "+t;
   if(body!==undefined&&!(body instanceof Blob)){h["Content-Type"]="application/json";body=JSON.stringify(body)}
   let r;try{r=await fetch(SB.url+path,{method,headers:h,body,cache:"no-store"})}catch(e){throw netErr()}
@@ -5826,11 +5840,18 @@ function layoutTabs(root){
       if(st&&st.ld!=="none"){m.classList.add("ld-"+st.ld);m.textContent=(st.ld==="under"?"_":st.ld==="hyphen"?"-":".").repeat(Math.ceil((to-x)/2)+2)}})})}
 function withShown(el,fn){const s=el.getAttribute("style");el.style.cssText+=";display:block!important;position:absolute;left:-10000px;top:0;visibility:hidden";try{return fn()}finally{s==null?el.removeAttribute("style"):el.setAttribute("style",s)}}
 /* почистване на HTML преди запис (при редакция/поставяне) — без скриптове и опасни атрибути */
-function cleanHtml(h){const d=document.createElement("div");d.innerHTML=h;
-  d.querySelectorAll("script,iframe,object,embed,link,meta,style,form,input,button").forEach(e=>e.remove());
-  d.querySelectorAll("*").forEach(e=>{for(const a of[...e.attributes]){const n=a.name.toLowerCase(),v=a.value.trim().toLowerCase();
-    if(n.startsWith("on")||n==="contenteditable"||((n==="src"||n==="href")&&!(v.startsWith("data:image/")||v.startsWith("#"))))e.removeAttribute(a.name)}});
-  return d.innerHTML}
+/* сигурност: HTML на документите се чисти и при запис, и при всяко показване/печат (записът може да е направен и извън програмата).
+   <template> не изпълнява нищо и не зарежда картинки, докато чистим */
+function cleanHtml(h){const t=document.createElement("template");t.innerHTML=String(h??"");const d=t.content;
+  d.querySelectorAll("script,iframe,frame,frameset,object,embed,link,meta,style,base,form,input,button,select,textarea,svg,math,template,noscript,audio,video,source,track,portal").forEach(e=>e.remove());
+  d.querySelectorAll("*").forEach(e=>{for(const a of[...e.attributes]){const n=a.name.toLowerCase(),v=a.value.replace(/[\s\u0000-\u001f]/g,"").toLowerCase();
+    if(n.startsWith("on")||n==="contenteditable"||n==="srcset"||n==="formaction"||n==="action"||n.includes(":")||
+      ((n==="src"||n==="href"||n==="background"||n==="poster")&&!(v.startsWith("data:image/")||v.startsWith("#")))||
+      (n==="style"&&/url\(|expression|javascript:|@import/.test(v)))e.removeAttribute(a.name)}});
+  return t.innerHTML}
+const safeCss=s=>String(s??"").split(";").filter(x=>!/url\(|expression|javascript:|@import/i.test(x)).join(";").replace(/["<>\\]/g,"");
+function safeDoc(d){const D={w:210,h:297,t:25,r:25,b:25,l:25},p=d&&d.page||{},n=(v,f)=>{const x=parseFloat(v);return isFinite(x)&&x>=0&&x<2000?x:f};
+  return Object.assign({},d,{html:cleanHtml(d&&d.html),base:safeCss(d&&d.base),page:{w:n(p.w,D.w),h:n(p.h,D.h),t:n(p.t,D.t),r:n(p.r,D.r),b:n(p.b,D.b),l:n(p.l,D.l)}})}
 
 /* =====================================================================
    РАЗДЕЛ „ДОКУМЕНТИ“ — хранилище "docs":
@@ -5894,7 +5915,7 @@ $("#docTable").addEventListener("click",async e=>{const tr=e.target.closest("tr[
 function downloadDoc(d){if(!d.file){toast("Файлът не е наличен.",true);return}const a=document.createElement("a");a.href=URL.createObjectURL(d.file);a.download=d.orig||d.name+(d.kind==="pdf"?".pdf":".docx");document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),3000)}
 function paperStyle(d){const p=d.page||{w:210,h:297,t:25,r:25,b:25,l:25};return `width:${p.w}mm;min-height:${p.h}mm;padding:${p.t}mm ${p.r}mm ${p.b}mm ${p.l}mm;${d.base||""}`}
 async function openDoc(id){
-  DOCV=await DB.get("docs",id);if(!DOCV)return;
+  DOCV=await DB.get("docs",id);if(!DOCV)return;if(DOCV.kind!=="pdf")DOCV=safeDoc(DOCV);
   $("#docListView").classList.add("hidden");$("#docView").classList.remove("hidden");
   const pdf=DOCV.kind==="pdf",P=$("#docPaper"),F=$("#docPdf");
   if(F.dataset.url){URL.revokeObjectURL(F.dataset.url);delete F.dataset.url}
@@ -5938,6 +5959,7 @@ function printPdf(d){
 $("#docPdfOpen").onclick=e=>{e.preventDefault();const u=$("#docPdf").dataset.url;if(u)window.open(u,"_blank")};
 function printDoc(d){
   if(d.kind==="pdf")return printPdf(d);
+  d=safeDoc(d);
   const p=d.page||{w:210,h:297,t:25,r:25,b:25,l:25},st=document.createElement("style");st.id="docPageCss";
   // ако текстът е до една страница (или малко над нея) — смалява се да се събере на 1 лист и печатът е без полета на браузъра,
   // така браузърът не добавя адрес/дата горе и долу. По-дългите документи се печатат както досега, на няколко листа.
@@ -6537,7 +6559,7 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="23"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="24"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
