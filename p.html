@@ -61,7 +61,7 @@ function head(L,title,meta){const a=(L.data&&L.data.agency)||{};return `<div cla
 function contact(L){const a=(L.data&&L.data.agency)||{};return a.gsm?`<p class="foot">Въпроси: тел. <a href="tel:${esc(a.gsm.replace(/[^\d+]/g,""))}">${esc(a.gsm)}</a></p>`:""}
 
 function offer(L){const d=L.data||{},rows=d.rows||[];
-  document.title="Оферта — "+((d.agency&&d.agency.short)||L.agency||"");
+  document.title="Оферта | "+((d.agency&&d.agency.short)||L.agency||"");
   let h=head(L,"Оферта",[d.decName?"относно "+esc(d.kind||"погребение / кремация")+" на "+esc(d.decName):"",d.when?esc(d.when):"",d.date?"от "+bgDate(d.date):""].filter(Boolean).join(" · "));
   h+=`<div class="card"><div class="tw"><table><thead><tr><th>Услуга / продукт</th><th class="m">К-во</th><th class="m">Сума</th></tr></thead><tbody>${
     rows.map(x=>`<tr><td>${esc(x.name)}${x.desc?`<div class="d">${esc(x.desc)}</div>`:""}</td><td class="m">${esc(x.q??"")} ${esc(x.unit||"")}</td><td class="m">${fmt(x.amt)} €</td></tr>`).join("")||`<tr><td colspan="3" class="d">Няма избрани услуги.</td></tr>`}
@@ -79,7 +79,7 @@ function offer(L){const d=L.data||{},rows=d.rows||[];
     $("#yes").onclick=()=>send("accept");$("#q").onclick=()=>{if(!$("#nt").value.trim()){$("#nt").focus();$("#e").innerHTML=`<div class="err">Напишете въпроса си в полето „Бележка или въпрос“.</div>`;return}send("question")}}}
 
 function review(L){const d=L.data||{};let rating=0;
-  document.title="Отзив — "+((d.agency&&d.agency.short)||L.agency||"");
+  document.title="Отзив | "+((d.agency&&d.agency.short)||L.agency||"");
   let h=head(L,"Как се справихме?",d.decName?"Благодарим, че ни се доверихте за изпращането на "+esc(d.decName)+".":"Благодарим, че ни се доверихте.");
   if(L.response){h+=msg("ok","Благодарим за оценката! Тя е получена.")}
   else h+=`<div class="card form"><div><div style="font-size:14px;color:var(--muted);margin-bottom:4px">Оценка</div><div class="stars" id="st">${[1,2,3,4,5].map(i=>`<button type="button" data-v="${i}" aria-label="${i} от 5">★</button>`).join("")}</div></div>
@@ -97,7 +97,7 @@ function review(L){const d=L.data||{};let rating=0;
   try{const L=await rpc("public_link_get",{p_token:TOKEN});
     if(!L||L.error==="missing"){app.innerHTML=msg("err","Линкът не е намерен. Проверете дали е копиран изцяло.");return}
     if(L.error==="expired"){app.innerHTML=msg("err","Линкът е изтекъл. Свържете се с агенцията за нов.");return}
-    if(L.closed){app.innerHTML=head(L,L.kind==="offer"?"Оферта":"Отзив","")+msg("ok",L.kind==="offer"?(L.response&&L.response.answer==="accept"?`Офертата е потвърдена${L.responded_at?" на "+bgDate(L.responded_at):""}. Благодарим!`:"Отговорът Ви е получен."):"Оценката Ви е получена. Благодарим!")+`<p class="foot">Линкът е изтекъл — подробностите са при агенцията.</p>`;return}
+    if(L.closed){app.innerHTML=head(L,L.kind==="offer"?"Оферта":"Отзив","")+msg("ok",L.kind==="offer"?(L.response&&L.response.answer==="accept"?`Офертата е потвърдена${L.responded_at?" на "+bgDate(L.responded_at):""}. Благодарим!`:"Отговорът Ви е получен."):"Оценката Ви е получена. Благодарим!")+`<p class="foot">Линкът е изтекъл. Подробностите са при агенцията.</p>`;return}
     (L.kind==="offer"?offer:review)(L)}
   catch(e){app.innerHTML=msg("err",esc(e.message))}
 })();
