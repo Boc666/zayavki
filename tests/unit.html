@@ -154,6 +154,14 @@ function run(){
   T("стар запис без сървърни данни: показва записаното",()=>eq(E(`(()=>{const o=USERS;USERS=[];try{return auditWho({user:"Мария"})}finally{USERS=o}})()`),"Мария"));
   T("часът е от сървъра, когато го има",()=>eq(E(`auditTime({ts:"2020-01-01T00:00:00Z",serverTs:"2026-05-05T10:00:00Z"}).toISOString()`),"2026-05-05T10:00:00.000Z"));
 
+  G("Помощ: ръководство");
+  T("всяка тема има заглавие и поне един въпрос с отговор",()=>eq(E(`HELP.filter(t=>!t.t||!t.q.length||t.q.some(x=>!x[0]||!x[1])).map(t=>t.id)`),[]));
+  T("темите сочат към истински раздели от менюто",()=>eq(E(`HELP.filter(t=>t.tab&&!document.querySelector('nav.tabs button[data-tab="'+t.tab+'"]')).map(t=>t.id)`),[]));
+  T("всеки раздел от менюто има тема",()=>eq(E(`[...document.querySelectorAll("nav.tabs button")].map(b=>b.dataset.tab).filter(n=>!HELP.some(t=>t.tab===n))`),[]));
+  T("служител вижда само темите за своите раздели",()=>eq(E(`(()=>{const o=ME;ME={role:"user",perms:{req:"edit"}};try{const l=helpTopics().map(t=>t.id);return [l.includes("list"),l.includes("users"),l.includes("fin")]}finally{ME=o}})()`),[true,false,false]));
+  T("търсенето намира по дума от отговора, без значение от главни букви",()=>{const r=E(`(()=>{const o=ME;ME={role:"admin"};try{return helpSearch("СТОРНО").map(x=>x.topic.id)}finally{ME=o}})()`);return r.includes("pay")?true:{info:r.join()}});
+  T("търсенето не показва теми без достъп",()=>eq(E(`(()=>{const o=ME;ME={role:"user",perms:{}};try{return helpSearch("сторно").length}finally{ME=o}})()`),0));
+
   G("Печат: всеки лист се събира на една страница A4");
   // мери като при печат: смалява дългите текстове (както печатът) и проверява, че нищо не е отрязано и листът е A4
   const measure=code=>E(`(()=>{const box=document.createElement("div");box.style.cssText="position:absolute;left:-5000px;top:0";
@@ -172,12 +180,31 @@ function run(){
   fit("заявка с много дълги имена и бележка от няколко реда",`page1(Object.assign(sampleRequests()[0],{appName:"Генерал-лейтенант о.з. Христо Тодоров Христов-Бояджиев-Николаев-Стоянов",decName:"Анастасия Христова Тодорова-Бояджиева-Лазарова-Попова",notes:"Близките молят за кратка панихида в 11 ч. и венец от семейството. ".repeat(3)}),"print")`);
   T("прекалено дълга бележка: печатът предупреждава (не отрязва безшумно)",()=>{const v=measure(`page1(Object.assign(sampleRequests()[0],{notes:"Много дълга бележка. ".repeat(60)}),"print")`);return v.clipped.length>0?true:{info:"не е отчетено отрязване"}});
 
-  ownerTabs().then(show);
+  ownerTabs().then(helpSendTests).then(show);
 }
 // асинхронни тестове: мрежата е подменена (нищо не излиза навън)
 async function TA(name,fn){let ok=false,info="";try{const r=await fn();ok=r===true;if(!ok)info=r&&r.info!==undefined?r.info:JSON.stringify(r)}catch(e){info="грешка: "+e.message}
   results.push({group,name,ok,info});
   out.insertAdjacentHTML("beforeend",`<div class="t ${ok?"ok":"bad"}"><b>${ok?"✔":"✗"}</b><div>${name.replace(/</g,"&lt;")}${ok?"":`<small>${String(info).replace(/</g,"&lt;")}</small>`}</div></div>`)}
+async function helpSendTests(){
+  const W=document.getElementById("app").contentWindow,E=c=>W.eval(c),orig=W.fetch;let sent=[],reply;
+  W.fetch=async(url,o={})=>{sent.push({url:String(url),body:JSON.parse(o.body||"{}")});return reply()};
+  const ok=()=>new Response('"x"',{status:200,headers:{"Content-Type":"application/json"}});
+  const er=(st,m)=>()=>new Response(JSON.stringify({message:m,code:"P0001"}),{status:st,headers:{"Content-Type":"application/json"}});
+  E(`SBS={access:"t",refresh:"r",exp:Date.now()+3600e3,uid:"u"};AG={id:"A",code:"A",name:"Агенция A"}`);
+  G("Помощ: запитване");
+  const send=d=>E(`helpSend(${JSON.stringify(d)})`),D={id:"11111111-1111-4111-8111-111111111111",topic:"Проблем",text:"Не печата",phone:"0888 123 456"};
+  const fails=async d=>{try{await send(d);return ""}catch(e){return e.message}};
+  try{
+    await TA("изпраща вида, текста и телефона до сървъра",async()=>{sent=[];reply=ok;await send(D);const c=sent[0];
+      return eq([sent.length,/rpc\/help_request$/.test(c.url),c.body.p_id,c.body.p_topic,c.body.p_text,c.body.p_phone],[1,true,D.id,"Проблем","Не печата","0888 123 456"])});
+    await TA("празно съобщение не се изпраща",async()=>{sent=[];reply=ok;const m=await fails({...D,text:"   "});return sent.length===0&&/Напишете/.test(m)?true:{info:m}});
+    await TA("без телефон не се изпраща",async()=>{sent=[];reply=ok;const m=await fails({...D,phone:"12"});return sent.length===0&&/телефон/i.test(m)?true:{info:m}});
+    await TA("над 1500 знака не се изпраща",async()=>{sent=[];reply=ok;const m=await fails({...D,text:"я".repeat(1501)});return sent.length===0&&/1500/.test(m)?true:{info:m}});
+    await TA("базата още няма функцията: ясно съобщение с телефон",async()=>{reply=er(404,"Could not find the function public.help_request");const m=await fails(D);return /\+359/.test(m)&&!/function/.test(m)?true:{info:m}});
+    await TA("съобщението за лимит от сървъра стига до потребителя",async()=>{reply=er(400,"Изпратихте много съобщения.");const m=await fails(D);return /много съобщения/.test(m)?true:{info:m}});
+  }finally{W.fetch=orig;E(`SBS=null;AG=null`)}
+}
 async function ownerTabs(){
   const W=document.getElementById("app").contentWindow,E=c=>W.eval(c),orig=W.fetch,calls=[];let acting="A";
   W.fetch=async(url,o={})=>{calls.push((o.method||"GET")+" "+String(url).replace(/^https?:\/\/[^/]+/,""));

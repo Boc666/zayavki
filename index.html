@@ -198,6 +198,15 @@ body.plat-mode #modalWrap{z-index:170}body.plat-mode #toast{z-index:180;left:50%
 #srvBar{position:fixed;left:0;right:0;top:0;z-index:300;background:var(--err);color:#fff;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));font-size:13.5px;text-align:center}
 .pair-code{font:600 34px/1.1 ui-monospace,Consolas,monospace;letter-spacing:.2em;color:var(--text);margin:6px 0 2px}
 .pair-url{font:600 17px ui-monospace,Consolas,monospace;color:var(--text);user-select:all;word-break:break-all}
+.side-help{display:flex;align-items:center;gap:10px;margin:8px 12px;padding:10px 12px;min-height:42px;border:1px solid var(--border-soft);border-radius:var(--r-sm);background:none;color:var(--text2);font:500 13px var(--ui);cursor:pointer;flex:none}
+.side-help svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+@media(hover:hover) and (pointer:fine){.side-help:hover,.help-t:hover{color:var(--text);border-color:var(--border);background:var(--panel2)}}
+.help-g{margin:18px 0 8px;font:600 12.5px var(--ui);color:var(--text2)}.help-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.help-t{text-align:left;padding:11px 13px;border:1px solid var(--border-soft);border-radius:10px;background:var(--panel);color:var(--text);font:inherit;cursor:pointer}
+.help-t b{display:block;font-weight:600;font-size:13.5px}.help-t small{color:var(--text2);font-size:12px}
+.help-q{border-bottom:1px solid var(--border-soft)}.help-q summary{padding:12px 2px;font-weight:600;font-size:14px;cursor:pointer}
+.help-a{padding:0 2px 14px 16px;line-height:1.65;font-size:14px}.help-a ol{margin:0 0 6px;padding-left:20px}
+.help-from{margin-top:12px;font-size:12px;color:var(--text2)}.help-h{margin:12px 0 6px}.help-head{gap:8px}.help-tel{margin:18px 0 0}.help #helpQ{width:100%}
 .side-user{display:flex;align-items:center;gap:9px;padding:12px 14px 12px 18px;border-top:1px solid var(--border-soft)}
 .side-user .av{width:30px;height:30px;border-radius:50%;background:var(--bronze-soft);color:var(--bronze-hi);display:flex;align-items:center;justify-content:center;font:600 12.5px var(--ui);flex:none;border:1px solid rgba(176,141,87,.35)}
 .side-user .who{flex:1;min-width:0;line-height:1.25}
@@ -376,7 +385,7 @@ table.list td.money,table.list td.num{white-space:nowrap}
   .brand>div:nth-child(2){flex:1;min-width:0}
   .side-burger{display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin-right:-6px;background:none;border:0;color:var(--text);border-radius:var(--r-sm);cursor:pointer}
   .side-burger svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round}
-  aside.side:not(.open) nav.tabs,aside.side:not(.open) .side-user,aside.side:not(.open) .side-foot{display:none!important}
+  aside.side:not(.open) nav.tabs,aside.side:not(.open) .side-help,aside.side:not(.open) .side-user,aside.side:not(.open) .side-foot{display:none!important}
   aside.side.open{overflow-y:auto;box-shadow:0 18px 40px rgba(0,0,0,.55)}
   aside.side.open nav.tabs{flex-direction:column;flex-wrap:nowrap;padding:4px 10px 10px;border-top:1px solid var(--border-soft)}
   nav.tabs button{padding:12px 12px;font-size:15px}
@@ -1353,6 +1362,7 @@ main>section.mx-enter .mx-axis .ev{animation:mxGrow .55s cubic-bezier(.2,.8,.2,1
     <button data-tab="users"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="1.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14.5v2.5"/></svg>Потребители</button>
     <button data-tab="settings"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Настройки</button>
   </nav>
+  <button class="side-help" id="helpBtn" type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.6 2.6 0 1 1 3.6 2.4c-.7.3-1.1.9-1.1 1.7v.4M12 17v.1"/></svg>Помощ</button>
   <div class="side-user hidden" id="sideUser">
     <div class="av" id="suAv"></div><div class="who"><b id="suName"></b><small id="suRole"></small></div>
     <button class="btn ghost small ico" id="suPw" title="Смени паролата си"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg></button>
@@ -3480,7 +3490,7 @@ const TOUR_STEPS=[
   {t:"Склад",h:"В „Инвентар“ водите ковчези, урни и венци. Изписват се сами от заявката, с покупна и продажна цена."},
   {t:"Отчети",h:"В „Отчети“ виждате оборот, <b>чиста печалба</b> и разходите на агенцията по заявка и по месец."},
   {t:"И още",h:"Некролози, помени с напомняния, <b>хладилна камера</b>, клиенти и партньори. Всичко е в менюто вляво."},
-  {t:"Да настроим агенцията",h:"Накрая попълнете данните на агенцията и качете бланката си. Сега ще ви преведем през тях.<br><br>Помощ по всяко време: <b>+359 893 008 182</b>."}
+  {t:"Да настроим агенцията",h:"Накрая попълнете данните на агенцията и качете бланката си. Сега ще ви преведем през тях.<br><br>Помощ по всяко време: бутонът <b>„Помощ“</b> в менюто или <b>+359 893 008 182</b>."}
 ];
 function startTour(onDone){let i=0;const done=()=>{try{localStorage.removeItem("memoriox-newtour")}catch(e){}if(onDone)setTimeout(onDone,60)};
   const dots=()=>`<div style="display:flex;gap:6px;justify-content:center;margin:0 0 12px">${TOUR_STEPS.map((_,n)=>`<span style="width:7px;height:7px;border-radius:50%;background:${n===i?"var(--bronze-hi,#d2b07a)":"var(--border,#ccd)"}"></span>`).join("")}</div>`;
@@ -6573,11 +6583,12 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="25"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="26"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
   {v:"1.0",d:"19.11.2026",items:[
+    "Нов бутон „Помощ“ в менюто: ръководство по раздели с търсене и „Пишете ни“ за въпрос до екипа.",
     "Историята на версиите вече не се показва в програмата; долу вляво остава само номерът на версията.",
     "По-чисто меню: долу вляво остават само номерът на версията и бутонът за тъмна/светла тема.",
     "Имейл на администратора: при нова регистрация влизате след потвърждение на имейла; „Забравена парола“ праща линк за нова парола на потвърдения имейл (важи 1 час). Кодът за възстановяване вече не се ползва. Добавете имейл от „Потребители → Имейл за възстановяване“.",
@@ -6740,6 +6751,161 @@ async function authStart(){
   if(u){ME=u;lastAct=Date.now();applyUser();showTab(firstTab());return}
   authShow("login");
 }
+/* =====================================================================
+   ПОМОЩ — ръководство по раздели + запитване до екипа (Telegram на собственика през help_request, миграция 20)
+   HELP: tab = раздел от менюто (показва се само на хора с достъп до него); q = [въпрос, отговор]
+   ===================================================================== */
+const HELP=[
+ {id:"start",g:"Начало",t:"Първи стъпки",q:[
+  ["Откъде да започна?","<ol><li>Попълнете данните на агенцията и качете логото в <b>Настройки</b>.</li><li>Въведете цените си в <b>Услуги и цени</b>.</li><li>Добавете артикулите си в <b>Инвентар</b>.</li><li>Създайте служителите в <b>Потребители</b>.</li><li>Направете първата заявка: <b>Заявки → Нова заявка</b>.</li></ol>Настройките и потребителите са само за администратора."],
+  ["Мога ли да пробвам, без да въвеждам истински данни?","Да. Администраторът отваря <b>Настройки → Архив → „Добави 2 примерни заявки“</b>. Те са измислени и са отбелязани с „ПРИМЕР“. После се махат с „Изтрий примерните заявки“."],
+  ["Не виждам някой раздел. Защо?","Всеки служител вижда само разделите, които администраторът му е разрешил. Помолете администратора да отвори <b>Потребители → Редакция</b> и да ви даде достъп."]]},
+ {id:"search",g:"Начало",t:"Търсене и известия",q:[
+  ["Как да намеря нещо бързо?","Натиснете <b>Търсене</b> горе в менюто (или Ctrl K, на Mac ⌘ K) и напишете поне 2 знака: име, телефон, номер на заявка или фактура. Търси в заявките, клиентите, календара и документите, до които имате достъп."],
+  ["За какво е камбанката?","До търсенето. Показва нещата, които искат внимание, и помените в следващите 3 дни. Натиснете ред, за да го отворите."],
+  ["Как се сменя светла и тъмна тема?","С бутона „Тъмна тема“ / „Светла тема“ най-долу в менюто. Изборът се помни на всяко устройство."]]},
+ {id:"phone",g:"Начало",t:"На телефона",q:[
+  ["Как да добавя програмата на iPhone?","<ol><li>Отворете <b>Safari</b> и въведете <b>app.memoriox.eu</b>.</li><li>Натиснете „Сподели“ (квадрат със стрелка нагоре).</li><li>Изберете <b>„Добави към началния екран“</b> и „Добави“.</li><li>Отворете я от новата иконка и влезте.</li></ol>"],
+  ["Как да я добавя на Android?","<ol><li>Отворете <b>Chrome</b> и въведете <b>app.memoriox.eu</b>.</li><li>Менюто ⋮ горе вдясно.</li><li><b>„Инсталиране на приложението“</b> или „Добавяне към началния екран“.</li></ol>"],
+  ["Какво става, ако няма интернет?","Програмата ви предупреждава, че няма връзка и че промяната не е записана. Запишете отново, когато връзката се върне."]]},
+ {id:"dash",g:"Работа",t:"Начално табло",tab:"dash",q:[
+  ["Какво виждам тук?","<b>Денят</b>: ритуалите и срещите за днес по часове. <b>Иска внимание</b>: например липсващ час или изчерпан склад. Под тях са ритуалите за следващите 14 дни, неплатените остатъци и помените за напомняне."],
+  ["Мога ли да отворя заявка оттук?","Да, натиснете реда ѝ. С „Нова заявка“ горе започвате нов случай."]]},
+ {id:"list",g:"Работа",t:"Заявки",tab:"list",q:[
+  ["Как се прави нова заявка?","<ol><li><b>Заявки → Нова заявка</b>.</li><li>Страница 1: данните на заявителя, на починалия и ритуала.</li><li>Страница 2: отбележете услугите, количествата и цените. Сумата се смята сама.</li><li>Натиснете <b>Запази</b>.</li></ol>На телефон горе има превключвател „Форма / Бланка“."],
+  ["Как да не попълвам едни и същи услуги всеки път?","Отворете заявка с попълнени услуги, натиснете <b>★ Образци</b>, напишете име (напр. „Стандартно погребение“) и „Запази като образец“. После от списъка <b>★ По образец</b> започвате нова заявка с готовите услуги и цени. В образеца няма лични данни."],
+  ["Какво значат статусите?","<b>Нова заявка → Подготовка → Потвърден ритуал → Приключена</b>. Сменят се горе в заявката. Ако не сте избрали статус, програмата го изчислява сама и пише „(изчислен)“."],
+  ["Как се дава задача на колега?","Горе в заявката изберете <b>Отговорник</b>, напишете „Следващо действие“ и добавете <b>Задачи</b>. Запазете заявката."],
+  ["Как се печата?","В отворената заявка: <b>Преглед</b>, за да видите листа, после <b>Печат / PDF</b>. За PDF изберете „Запазване като PDF“ в прозореца за печат."],
+  ["Излезе, че някой друг е променил заявката. Какво да правя?","Двама сте работили по нея едновременно. Програмата ви пита коя версия да остане. Прегледайте разликите, преди да изберете, за да не се загуби работата на колегата."],
+  ["Как се изтрива заявка?","Иска право „Може да изтрива заявки“. Ако по нея има изписани артикули, те се връщат в склада."]]},
+ {id:"pay",g:"Работа",t:"Плащания",area:"req",q:[
+  ["Как се записва плащане или аванс?","<ol><li>Отворете заявката и натиснете <b>Плащания</b>.</li><li>Въведете дата, сума и начин (в брой, карта, банков път, друго).</li><li>Натиснете <b>Добави плащане</b>.</li></ol>Остатъкът се смята сам."],
+  ["Как се връщат пари или се поправя грешно плащане?","В същия прозорец въведете сумата и натиснете <b>Сторно / връщане</b>. Старото плащане остава в историята, а сумата се изважда."],
+  ["Къде виждам кой не е платил?","В <b>Заявки</b> с филтъра „С остатък“ и в началното табло, в „Неплатени остатъци“."]]},
+ {id:"links",g:"Работа",t:"Линк към клиента",area:"req",q:[
+  ["Как да пратя оферта на близките?","<ol><li>В заявката натиснете <b>Линк към клиента</b>.</li><li>Натиснете <b>Нов линк с офертата</b>.</li><li>Изпратете го със SMS, с Viber или копирайте текста.</li></ol>Програмата не праща нищо сама. Клиентът отваря линка без парола и вижда само офертата."],
+  ["Как разбирам дали са я приели?","В същия прозорец, в „Изпратени линкове“: не е отворена, отворена, потвърдена или има въпрос."],
+  ["Как се спира линк?","Със „Спри“ до него. След това линкът вече не се отваря."],
+  ["Как да поискам отзив?","В същия прозорец натиснете <b>Молба за отзив</b>."]]},
+ {id:"cal",g:"Работа",t:"Календар",tab:"cal",q:[
+  ["Какво се появява тук само?","Ритуалите от заявките и помените по датата на смъртта. Горе избирате слоевете: ритуали, помени, хладилна камера, срещи и задачи."],
+  ["Как се сменя изгледът?","С <b>Седмица / Месец</b> горе. Можете да филтрирате и по отговорник и статус."],
+  ["Как да виждам графика в телефона си?","Натиснете <b>В телефона</b>. На iPhone: „Добави в календара“. За Google: копирайте линка и го добавете на calendar.google.com → „Други календари“ → + → „От URL адрес“. Линкът е личен, не го давайте на други."]]},
+ {id:"wsl",g:"Работа",t:"Работни листове",tab:"wsl",q:[
+  ["За какво е работният лист?","За разходите по една заявка: камера, кетъринг, други. От тях излиза печалбата по случая."],
+  ["Как се отваря?","От <b>Работни листове</b> или от заявката с бутона <b>Работен лист</b>. Записва се сам, докато пишете."],
+  ["Защо някой разход не може да се промени?","Защото идва от изписан складов артикул. Сумата е покупната му цена от склада."],
+  ["Откъде идват моделите кетъринг?","От <b>Услуги и цени → Кетъринг модели</b>. Там въвеждате колко ви струва един брой."]]},
+ {id:"clients",g:"Клиенти и помени",t:"Клиенти",tab:"clients",q:[
+  ["Какво има в профила на клиент?","Заявките му, сумите, неплатеното и следващият помен."],
+  ["Как се прави профил?","В заявката натиснете <b>Свържи с профил</b>, или в <b>Клиенти → „Заявители без профил“</b>. Програмата подсказва възможни дубликати по телефон, но не слива нищо сама."]]},
+ {id:"partners",g:"Клиенти и помени",t:"Партньори",tab:"partners",q:[
+  ["Какво се пази тук?","Телефоните на гробищни паркове, храмове, доставчици и други. Добавяте с <b>+ Партньор</b> и филтрирате по категория."]]},
+ {id:"showcase",g:"Клиенти и помени",t:"Каталог за клиенти (QR)",tab:"showcase",q:[
+  ["Как се прави каталогът?","Най-лесно: в <b>Инвентар</b> отметнете „В каталога за клиенти“ на артикула. Появява се сам, по категория, със снимка и цена. Ръчен раздел се прави с <b>＋ Раздел</b>."],
+  ["Как го виждат близките?","Включете каталога с отметката горе, после <b>QR код / Линк</b>. Сканират кода с телефона си и гледат без вход."]]},
+ {id:"necro",g:"Клиенти и помени",t:"Некролози",tab:"necro",q:[
+  ["Откъде идват бройките?","Некролозите от заявките влизат сами, когато заявката стане „Приключена“. Поръчки без заявка се добавят в <b>Отделни поръчки</b>."],
+  ["Как се смята цената?","По <b>Ценоразпис</b>: въвеждате цената за общия брой (напр. 5 бр. = 20 €). За бройки между стъпалата програмата изчислява средна цена."],
+  ["Къде се пишат хартия и тонер?","В <b>Разходи</b>. Изваждат се от прихода от некролози за месеца."]]},
+ {id:"days40",g:"Клиенти и помени",t:"Помени",tab:"days40",q:[
+  ["Защо някой помен липсва?","Датите се смятат от датата в „Съобщение за смърт“ в заявката. Ако тя липсва, поменът не се изчислява."],
+  ["Как се напомня на близките?","До помена има <b>Обади се</b> и <b>Съобщение</b> (SMS или Viber, с готов текст). После натиснете <b>Свързахме се</b> и поменът влиза в календара."],
+  ["Как се брои 40-ият ден?","Денят на смъртта е първи ден, затова 40-ият ден е 39 дни след него. Под списъка има калкулатор за всяка дата."]]},
+ {id:"files",g:"Документи и склад",t:"Документи",tab:"files",q:[
+  ["Как да кача бланка?","<b>Качи документи</b> или пуснете файла в полето. Приема PDF и Word (.docx)."],
+  ["Word или PDF?","За печат точно като във Word качете PDF (във Word: „Запиши като“ → PDF). Word файловете могат да се редактират тук с <b>Редакция</b>."],
+  ["Объркахме бланка. Как да я върна?","В редакция натиснете <b>Върни оригинала</b> и после „Запази“."]]},
+ {id:"inv",g:"Документи и склад",t:"Фактури и оферти",area:"docs",q:[
+  ["Как се прави фактура?","<ol><li>Отворете заявката и натиснете <b>Фактура</b>.</li><li>Попълнете получателя: физическо лице или фирма.</li><li>Проверете прегледа долу и натиснете <b>Печат фактура</b>.</li></ol>Ако полето за номер е празно, номерът се дава автоматично."],
+  ["Къде се попълва фирмата ни?","<b>Настройки → Данни за фактури</b>: ЕИК, МОЛ, банка, IBAN, ДДС. Само от администратор."],
+  ["Как се добавя ДДС?","С отметката „С ДДС“ във фактурата. Сумата остава същата и се разделя на основа и ДДС."],
+  ["Как се печата оферта?","В заявката натиснете <b>Оферта</b>. Тя не е документ за плащане. Срокът ѝ се задава в Настройки."]]},
+ {id:"sr",g:"Документи и склад",t:"Стокови разписки",tab:"sr",q:[
+  ["Как се издава?","<b>+ Нова разписка</b>, попълнете получателя, добавете перата и натиснете <b>Печат разписка</b>."],
+  ["Какво правят трите отметки?","<b>С данните на агенцията</b>: лого и „Доставчик“. <b>Изписва от склада</b>: намалява наличността. <b>Влиза в статистиката</b>: сумата се брои в отчетите."]]},
+ {id:"stock",g:"Документи и склад",t:"Инвентар и склад",tab:"stock",q:[
+  ["Как се добавя артикул?","<b>Нов артикул</b>: име, категория и продажна цена. Изберете как се води: „На склад“ (брои се) или „Купува се при нужда“ (без наличност)."],
+  ["Как се зарежда стока?","<b>Нова доставка</b>: артикул, количество и покупна цена."],
+  ["Как се изписва от склада?","В заявката изберете артикул от склада до услугата, запазете и натиснете <b>Изпиши от склада</b>. Ако не достига, програмата спира изписването и казва колко липсва."],
+  ["Преброих друго количество. Как да го оправя?","<b>Корекция на наличност</b>: въведете преброеното и причината. Иска право „Може да прави складови корекции“."],
+  ["Къде е историята?","В <b>Складови движения</b>: всяка доставка, продажба, връщане и корекция."]]},
+ {id:"fridge",g:"Документи и склад",t:"Хладилна камера",tab:"fridge",q:[
+  ["Как се приема тяло?","<b>＋ Приеми тяло</b>: име, клетка и дата на влизане. Дните престой се смятат сами. Промените се правят от администратор."],
+  ["Как се извежда?","С <b>Изведи</b> на реда, записва се днешна дата. Остава в „История“."],
+  ["Как се задава броят клетки?","С <b>Капацитет</b>. Така се виждат свободните места."]]},
+ {id:"catalog",g:"Документи и склад",t:"Услуги и цени",tab:"catalog",q:[
+  ["Каква е разликата между двете цени?","<b>Препоръчителната</b> се попълва в заявката с ★. <b>Макс. допустима</b> е горната граница за единичната цена."],
+  ["Какво са „Готови бележки“?","Изборите в падащото меню до всяка услуга в заявката. Разделят се с точка и запетая."],
+  ["Промених цени, но не се запазиха.","Натиснете <b>Запази каталога</b> най-долу."]]},
+ {id:"fin",g:"Отчети",t:"Отчети и печалба",tab:"fin",q:[
+  ["Какво има тук?","<b>Финанси</b>: пари, неплатени суми и заявки за периода. <b>Статистика</b>: печалба по месеци. <b>Разходи</b>: разходите на агенцията."],
+  ["Как се въвежда наем или заплати?","В <b>Разходи</b>, като планов разход. Въвежда се веднъж и влиза сам всеки месец. С „Платено“ записвате реалната сума."],
+  ["Как да дам данни на счетоводителя?","<b>Финанси → Справка за счетоводителя</b>: „Фактури (Excel)“ и „Плащания (Excel)“ за избрания период."]]},
+ {id:"users",g:"Управление",t:"Потребители и права",tab:"users",q:[
+  ["Как се добавя служител?","<b>Нов потребител</b>: име, потребителско име, парола и роля. За всеки раздел избирате „Няма достъп“, „Вижда“ или „Редактира“."],
+  ["Служител напусна. Какво да направя?","<b>Редакция</b> → махнете „Активен (може да влиза)“. Историята му остава."],
+  ["Как виждам кой какво е правил?","<b>История на действията</b>, с филтър по човек и дата."],
+  ["Забравена парола?","На служител: администраторът задава нова от „Редакция“. На администратор: „Забравена парола“ на входа праща линк на потвърдения имейл."]]},
+ {id:"settings",g:"Управление",t:"Настройки",tab:"settings",q:[
+  ["Как се сменя логото?","<b>Настройки → Лого и украса</b>. Логото на документите и логото в менюто се избират поотделно."],
+  ["Мога ли да променя полетата в заявката?","Да: <b>Шаблон на заявката → Промени шаблона</b>. Въведените данни не се губят, дори да махнете поле."],
+  ["Как се прави архив?","<b>Архив → Свали архив</b>. Пазете файла на сигурно място, в него има лични данни."],
+  ["Как се изтриват стари лични данни?","<b>Пазене на лични данни</b>: изберете срок. След него се изтриват ЕГН, телефон и адреси. Имената, сумите и фактурите остават."],
+  ["Как се плаща абонаментът?","<b>Настройки → Абонамент</b>, с карта. Достъпът се удължава сам след плащането."]]}];
+const HELP_PHONE="+359 893 008 182",HELP_KINDS=["Въпрос","Проблем","Предложение","Абонамент"];
+const helpTopics=()=>HELP.filter(t=>t.tab?canTab(t.tab):t.area?can(t.area):true);
+const helpPlain=h=>h.replace(/<[^>]+>/g," ").toLowerCase();
+function helpSearch(q){const w=String(q||"").toLowerCase().split(/\s+/).filter(Boolean);if(!w.length)return[];
+  return helpTopics().flatMap(topic=>topic.q.map((x,i)=>({topic,i,x,s:(topic.t+" "+x[0]+" "+helpPlain(x[1])).toLowerCase()}))).filter(r=>w.every(y=>r.s.includes(y)))}
+const helpTel=()=>(typeof AG==="object"&&AG&&AG.phone)||HELP_PHONE;
+async function helpSend(d){
+  const text=String(d.text||"").trim(),phone=String(d.phone||"").trim();
+  if(!text)throw new Error("Напишете съобщението си.");
+  if(text.length>1500)throw new Error("Съобщението е твърде дълго (най-много 1500 знака).");
+  if(phone.replace(/\D/g,"").length<6)throw new Error("Попълнете телефон за връзка, за да ви отговорим.");
+  const on=document.querySelector("nav.tabs button.on");
+  const info=[on?"екран: "+on.firstChild.nextSibling.textContent.trim():"","версия "+APP_VERSION+" ("+APP_BUILD+")",matchMedia("(max-width:760px)").matches?"телефон":"компютър"].filter(Boolean).join(" · ");
+  try{return await rpc("help_request",{p_id:d.id,p_topic:d.topic,p_text:text,p_phone:phone,p_info:info})}
+  catch(e){if(/Could not find the function|PGRST202|schema cache/.test(e.message))throw new Error("Запитванията още не са включени. Обадете се на "+helpTel()+".");throw e}}
+let HELP_DRAFT=null; // написаното остава, ако прозорецът се затвори или няма връзка
+function openHelp(){
+  const m=openModal({title:"Помощ",wide:true,body:`<div class="help" id="helpBody"></div>`,actions:CLOUD?[{label:"Затвори"},{label:"Пишете ни",cls:"primary",act:()=>{form();return false}}]:[{label:"Затвори"}]});
+  const B=m.q("#helpBody"),foot=m.el.querySelectorAll("footer .btn"),cta=foot[1];let Q="";
+  const back=`<button type="button" class="btn ghost small" data-hb>← Всички теми</button>`;
+  const item=(x,open)=>`<details class="help-q" ${open?"open":""}><summary>${x[0]}</summary><div class="help-a">${x[1]}</div></details>`;
+  const top=()=>{m.q(".mb").scrollTop=0;m.err("")};
+  function list(){const box=B.querySelector("#helpList");
+    if(Q.trim()){const R=helpSearch(Q);box.innerHTML=R.length?R.slice(0,40).map(r=>`<div class="help-from">${r.topic.t}</div>${item(r.x,R.length<3)}`).join(""):`<div class="empty">Не намерихме отговор. ${CLOUD?"Натиснете „Пишете ни“ долу.":""}</div>`;return}
+    const T=helpTopics(),G=[...new Set(T.map(t=>t.g))];
+    box.innerHTML=G.map(g=>`<div class="help-g">${g}</div><div class="help-grid">${T.filter(t=>t.g===g).map(t=>`<button type="button" class="help-t" data-ht="${t.id}"><b>${t.t}</b><small>${t.q.length} ${t.q.length===1?"въпрос":"въпроса"}</small></button>`).join("")}</div>`).join("")}
+  function home(){if(cta)cta.classList.remove("hidden");
+    B.innerHTML=`<input class="ui-in" type="search" id="helpQ" aria-label="Търсене в помощта" placeholder="Търсене: напр. фактура, аванс, печат…" value="${esc(Q)}"><div id="helpList"></div>
+      <p class="muted help-tel">Спешно? Обадете се: <a href="tel:${esc(helpTel().replace(/[^+\d]/g,""))}">${esc(helpTel())}</a></p>`;
+    B.querySelector("#helpQ").oninput=e=>{Q=e.target.value;list()};list();top()}
+  function topic(id){const t=helpTopics().find(x=>x.id===id);if(!t)return home();
+    B.innerHTML=`<div class="row help-head">${back}<span class="spacer"></span>${t.tab?`<button type="button" class="btn small" data-hgo="${t.tab}">Отвори раздела →</button>`:""}</div><h2 class="help-h">${t.t}</h2>${t.q.map((x,i)=>item(x,i===0)).join("")}`;top()}
+  function form(){const D=HELP_DRAFT||(HELP_DRAFT={id:crypto.randomUUID?crypto.randomUUID():null,topic:HELP_KINDS[0],text:"",phone:""});
+    if(cta)cta.classList.add("hidden");
+    B.innerHTML=`<div class="row help-head">${back}</div><h2 class="help-h">Пишете ни</h2>
+      <div class="grid" style="grid-template-columns:1fr"><label class="f">Относно<select class="ui-in" id="hpK">${HELP_KINDS.map(k=>`<option ${k===D.topic?"selected":""}>${k}</option>`).join("")}</select></label>
+      <label class="f">Съобщение *<textarea class="ui-in" id="hpT" rows="6" maxlength="1500" placeholder="Какво искахте да направите и какво се получи?">${esc(D.text)}</textarea></label>
+      <label class="f">Телефон за връзка *<input class="ui-in" id="hpP" type="tel" autocomplete="tel" value="${esc(D.phone)}"></label></div>
+      <p class="muted" style="margin:10px 0">Моля, не пишете ЕГН, имена и други данни на починали или близки. Съобщението се изпраща до екипа на Memoriox с името ви, агенцията и екрана, на който сте.</p>
+      <button type="button" class="btn primary" id="hpS">Изпрати</button>`;
+    const keep=()=>{D.topic=B.querySelector("#hpK").value;D.text=B.querySelector("#hpT").value;D.phone=B.querySelector("#hpP").value};
+    B.oninput=e=>{if(e.target.id&&/^hp[KTP]$/.test(e.target.id))keep()};
+    B.querySelector("#hpS").onclick=async e=>{const b=e.currentTarget;keep();b.disabled=true;m.err("");
+      try{await helpSend(D);HELP_DRAFT=null;B.innerHTML=`<div class="empty"><b>Съобщението е изпратено ✔</b><br>Ще ви се обадим на ${esc(D.phone)}.</div><div style="text-align:center">${back}</div>`}
+      catch(x){m.err(x.message);b.disabled=false}};
+    top()}
+  B.onclick=e=>{const t=e.target.closest("[data-ht]"),g=e.target.closest("[data-hgo]");
+    if(t)topic(t.dataset.ht);else if(e.target.closest("[data-hb]"))home();
+    else if(g){closeModal();const n=document.querySelector(`nav.tabs button[data-tab="${g.dataset.hgo}"]`);if(n)n.click()}}; // през менюто: пита за незапазени промени
+  home();
+}
+$("#helpBtn").onclick=()=>{const a=document.querySelector("aside.side");a.classList.remove("open");openHelp()};
 $("#suOut").onclick=()=>{if(DIRTY&&!confirm("Има незапазени промени. Да изляза ли БЕЗ запис?"))return;
   setDirty(false);wsFlush();invFlush();sessionStorage.removeItem("uid");purgeDrafts(true);
   Promise.resolve(audit("Изход")).then(()=>CLOUD&&sbLogout()).finally(()=>setTimeout(()=>location.reload(),150))};
