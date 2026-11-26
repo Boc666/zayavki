@@ -154,6 +154,22 @@ function run(){
   T("стар запис без сървърни данни: показва записаното",()=>eq(E(`(()=>{const o=USERS;USERS=[];try{return auditWho({user:"Мария"})}finally{USERS=o}})()`),"Мария"));
   T("часът е от сървъра, когато го има",()=>eq(E(`auditTime({ts:"2020-01-01T00:00:00Z",serverTs:"2026-05-05T10:00:00Z"}).toISOString()`),"2026-05-05T10:00:00.000Z"));
 
+  G("Склад: две продажни цени");
+  T("стоковата разписка взима цената за разписки, ако е въведена",()=>eq(E(`[srUnitPrice({salePrice:100,srPrice:80}),srUnitPrice({salePrice:100,srPrice:null}),srUnitPrice({salePrice:null})]`),[80,100,null]));
+  T("старите артикули получават празна цена за разписки",()=>eq(E(`migrateInvd({items:[{id:"i1",name:"Ковчег",salePrice:100}],moves:[]}).items[0].srPrice`),null));
+
+  G("Фактура към стокова разписка");
+  const SRX=`{id:"s1",number:"7",date:"2026-11-20",buyerName:"Иван Петров",lines:[{name:"Ковчег",item:"izt",qty:2,price:300},{name:"Венец",price:45},{name:"  ",price:null}]}`;
+  T("перата идват от разписката: име, количество и единична цена",()=>eq(E(`srInvFrom(${SRX}).lines.map(l=>[l.name,l.qty,l.price])`),[["Ковчег",2,150],["Венец",1,45]]));
+  T("получателят и датата на данъчното събитие са от разписката",()=>eq(E(`(()=>{const I=srInvFrom(${SRX});return [I.buyerName,I.taxDate,I.buyerType]})()`),["Иван Петров","2026-11-20","person"]));
+  T("сумата е сборът от перата; с ДДС се разделя на основа и данък",()=>eq(E(`(()=>{const I=srInvFrom(${SRX});I.vat=false;const a=invCalc({inv:I});I.vat=true;const b=invCalc({inv:I});return [a.total,a.base,b.total,b.base,b.vat]})()`),[345,345,345,287.5,57.5]));
+  T("печатът показва всяко перо и общата сума",()=>{const h=E(`(()=>{const I=srInvFrom(${SRX});I.vat=false;I.number="0000000009";return buildInvPrint({inv:I})})()`);
+    return /Ковчег/.test(h)&&/Венец/.test(h)&&/345,00/.test(h)&&/0000000009/.test(h)?true:{info:h.replace(/<[^>]+>/g," ").replace(/\s+/g," ").slice(0,300)}});
+  T("старата фактура към заявка печата както досега един ред",()=>{const h=E(`(()=>{const r=sampleRequests()[0];r.inv=Object.assign(emptyInv(),{desc:"Погребални услуги",amount:500});return buildInvPrint(r)})()`);
+    return /Погребални услуги/.test(h)&&/500,00/.test(h)?true:{info:"няма реда"}});
+  T("един номер не може да е и на заявка, и на разписка",()=>eq(E(`(()=>{const R=[{id:"r1",number:"3",inv:{number:"0000000005"}}],S=[{id:"s1",number:"7",inv:{number:"0000000006"}}];
+      return [invNoUsed("0000000005",R,S,"s1"),invNoUsed("0000000006",R,S,"r1"),invNoUsed("0000000006",R,S,"s1"),invNoUsed("0000000007",R,S,"s1")]})()`),["заявка № 3","стокова разписка № 7",null,null]));
+
   G("Помощ: ръководство");
   T("всяка тема има заглавие и поне един въпрос с отговор",()=>eq(E(`HELP.filter(t=>!t.t||!t.q.length||t.q.some(x=>!x[0]||!x[1])).map(t=>t.id)`),[]));
   T("темите сочат към истински раздели от менюто",()=>eq(E(`HELP.filter(t=>t.tab&&!document.querySelector('nav.tabs button[data-tab="'+t.tab+'"]')).map(t=>t.id)`),[]));

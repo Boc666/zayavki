@@ -201,6 +201,9 @@ body.plat-mode #modalWrap{z-index:170}body.plat-mode #toast{z-index:180;left:50%
 .side-help{display:flex;align-items:center;gap:10px;margin:8px 12px;padding:10px 12px;min-height:42px;border:1px solid var(--border-soft);border-radius:var(--r-sm);background:none;color:var(--text2);font:500 13px var(--ui);cursor:pointer;flex:none}
 .side-help svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 @media(hover:hover) and (pointer:fine){.side-help:hover,.help-t:hover{color:var(--text);border-color:var(--border);background:var(--panel2)}}
+.inv-lines td{vertical-align:middle}.inv-lines .ui-in{min-width:0;width:100%}
+@media(max-width:760px){.inv-lines thead{display:none}.inv-lines tbody tr{display:grid;grid-template-columns:1fr 1fr 1.3fr auto auto;gap:6px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-soft)}
+  .inv-lines tbody td{padding:0!important;border:0!important}.inv-lines tbody td:first-child{grid-column:1/-1}.inv-lines tfoot tr{display:flex;justify-content:flex-end;gap:10px}.inv-lines tfoot td{border:0}.inv-lines tfoot td:empty{display:none}}
 .help-g{margin:18px 0 8px;font:600 12.5px var(--ui);color:var(--text2)}.help-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
 .help-t{text-align:left;padding:11px 13px;border:1px solid var(--border-soft);border-radius:10px;background:var(--panel);color:var(--text);font:inherit;cursor:pointer}
 .help-t b{display:block;font-weight:600;font-size:13.5px}.help-t small{color:var(--text2);font-size:12px}
@@ -1742,6 +1745,7 @@ main>section.mx-enter .mx-axis .ev{animation:mxGrow .55s cubic-bezier(.2,.8,.2,1
     <span class="spacer"></span>
     <button class="btn primary" id="srNew">+ Нова разписка</button>
     <button class="btn ghost hidden" id="srDel">Изтрий</button>
+    <button class="btn hidden" id="srInv" title="Фактура към тази разписка: перата се попълват от разписката и могат да се променят">Фактура</button>
     <button class="btn dark hidden" id="srPrint"><svg viewBox="0 0 24 24"><path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="1"/><path d="M7 14h10v7H7z"/></svg>Печат разписка</button>
   </div>
   <div id="srBody"></div>
@@ -3959,8 +3963,10 @@ function emptyInv(){return{number:"",date:"",taxDate:"",place:"",buyerType:"pers
   desc:"",amount:null,vat:null,payment:"в брой",author:""}}
 const INV_PAY=["в брой","по банков път","с карта"];
 /* сумата в заявката е крайната цена; при ДДС тя се разделя на основа + ДДС */
+/* фактура с пера (към стокова разписка): цените са крайни, с ДДС, ако е с ДДС */
+const invLineSum=l=>r2((num(l.qty)??0)*(num(l.price)??0));
 function invCalc(r){
-  const I=r.inv,total=r2(I.amount!=null?I.amount:calc(r).total),rate=num(SETTINGS.invVatRate)??20;
+  const I=r.inv,rate=num(SETTINGS.invVatRate)??20,total=Array.isArray(I.lines)?r2(I.lines.reduce((a,l)=>a+invLineSum(l),0)):r2(I.amount!=null?I.amount:calc(r).total);
   const base=I.vat?r2(total/(1+rate/100)):total;
   return{total,base,rate,vat:r2(total-base)};
 }
@@ -4000,18 +4006,35 @@ $("#btnInv").onclick=async()=>{if(!CURRENT)return;
   const inDb=await DB.get("requests",CURRENT.id);
   if((DIRTY||!inDb)&&!(await saveCurrent()))return;
   openInvoice(CURRENT.id)};
-$("#invBack").onclick=()=>showTab("list");
-$("#invOpenReq").onclick=async()=>{await invFlush();
+async function openSrInvoice(){if(!SRID)return;await srFlush();const x=SR.items[SRID];if(!x)return;
+  if(!x.inv){if(!needEdit("docs","издаване на фактури"))return;x.inv=srInvFrom(x);srPending=true;await srFlush()}
+  INV={id:x.id,number:x.number,appName:x.buyerName||"",inv:structuredClone(x.inv),_sr:true};renderInv();showTab("inv")}
+$("#invBack").onclick=async()=>{if(INV&&INV._sr){await invFlush();SRID=INV.id;showTab("sr");return}showTab("list")};
+$("#invOpenReq").onclick=async()=>{await invFlush();if(INV&&INV._sr){SRID=INV.id;showTab("sr");return}
   if(DIRTY&&CURRENT&&CURRENT.id!==INV.id&&!confirm("Имате незапазени промени в друга заявка. Да продължа ли БЕЗ запис?"))return;
   openRequest(structuredClone(await DB.get("requests",INV.id)));showTab("edit")};
 const invNextNo=()=>String(SETTINGS.invNext||1).padStart(10,"0");
+/* нова фактура към стокова разписка: перата, количествата и получателят — от разписката; после всичко се променя свободно */
+function srInvFrom(x){const one=l=>{const it=l.item?itemById(l.item):null,q=l.item&&num(l.qty)>0?num(l.qty):1;
+    return {name:String(l.name||"").trim(),unit:it&&it.unit||"бр.",qty:q,price:num(l.price)!=null?r2(num(l.price)/q):null}};
+  return Object.assign(emptyInv(),{date:todayISO(),taxDate:x.date||todayISO(),place:SETTINGS.city||"",buyerType:"person",buyerName:x.buyerName||"",
+    vat:!!SETTINGS.invVatOn,author:SETTINGS.invMol||x.author||"",lines:(x.lines||[]).filter(l=>String(l.name||"").trim()||num(l.price)).map(one)})}
+/* един номер на фактура — само веднъж, независимо дали е към заявка или към разписка; връща къде е зает */
+function invNoUsed(no,reqs,receipts,exceptId){no=String(no||"").trim();if(!no)return null;
+  const r=(reqs||[]).find(x=>x.id!==exceptId&&!x.sample&&x.inv&&String(x.inv.number||"").trim()===no);if(r)return "заявка № "+r.number;
+  const x=(receipts||[]).find(x=>x.id!==exceptId&&x.inv&&String(x.inv.number||"").trim()===no);return x?"стокова разписка № "+x.number:null}
+async function invNoUsedNow(no,exceptId){let R=[],S=[];try{R=await DB.all("requests")}catch(e){}
+  try{const v=await getMeta("receipts",null);S=Object.values((v&&v.items)||{})}catch(e){S=Object.values(SR.items||{})}
+  return invNoUsed(no,R,S,exceptId)}
 async function invAssignNo(){
   const I=INV.inv;I.number=I.number.trim();
-  if(HAS_NUMS){if(!I.number){I.number=String(await takeNumber("invoice")).padStart(10,"0");SETTINGS.invNext=parseInt(I.number,10)+1;return true}}
+  if(HAS_NUMS){if(!I.number){ // сървърът не знае за фактурите към разписки — прескачаме номер, ако е зает там
+      for(let k=0;k<50;k++){I.number=String(await takeNumber("invoice")).padStart(10,"0");if(!(await invNoUsedNow(I.number,INV.id)))break}
+      SETTINGS.invNext=parseInt(I.number,10)+1;return true}}
   else{if(SRV||CLOUD){const s=await getMeta("settings",null);if(s&&(s.invNext||1)>(SETTINGS.invNext||1))SETTINGS.invNext=s.invNext}
-    if(!I.number){I.number=invNextNo();await bumpCounter("invNext",(SETTINGS.invNext||1)+1);return true}}
-  const dup=(await DB.all("requests")).find(x=>x.id!==INV.id&&x.inv&&String(x.inv.number).trim()===I.number);
-  if(dup&&!confirm(`Фактура № ${I.number} вече е издадена по заявка № ${dup.number}. Да продължа ли?`))return false;
+    if(!I.number){for(let k=0;k<50;k++){I.number=invNextNo();await bumpCounter("invNext",(SETTINGS.invNext||1)+1);if(!(await invNoUsedNow(I.number,INV.id)))break}return true}}
+  const dup=await invNoUsedNow(I.number,INV.id);
+  if(dup&&!confirm(`Фактура № ${I.number} вече е издадена (${dup}). Да продължа ли?`))return false;
   const n=parseInt(I.number,10);if(isFinite(n)&&n>=(SETTINGS.invNext||1)){await bumpCounter("invNext",n+1)}
   return true;
 }
@@ -4020,12 +4043,13 @@ $("#invPrint").onclick=async()=>{if(!needEdit("docs","издаване на фа
   if(!(await invAssignNo()))return;
   invPending=true;await invFlush();renderInv();
   $("#printArea").innerHTML=buildInvPrint(INV);
-  audit("Печат на фактура","№ "+INV.inv.number+" към заявка № "+INV.number+" · "+eur(invCalc(INV).total),INV.id);const old=document.title;document.title=`Фактура_${INV.inv.number}`;printNow(()=>{document.title=old})};
+  audit("Печат на фактура","№ "+INV.inv.number+(INV._sr?" към стокова разписка № ":" към заявка № ")+INV.number+" · "+eur(invCalc(INV).total),INV._sr?undefined:INV.id);const old=document.title;document.title=`Фактура_${INV.inv.number}`;printNow(()=>{document.title=old})};
 
 function renderInv(){
-  const r=INV,I=r.inv,co=I.buyerType==="company",t=calc(r).total;
+  const r=INV,I=r.inv,co=I.buyerType==="company",SRI=Array.isArray(I.lines),t=SRI?0:calc(r).total;
   const iT=(k,label,ph="",cls="",type="text")=>`<label class="f ${cls}">${label}<input class="ui-in" type="${type}" data-i="${k}" value="${esc(I[k]??"")}" placeholder="${esc(ph)}"></label>`;
-  $("#invTitle").textContent=`Фактура към заявка № ${r.number}`;
+  $("#invTitle").textContent=SRI?`Фактура към стокова разписка № ${r.number}`:`Фактура към заявка № ${r.number}`;
+  $("#invOpenReq").textContent=r._sr?"Отвори разписката":"Отвори заявката";
   $("#invBody").innerHTML=`
   ${SETTINGS.invEik?"":`<div class="notice">Данните на фирмата (ЕИК, МОЛ, адрес…) още не са попълнени. Отидете в „Настройки“ → „Данни за фактури“.</div>`}
   <div class="card"><div class="grid">
@@ -4044,8 +4068,17 @@ function renderInv(){
   </div>
   <h3>Услуга и плащане</h3>
   <div class="grid">
-    ${iT("desc","Описание (един общ ред)","","full")}
-    <label class="f">Сума за плащане (€)<input class="ui-in money" data-i="amount" value="${numIn(I.amount)}" placeholder="${numIn(t)} от заявката" inputmode="decimal"></label>
+    ${SRI?`<div class="full"><table class="list inv-lines"><thead><tr><th>Наименование</th><th style="width:90px">Мярка</th><th style="width:90px;text-align:right">К-во</th><th style="width:120px;text-align:right">Ед. цена (€)</th><th style="width:110px;text-align:right">Сума</th><th style="width:40px"></th></tr></thead>
+      <tbody>${I.lines.map((l,i)=>`<tr><td><input class="ui-in" data-il="${i}" data-lf="name" value="${esc(l.name||"")}" placeholder="напр. Ковчег" aria-label="Наименование"></td>
+        <td><input class="ui-in" data-il="${i}" data-lf="unit" value="${esc(l.unit||"")}" placeholder="мярка" aria-label="Мярка"></td>
+        <td><input class="ui-in" data-il="${i}" data-lf="qty" value="${numIn(l.qty)}" inputmode="decimal" style="text-align:right" placeholder="к-во" aria-label="Количество"></td>
+        <td><input class="ui-in" data-il="${i}" data-lf="price" value="${numIn(l.price)}" inputmode="decimal" style="text-align:right" placeholder="ед. цена" aria-label="Единична цена"></td>
+        <td style="text-align:right" data-ils="${i}">${eur(invLineSum(l))}</td>
+        <td><button type="button" class="btn small ghost" data-ildel="${i}" title="Махни реда">✕</button></td></tr>`).join("")||`<tr><td colspan="6" class="empty">Няма редове.</td></tr>`}</tbody>
+      <tfoot><tr><td colspan="4" style="text-align:right"><b>Сума за плащане:</b></td><td style="text-align:right"><b id="invLinesSum">${eur(invCalc(r).total)}</b></td><td></td></tr></tfoot></table>
+      <div class="row" style="margin-top:8px"><button type="button" class="btn small" id="invAddLine">+ Добави ред</button><span class="muted" style="font-size:12px">Цените са крайни${I.vat?", с ДДС":""}. Промените тук не променят разписката.</span></div></div>`
+    :`${iT("desc","Описание (един общ ред)","","full")}
+    <label class="f">Сума за плащане (€)<input class="ui-in money" data-i="amount" value="${numIn(I.amount)}" placeholder="${numIn(t)} от заявката" inputmode="decimal"></label>`}
     <label class="f">Начин на плащане<select class="ui-in" data-i="payment">${INV_PAY.map(p=>`<option ${I.payment===p?"selected":""}>${p}</option>`).join("")}</select></label>
     ${iT("author","Съставил")}
     <label class="f"><span><input type="checkbox" data-i="vat" ${I.vat?"checked":""}> С ДДС (${fmt(num(SETTINGS.invVatRate)??20).replace(/,00$/,"")} %)</span>
@@ -4055,19 +4088,29 @@ function renderInv(){
 }
 function invPreview(){$("#invPrev").innerHTML=buildInvPrint(INV)}
 const invBody=$("#invBody");
-invBody.addEventListener("input",e=>{const el=e.target;if(!INV||!el.dataset.i||el.type==="checkbox"||el.type==="radio"||el.tagName==="SELECT")return;
+invBody.addEventListener("input",e=>{const el=e.target;
+  if(INV&&el.dataset.il!=null){const l=INV.inv.lines[+el.dataset.il];if(!l)return;const f=el.dataset.lf;l[f]=f==="qty"||f==="price"?num(el.value):el.value;
+    const c=invBody.querySelector(`[data-ils="${el.dataset.il}"]`);if(c)c.textContent=eur(invLineSum(l));const t=$("#invLinesSum");if(t)t.textContent=eur(invCalc(INV).total);invPreview();invSaveSoon();return}
+  if(!INV||!el.dataset.i||el.type==="checkbox"||el.type==="radio"||el.tagName==="SELECT")return;
   INV.inv[el.dataset.i]=el.classList.contains("money")?num(el.value):el.value;invPreview();invSaveSoon()});
+invBody.addEventListener("click",e=>{if(!INV||!Array.isArray(INV.inv.lines))return;
+  if(e.target.id==="invAddLine"){INV.inv.lines.push({name:"",unit:"бр.",qty:1,price:null});renderInv();invSaveSoon();const n=$$('#invBody [data-lf="name"]');if(n.length)n[n.length-1].focus();return}
+  const d=e.target.closest("[data-ildel]");if(d){INV.inv.lines.splice(+d.dataset.ildel,1);renderInv();invSaveSoon()}});
 invBody.addEventListener("change",e=>{const el=e.target,k=el.dataset.i;if(!INV||!k)return;
   if(el.type==="radio"){if(!el.checked)return;INV.inv[k]=el.value;
     if(k==="buyerType"){const I=INV.inv,r=INV;I.buyerId="";I.buyerVat="";I.buyerMol="";
       I.buyerName=el.value==="person"?r.appName:"";I.buyerAddr=el.value==="person"?[r.appCity,r.appStreet,r.appNo].filter(Boolean).join(", "):""}
     renderInv()}
-  else if(el.type==="checkbox"){INV.inv[k]=el.checked;invPreview()}
+  else if(el.type==="checkbox"){INV.inv[k]=el.checked;if(Array.isArray(INV.inv.lines))renderInv();else invPreview()}
   else if(el.tagName==="SELECT"){INV.inv[k]=el.value;invPreview()}
   else return;
   invSaveSoon()});
 function invSaveSoon(){invPending=true;const s=$("#invState");s.textContent="Записване…";s.classList.add("dirty");clearTimeout(invTimer);invTimer=setTimeout(invFlush,400)}
 async function invFlush(){clearTimeout(invTimer);if(!invPending||!INV)return;invPending=false;
+  if(INV._sr){const x=SR.items[INV.id];if(!x){toast("Разписката не е намерена. Фактурата НЕ е записана.",true);return}
+    x.inv=structuredClone(INV.inv);srPending=true;await srFlush();if(srPending){invPending=true;return}
+    auditThrottled("inv"+INV.id,"Промени във фактура","стокова разписка № "+INV.number);
+    const s=$("#invState");s.textContent="Запазено ✓";s.classList.remove("dirty");return}
   let res;try{res=await guardedSave(INV.id,"inv",{inv:structuredClone(INV.inv)})}catch(e){invPending=true;toast("Фактурата НЕ е записана: "+e.message,true);return}
   if(!res){invPending=true;return}
   if(res.reload){INV=normalizeRequest(structuredClone(res.reload));renderInv();toast("Заредена е тяхната версия на фактурата.",true);return}
@@ -4095,8 +4138,10 @@ function buildInvPrint(r){
         ${row("Банка",S.invBank)}${row("IBAN",S.invIban)}${row("BIC",S.invBic)}</div>
     </div>
     <table class="inv-t">
-      <thead><tr><th style="width:8mm">№</th><th>Наименование на услугата</th><th style="width:16mm">Мярка</th><th class="m" style="width:14mm">К-во</th><th class="m" style="width:28mm">Ед. цена</th><th class="m" style="width:28mm">Стойност</th></tr></thead>
-      <tbody><tr><td>1</td><td>${esc(I.desc)}</td><td>услуга</td><td class="m">1</td><td class="m">${fmt(c.base)} €</td><td class="m">${fmt(c.base)} €</td></tr></tbody>
+      <thead><tr><th style="width:8mm">№</th><th>${Array.isArray(I.lines)?"Наименование на стоката / услугата":"Наименование на услугата"}</th><th style="width:16mm">Мярка</th><th class="m" style="width:14mm">К-во</th><th class="m" style="width:28mm">Ед. цена</th><th class="m" style="width:28mm">Стойност</th></tr></thead>
+      <tbody>${Array.isArray(I.lines)?I.lines.map((l,i)=>{const k=I.vat?1+c.rate/100:1,u=(num(l.price)??0)/k;
+          return `<tr><td>${i+1}</td><td>${esc(l.name)}</td><td>${esc(l.unit||"")}</td><td class="m">${numIn(num(l.qty)??0)}</td><td class="m">${fmt(r2(u))} €</td><td class="m">${fmt(r2(invLineSum(l)/k))} €</td></tr>`}).join("")
+        :`<tr><td>1</td><td>${esc(I.desc)}</td><td>услуга</td><td class="m">1</td><td class="m">${fmt(c.base)} €</td><td class="m">${fmt(c.base)} €</td></tr>`}</tbody>
     </table>
     <table class="inv-sum">
       <tr><td>Данъчна основа:</td><td class="m">${fmt(c.base)} €</td></tr>
@@ -4180,13 +4225,16 @@ function srCalc(x){const income=srTotal(x);let expenses=0;
   (x.lines||[]).forEach(l=>{if(l.issued&&l.issued.qty>0)expenses+=l.issued.cost||0;
     else if(x.stock&&l.item){const it=itemById(l.item);if(it)expenses+=(it.avgCost||it.lastCost||0)*(num(l.qty)??1)}});
   expenses=r2(expenses);return{income,expenses,profit:r2(income-expenses)}}
+/* издадени фактури към стокови разписки (за „Парите в периода“ и справката за счетоводителя) */
+async function srInvoices(){try{await srFlush();const v=await getMeta("receipts",null);return Object.values((v&&v.items)||{}).filter(x=>x&&x.inv&&String(x.inv.number||"").trim())}catch(e){return[]}}
 async function srForStats(){try{await srFlush();const v=await getMeta("receipts",null);return Object.values((v&&v.items)||{}).map(srNorm).filter(x=>x.stats&&x.date)}catch(e){return[]}}
 const srIssuedAny=x=>x.lines.some(l=>l.issued&&l.issued.qty>0)||x.orphans.length>0;
 async function renderSr(){await srFlush();await srLoad();
   if(SRID&&!SR.items[SRID])SRID=null;
   const ed=can("docs","edit"),one=!!SRID;
   $("#srBack").classList.toggle("hidden",!one);$("#srState").classList.toggle("hidden",!one);$("#srPrint").classList.toggle("hidden",!one);
-  $("#srDel").classList.toggle("hidden",!one||!ed);$("#srNew").classList.toggle("hidden",one||!ed);$("#srPrevCard").classList.toggle("hidden",!one);
+  $("#srDel").classList.toggle("hidden",!one||!ed);
+  {const x=one&&SR.items[SRID],b=$("#srInv"),has=!!(x&&x.inv);b.classList.toggle("hidden",!one||(!has&&!ed));b.textContent=has&&x.inv.number?"Фактура № "+x.inv.number:"Фактура"}$("#srNew").classList.toggle("hidden",one||!ed);$("#srPrevCard").classList.toggle("hidden",!one);
   if(one){srEditor();return}
   $("#srTitle").textContent="Стокови разписки";
   const L=srList();
@@ -4207,9 +4255,11 @@ $("#srBody").addEventListener("click",e=>{const tr=e.target.closest("[data-open]
     srEditor();srSaveSoon()}});
 $("#srDel").onclick=async()=>{if(!SRID||!needEdit("docs","изтриване на стокови разписки"))return;const x=SR.items[SRID];
   const back=srIssuedAny(x);
+  if(x.inv&&String(x.inv.number||"").trim()&&!confirm(`Към тази разписка има издадена фактура № ${x.inv.number}. Фактурата ще изчезне от справките за счетоводителя. Сигурни ли сте?`))return;
   if(!confirm(`Да изтрия ли стокова разписка № ${x.number}? Това не може да се върне.`+(back?"\n\nИзписаната по нея стока ще бъде върната в склада.":"")))return;
   if(back){const y=srNorm(structuredClone(x));y.stock=false;if(!(await srStockSync(y,"Изтрита стокова разписка № "+x.number,false)))return}
   delete SR.items[SRID];SRID=null;srPending=true;await srFlush();audit("Изтрита стокова разписка","№ "+x.number+" · "+eur(srTotal(x)));renderSr()};
+$("#srInv").onclick=openSrInvoice;
 $("#srPrint").onclick=async()=>{if(!SRID||!needEdit("docs","издаване на стокови разписки"))return;const x=SR.items[SRID];
   x.lines.forEach(l=>{if(!(String(l.name||"").trim()||num(l.price)||l.item)&&l.issued&&l.issued.qty>0)x.orphans.push(l.issued)});
   x.lines=x.lines.filter(l=>String(l.name||"").trim()||num(l.price)||l.item);
@@ -4287,13 +4337,15 @@ function srAcShow(inp){const x=SR.items[SRID];if(!x||!x.stock||inp.disabled){srA
   box.dataset.l=i;
   let prev=null;
   box.innerHTML=M.map((it,k)=>{const c=it.cat||"Без категория",hd=c!==prev?`<div class="g">${esc(c)}</div>`:"";prev=c;
-    return hd+`<div class="o${k===0&&typed&&!l.item?" on":""}" data-pick="${esc(it.id)}"><b>${esc(it.name)}</b><span>налични ${numIn(it.stock)} ${esc(it.unit)}${it.salePrice!=null?" · "+eur(it.salePrice):""}</span></div>`}).join("")+
+    return hd+`<div class="o${k===0&&typed&&!l.item?" on":""}" data-pick="${esc(it.id)}"><b>${esc(it.name)}</b><span>налични ${numIn(it.stock)} ${esc(it.unit)}${srUnitPrice(it)!=null?" · "+eur(srUnitPrice(it)):""}</span></div>`}).join("")+
     `<div class="h">${M.length?(typed?"Изберете от склада или продължете да пишете, ако перото не е от склада.":"Изберете артикул от склада или напишете перо на ръка."):"Няма такъв артикул в склада. Перото ще е без склад."}</div>`;
   const r=inp.getBoundingClientRect();box.style.left=Math.max(8,Math.min(r.left,innerWidth-Math.max(r.width,300)-8))+"px";box.style.top=(r.bottom+4)+"px";box.style.width=Math.max(r.width,300)+"px";
   box.classList.remove("hidden")}
+/* цена на стоковата разписка: отделната цена за разписки, ако е въведена; иначе продажната от заявката */
+const srUnitPrice=it=>it&&it.srPrice!=null?it.srPrice:(it&&it.salePrice!=null?it.salePrice:null);
 function srPick(i,id){const x=SR.items[SRID],l=x&&x.lines[i],it=itemById(id);if(!l||!it)return;
   // на разписката — както е в „Инвентар“: „Категория - Име“ („Ковчег - 00“); ако името вече съдържа категорията — само името
-  const cat=String(it.cat||"").trim();l.item=it.id;l.name=cat&&!srHit(srWords(cat),it.name,4)?cat+" - "+it.name:it.name;if(!(num(l.qty)>0))l.qty=1;if(it.salePrice!=null)l.price=r2(it.salePrice*l.qty);
+  const cat=String(it.cat||"").trim();l.item=it.id;l.name=cat&&!srHit(srWords(cat),it.name,4)?cat+" - "+it.name:it.name;if(!(num(l.qty)>0))l.qty=1;const up=srUnitPrice(it);if(up!=null)l.price=r2(up*l.qty);
   srAcHide();srEditor();srSaveSoon();const q=$(`#srBody [data-f="qty"][data-l="${i}"]`);if(q){q.focus();q.select()}}
 function srSaveSoon(){srPending=true;const s=$("#srState");s.textContent="Записване…";s.classList.add("dirty");clearTimeout(srTimer);srTimer=setTimeout(srFlush,500)}
 async function srFlush(){clearTimeout(srTimer);if(!srPending)return;srPending=false;
@@ -4539,7 +4591,7 @@ const STK_UNITS=["бр.","компл.","м","пак.","л"];
 const qn=v=>Math.round((+v||0)*1000)/1000;
 const itemById=id=>INVD.items.find(x=>x.id===id);
 function migrateInvd(d){d=d||{};if(!Array.isArray(d.items))d.items=[];if(!Array.isArray(d.moves))d.moves=[];
-  d.items.forEach(it=>{for(const[k,v]of Object.entries({sku:"",desc:"",cat:"",unit:"бр.",stock:0,avgCost:0,lastCost:null,salePrice:null,minStock:0,lines:[],lastBuy:"",status:"active",onDemand:false,img:"",qr:false}))if(it[k]===undefined)it[k]=v});
+  d.items.forEach(it=>{for(const[k,v]of Object.entries({sku:"",desc:"",cat:"",unit:"бр.",stock:0,avgCost:0,lastCost:null,salePrice:null,srPrice:null,minStock:0,lines:[],lastBuy:"",status:"active",onDemand:false,img:"",qr:false}))if(it[k]===undefined)it[k]=v});
   return d}
 /* записва инвентара (и при нужда заявката) атомарно; mut работи върху копия */
 async function invCommit(mut,req){
@@ -4682,7 +4734,7 @@ function renderStock(){
       <td><b>${esc(i.name)}</b>${i.status==="archived"?' <span class="tag">архивиран</span>':""}${i.desc?`<div class="muted">${esc(i.desc)}</div>`:""}<div class="lnk">${lineNames(i).map(n=>`<span>${esc(n)}</span>`).join("")}</div></td>
       <td class="muted">${esc(i.cat)||"—"}</td>
       <td class="money" style="font-weight:600;${!i.onDemand&&(isLow(i)||i.stock<=0)?"color:var(--caution)":""}">${i.onDemand?'<span class="tag">при нужда</span>':`${numIn(i.stock)} <span class="muted">${esc(i.unit)}</span>${isLow(i)?'<div class="muted" style="color:var(--caution)">под минимума</div>':""}`}</td>
-      <td class="money muted">${numIn(i.minStock)||"—"}</td><td class="money">${i.lastCost!=null?eur(i.lastCost):"—"}</td><td class="money">${i.salePrice!=null?eur(i.salePrice):"—"}</td>
+      <td class="money muted">${numIn(i.minStock)||"—"}</td><td class="money">${i.lastCost!=null?eur(i.lastCost):"—"}</td><td class="money">${i.salePrice!=null?eur(i.salePrice):"—"}${i.srPrice!=null?`<div class="muted" title="Цена в стоковите разписки">разписка ${eur(i.srPrice)}</div>`:""}</td>
       <td class="num muted">${bgDate(i.lastBuy)||"—"}</td>
       <td class="acts"><button class="btn small" data-sa="del" data-id="${i.id}" ${i.status==="archived"||i.onDemand?"disabled":""}>Доставка</button>
         <button class="btn small ghost" data-sa="hist" data-id="${i.id}">История</button><button class="btn small ghost" data-sa="edit" data-id="${i.id}">Редакция</button>
@@ -4697,7 +4749,7 @@ function renderStock(){
     const ini=esc(String(i.name||"?").trim().charAt(0).toUpperCase());
     return `<article class="mx-card${i.status==="archived"?" arch":""}"><div class="img" ${i.img?`style="background-image:url('${esc(scImgUrl(i.img))}')"`:""}>${i.img?"":`<span>${ini}</span>`}${chip}</div>
       <div class="b"><div class="nm">${esc(i.name)}</div><div class="muted cat">${esc(i.cat||"Без категория")}${i.sku?" · "+esc(i.sku):""}</div>
-      <div class="kv"><div><span>Цена</span><b>${i.salePrice!=null?eur(i.salePrice):"—"}</b></div><div><span>Разход</span><b>${c!=null?eur(c):"—"}</b></div><div><span>Марж</span><b style="color:${m==null?"inherit":m>=30?"var(--ok)":"var(--caution)"}">${m==null?"—":m+" %"}</b></div></div>
+      <div class="kv"><div><span>Цена</span><b>${i.salePrice!=null?eur(i.salePrice):"—"}</b>${i.srPrice!=null?`<small class="muted" title="Цена в стоковите разписки">разписка ${eur(i.srPrice)}</small>`:""}</div><div><span>Разход</span><b>${c!=null?eur(c):"—"}</b></div><div><span>Марж</span><b style="color:${m==null?"inherit":m>=30?"var(--ok)":"var(--caution)"}">${m==null?"—":m+" %"}</b></div></div>
       ${ed&&i.status==="active"?`<div class="mx-seg sm"><button type="button" data-od="${i.id}" data-v="0" class="${i.onDemand?"":"on"}">На склад</button><button type="button" data-od="${i.id}" data-v="1" class="${i.onDemand?"on":""}">При нужда</button></div>`:""}
       ${CLOUD?`<div class="qr"><span>В каталога за клиенти</span><button type="button" class="mx-sw" role="switch" aria-checked="${!!i.qr}" data-qr="${i.id}" ${adm?"":"disabled title=\"Само администратор\""} aria-label="Каталог за клиенти: ${esc(i.name)}"></button></div>`:""}
       <div class="acts">${!i.onDemand&&i.status==="active"?`<button class="btn small" data-sa="del" data-id="${i.id}">Доставка</button>`:""}<button class="btn small ghost" data-sa="hist" data-id="${i.id}">История</button>${ed?`<button class="btn small ghost" data-sa="edit" data-id="${i.id}">Редакция</button>`:""}</div></div></article>`}).join("")
@@ -4737,7 +4789,8 @@ function itemModal(id){
       <label class="f" style="grid-column:span 2">Име на артикула *<input class="ui-in" id="fiName" value="${esc(v("name"))}" placeholder="напр. Драперия 02"></label>
       <label class="f">Категория<input class="ui-in" id="fiCat" value="${esc(v("cat"))}" list="fiCats" placeholder="напр. Драперии"><datalist id="fiCats">${cats.map(c=>`<option>${esc(c)}</option>`).join("")}</datalist></label>
       <label class="f">Мерна единица<input class="ui-in" id="fiUnit" value="${esc(v("unit")||"бр.")}" list="fiUnits"><datalist id="fiUnits">${STK_UNITS.map(u=>`<option>${u}</option>`).join("")}</datalist></label>
-      <label class="f">Продажна цена (€) *<input class="ui-in money" id="fiPrice" value="${numIn(it?it.salePrice:null)}" inputmode="decimal"></label>
+      <label class="f">Продажна цена в заявката (€) *<input class="ui-in money" id="fiPrice" value="${numIn(it?it.salePrice:null)}" inputmode="decimal"></label>
+      <label class="f">Продажна цена в стоковите разписки (€)<input class="ui-in money" id="fiSrPrice" value="${numIn(it?it.srPrice:null)}" inputmode="decimal" placeholder="същата като в заявката"></label>
       <label class="f">Минимална наличност<input class="ui-in money" id="fiMin" value="${numIn(it?it.minStock:null)}" inputmode="decimal" placeholder="0"></label>
       <div class="f full"><span class="muted">Как се води</span><div class="mx-seg" id="fiOdSeg"><button type="button" data-v="0" class="${it&&it.onDemand?"":"on"}">На склад, броим наличността</button><button type="button" data-v="1" class="${it&&it.onDemand?"on":""}">Купува се при нужда</button></div>
         <span class="muted" id="fiOdHint" style="font-size:12.5px"></span></div>
@@ -4758,11 +4811,11 @@ function itemModal(id){
       if(!name)throw new Error("Въведете име на артикула.");
       if(sku&&INVD.items.some(i=>i.id!==id&&i.sku.toLowerCase()===sku.toLowerCase()))throw new Error(`Кодът „${sku}“ вече се използва.`);
       if(INVD.items.some(i=>i.id!==id&&i.name.toLowerCase()===name.toLowerCase())&&!confirm(`Вече има артикул с име „${name}“. Да продължа ли?`))return false;
-      const price=posNum(m.q("#fiPrice").value,"Продажна цена",true),min=m.q("#fiMin").value.trim()?posNum(m.q("#fiMin").value,"Минимална наличност",true):0;
+      const price=posNum(m.q("#fiPrice").value,"Продажна цена в заявката",true),srp=m.q("#fiSrPrice").value.trim()?posNum(m.q("#fiSrPrice").value,"Продажна цена в стоковите разписки",true):null,min=m.q("#fiMin").value.trim()?posNum(m.q("#fiMin").value,"Минимална наличност",true):0;
       const lines=[...m.el.querySelectorAll(".lines-pick input:checked")].map(x=>+x.value);
       if(!lines.length)throw new Error("Изберете поне едно перо от заявката.");
       const odv=m.el.querySelector("#fiOdSeg .on").dataset.v==="1";
-      const data={sku,name,cat:m.q("#fiCat").value.trim(),unit:m.q("#fiUnit").value.trim()||"бр.",salePrice:price,minStock:odv?0:min,lines,desc:m.q("#fiDesc").value.trim(),onDemand:odv};
+      const data={sku,name,cat:m.q("#fiCat").value.trim(),unit:m.q("#fiUnit").value.trim()||"бр.",salePrice:price,srPrice:srp,minStock:odv?0:min,lines,desc:m.q("#fiDesc").value.trim(),onDemand:odv};
       if(odv){const oc=m.q("#fiOdCost").value.trim();data.lastCost=oc?posNum(oc,"Покупна цена",true):null}
       if(m.q("#fiQr"))data.qr=m.q("#fiQr").checked;
       const f=m.q("#fiImg")&&m.q("#fiImg").files[0];
@@ -5333,7 +5386,7 @@ async function renderFin(){
     +kpi(srs.length?"Печалба (заявки и разписки)":"Печалба от заявките",`<span class="${pr<0?"neg":"pos"}">${eur(pr)}</span>`,inc?`марж ${Math.round(pr/inc*100)} %`:"")
     +(()=>{const oh=costsTotal(rg),net=r2(pr-oh);return kpi("Общи разходи",eur(oh),`<a href="#" data-gocosts>от „Разходи“</a>`)+kpi("Чиста печалба",`<span class="${net<0?"neg":"pos"}">${eur(net)}</span>`,"след общите разходи")})()+kpi("Неплатено за периода",`<span style="color:${un.length?"var(--caution)":"inherit"}">${eur(sumBy(un,r=>calc(r).rest))}</span>`,`${un.length} ${un.length===1?"заявка":"заявки"}`);
   const allUn=all.filter(r=>!r.paid&&calc(r).rest>0).sort((a,b)=>(a.ritDate||reqDay(a)).localeCompare(b.ritDate||reqDay(b)));
-  mxFinMoney(all,rg);mxFinChart(all);
+  mxFinMoney(all,rg,await srInvoices());mxFinChart(all);
   $("#finUnpaid").innerHTML=allUn.length?`<table class="list"><thead><tr><th>№</th><th>Заявител</th><th>Телефон</th><th>Ритуал</th><th class="money">Общо</th><th class="money">Аванс</th><th class="money">Остатък</th></tr></thead><tbody>${
     allUn.map(r=>{const c=calc(r);return `<tr class="click" data-id="${r.id}"><td><b>${esc(r.number)}</b>${sampleTag(r)}</td><td>${esc(r.appName)||"—"}</td><td class="num muted">${esc(r.appPhone)||""}</td><td class="num">${bgDate(r.ritDate)||"—"}</td>
       <td class="money">${eur(c.total)}</td><td class="money muted">${eur(c.advance)}</td><td class="money" style="color:var(--caution);font-weight:600">${eur(c.rest)}</td></tr>`}).join("")}</tbody>
@@ -5348,9 +5401,9 @@ async function renderFin(){
 }
 $$("#finSeg button").forEach(b=>b.onclick=()=>{FINP=b.dataset.p;renderFin()});
 // „Парите в периода“: какво реално е влязло (плащания по дата на плащане) и какво е фактурирано (по дата на фактурата)
-function mxFinMoney(all,rg){const inR=d=>finIn(d,rg);let paid=0,refund=0,np=0;
+function mxFinMoney(all,rg,srInv=[]){const inR=d=>finIn(d,rg);let paid=0,refund=0,np=0;
   for(const r of all)for(const p of (r.payments||[])){if(!inR(p.date))continue;const a=Number(p.amount)||0;if(p.type==="refund")refund+=a;else{paid+=a;np++}}
-  const inv=all.filter(r=>r.inv&&String(r.inv.number||"").trim()&&inR(r.inv.date));const invT=inv.reduce((a,r)=>a+invCalc({...r,inv:Object.assign(emptyInv(),r.inv)}).total,0);
+  const inv=all.filter(r=>r.inv&&String(r.inv.number||"").trim()&&inR(r.inv.date)).concat(srInv.filter(x=>inR(x.inv.date)));const invT=inv.reduce((a,r)=>a+invCalc({...r,inv:Object.assign(emptyInv(),r.inv)}).total,0);
   $("#finMoney").innerHTML=`<h2>Парите в периода</h2>
     <div class="mx-money"><div><small>Получени плащания</small><b>${eur(r2(paid))}</b><span class="muted">${np} ${np===1?"плащане":"плащания"} · по дата на плащане</span></div>
     <div><small>Върнати (сторно)</small><b>${refund?"−"+eur(r2(refund)):"—"}</b><span class="muted">&nbsp;</span></div>
@@ -5379,9 +5432,12 @@ const finTag=rg=>rg?`${rg[0]||"nachalo"}_${rg[1]||"dnes"}`:"vsichki";
 $("#finCsvInv").onclick=async()=>{const rg=finRange();
   const rows=(await allReqs()).filter(r=>!r.sample&&r.inv&&String(r.inv.number||"").trim()&&finIn(r.inv.date,rg))
     .sort((a,b)=>String(a.inv.number).localeCompare(String(b.inv.number))).map(r=>{const I=Object.assign(emptyInv(),r.inv),c=invCalc({...r,inv:I});
-      return [I.number,bgDate(I.date),bgDate(I.taxDate||I.date),I.buyerType==="company"?"фирма":"физическо лице",I.buyerName,I.buyerId,I.buyerVat,I.buyerAddr,c.base,c.vat,c.total,I.payment,r.number]});
+      return [I.number,bgDate(I.date),bgDate(I.taxDate||I.date),I.buyerType==="company"?"фирма":"физическо лице",I.buyerName,I.buyerId,I.buyerVat,I.buyerAddr,c.base,c.vat,c.total,I.payment,"заявка № "+r.number]})
+    .concat((await srInvoices()).filter(x=>finIn(x.inv.date,rg)).map(x=>{const I=Object.assign(emptyInv(),x.inv),c=invCalc({inv:I});
+      return [I.number,bgDate(I.date),bgDate(I.taxDate||I.date),I.buyerType==="company"?"фирма":"физическо лице",I.buyerName,I.buyerId,I.buyerVat,I.buyerAddr,c.base,c.vat,c.total,I.payment,"стокова разписка № "+x.number]}))
+    .sort((a,b)=>String(a[0]).localeCompare(String(b[0])));
   if(!rows.length){$("#finCsvNote").textContent="Няма издадени фактури за периода.";return}
-  downloadCsv(`fakturi_${finTag(rg)}.csv`,["Фактура №","Дата","Дата на данъчното събитие","Получател","Име / фирма","ЕГН / ЕИК","ДДС №","Адрес","Основа","ДДС","Общо","Плащане","Заявка №"],rows);
+  downloadCsv(`fakturi_${finTag(rg)}.csv`,["Фактура №","Дата","Дата на данъчното събитие","Получател","Име / фирма","ЕГН / ЕИК","ДДС №","Адрес","Основа","ДДС","Общо","Плащане","Към документ"],rows);
   $("#finCsvNote").textContent=`${rows.length} ${rows.length===1?"фактура":"фактури"} ✔`;audit("Справка за счетоводителя","фактури · "+rows.length)};
 $("#finCsvPay").onclick=async()=>{const rg=finRange(),rows=[];
   for(const r of (await allReqs()).filter(x=>!x.sample)){
@@ -6583,11 +6639,13 @@ function platformShow(P){
 }
 /* ---------- версия: показва се долу в менюто и при вход; ако сайтът е обновен, излиза лента ---------- */
 const APP_VERSION="1.0",APP_DATE="19.11.2026";
-const APP_BUILD="26"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
+const APP_BUILD="27"; // вътрешен номер на сборката: вдига се при всяко публикуване, дори версията да не се сменя (версията остава 1.0 до плащането с карта)
 /* „Какво ново“ — най-новата версия най-отгоре. При всяко публикуване: нов ред тук + APP_VERSION/APP_DATE.
    Пише се на езика на служителите (какво виждат/правят), не технически. */
 const CHANGELOG=[
   {v:"1.0",d:"19.11.2026",items:[
+    "Стокови разписки: бутон „Фактура“. Перата се попълват от разписката и могат свободно да се променят, добавят и махат. Номерът е от общата поредица на фактурите и фактурата влиза в справката за счетоводителя.",
+    "Инвентар: втора продажна цена за стоковите разписки. Ако е празна, в разписката излиза цената от заявката.",
     "Нов бутон „Помощ“ в менюто: ръководство по раздели с търсене и „Пишете ни“ за въпрос до екипа.",
     "Историята на версиите вече не се показва в програмата; долу вляво остава само номерът на версията.",
     "По-чисто меню: долу вляво остават само номерът на версията и бутонът за тъмна/светла тема.",
