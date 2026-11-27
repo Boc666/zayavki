@@ -86,8 +86,11 @@ header.nav.scrolled{border-bottom-color:var(--line)}
 .trust span{display:inline-flex;align-items:center;gap:8px;font-size:.9375rem;color:var(--ink2)}
 .trust svg{width:16px;height:16px;color:var(--ink3)}
 
-@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.hero .wrap>div{animation:rise .5s cubic-bezier(.2,.8,.2,1) both}.hero .wrap>.stage{animation-delay:.08s}
+/* движение: прогрес при четене, думите на заглавието изплуват, прегледът се накланя леко */
+#progress{position:fixed;left:0;top:0;height:2px;width:100%;transform-origin:0 50%;transform:scaleX(0);background:var(--bronze);z-index:60}
+.hero h1 .w{display:inline-block;overflow:hidden;vertical-align:top;padding-bottom:.08em;margin-bottom:-.08em}
+.hero h1 .w>span{display:inline-block}
+.stage{perspective:1600px}.mock{transform-origin:50% 0;will-change:transform}
 /* макет на програмата */
 .stage{position:relative;padding:0 0 56px 40px}
 .mock{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 24px 48px -24px rgba(22,24,29,.22),0 2px 6px rgba(22,24,29,.04);overflow:hidden}
@@ -266,6 +269,7 @@ footer{border-top:1px solid var(--line);padding-block:56px calc(36px + env(safe-
 <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
+<div id="progress" aria-hidden="true"></div>
 
 <header class="nav" id="nav">
   <div class="wrap">
@@ -349,10 +353,10 @@ footer{border-top:1px solid var(--line);padding-block:56px calc(36px + env(safe-
 <!-- ================= ЛЕНТА ================= -->
 <section class="facts" aria-label="Накратко">
   <div class="wrap">
-    <div class="fact"><b>14 дни</b><span>безплатно, без банкова карта</span></div>
-    <div class="fact"><b>1 заявка</b><span>от първото обаждане до фактурата</span></div>
-    <div class="fact"><b>40 дни</b><span>и другите помени се смятат сами</span></div>
-    <div class="fact"><b>Excel</b><span>справка за счетоводителя с едно натискане</span></div>
+    <div class="fact rv"><b>14 дни</b><span>безплатно, без банкова карта</span></div>
+    <div class="fact rv"><b>1 заявка</b><span>от първото обаждане до фактурата</span></div>
+    <div class="fact rv"><b>40 дни</b><span>и другите помени се смятат сами</span></div>
+    <div class="fact rv"><b>Excel</b><span>справка за счетоводителя с едно натискане</span></div>
   </div>
 </section>
 
@@ -366,15 +370,15 @@ footer{border-top:1px solid var(--line);padding-block:56px calc(36px + env(safe-
       <div style="margin-top:30px"><a class="btn pri" href="https://app.memoriox.eu/?trial=1">Пробвай 14 дни безплатно</a></div>
     </div>
     <div class="cards">
-      <article class="card"><div class="ic"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></div><h3>Заявки и бланки</h3><p>Цялата заявка за погребение или кремация на едно място: данни за починалия и близките, ритуал, гробище и всички услуги. За всеки случай виждате докъде е стигнал, кой отговаря за него и какво остава да се направи.</p></article>
-      <article class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M6 3.5h9l3 3v14H6z"/><path d="M9 11h6M9 15h4"/><path d="M15 3.5v3h3"/></svg></div><h3>Цени, оферти и фактури</h3><p>Цената се смята сама, с всички такси. Оферта за близките, фактура с ДДС и сума с думи, последователна номерация без дубликати. Всичко излиза директно от базата.</p></article>
-      <article class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 4l8 3.5-8 3.5z"/><path d="M4 7.5V16l8 4 8-4V7.5M12 11v9"/></svg></div><h3>Склад и инвентар</h3><p>Ковчези, урни, венци и всичко останало. Доставки, изписване по заявка, покупни и продажни цени, среднопретеглена себестойност и предупреждение при изчерпване.</p></article>
-      <article class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 20V4M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/></svg></div><h3>Финанси и отчети</h3><p>Оборот, разходи, неплатени суми и чиста печалба по заявка и по месеци. Справка за счетоводителя в Excel с едно натискане.</p></article>
-      <article class="card"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></div><h3>Некролози</h3><p>Брой поръчки, разходи и печалба от некролозите, ценоразпис по вид: цветна, черно-бяла или без снимка. Всичко се отчита само.</p></article>
-      <article class="card"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h3>Помени и календар</h3><p>9 дни, 40 дни, 6 месеца и година се смятат сами. Напомняния към близките по SMS и Viber, за да не изпускате повторните поръчки. Общ календар на ритуалите.</p></article>
-      <article class="card"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 7l14 10M19 7 5 17"/></svg></div><h3>Хладилна камера</h3><p>Регистър на телата в камерата: име, клетка, дата на влизане и извеждане, дни престой и свободни места. Ясно кой е вътре и колко време.</p></article>
-      <article class="card"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3.5"/><path d="M3 19c.8-3 3.2-4.5 6-4.5s5.2 1.5 6 4.5"/><path d="M16 5.5a3 3 0 0 1 0 6M18 14.5c1.5.6 2.5 2 3 4.5"/></svg></div><h3>Клиенти и партньори</h3><p>Клиентски профили с история на заявките и засичане по телефон. Указател с гробищни паркове, храмове и доставчици, с всички телефони на едно място.</p></article>
-      <article class="card"><div class="ic"><svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></div><h3>Екип и права</h3><p>Няколко потребители с роли и права по раздели. Решавате кой какво вижда и какво може да променя, а историята пази кой какво е направил.</p></article>
+      <article class="card rv"><div class="ic"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></div><h3>Заявки и бланки</h3><p>Цялата заявка за погребение или кремация на едно място: данни за починалия и близките, ритуал, гробище и всички услуги. За всеки случай виждате докъде е стигнал, кой отговаря за него и какво остава да се направи.</p></article>
+      <article class="card rv"><div class="ic"><svg viewBox="0 0 24 24"><path d="M6 3.5h9l3 3v14H6z"/><path d="M9 11h6M9 15h4"/><path d="M15 3.5v3h3"/></svg></div><h3>Цени, оферти и фактури</h3><p>Цената се смята сама, с всички такси. Оферта за близките, фактура с ДДС и сума с думи, последователна номерация без дубликати. Всичко излиза директно от базата.</p></article>
+      <article class="card rv"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 4l8 3.5-8 3.5z"/><path d="M4 7.5V16l8 4 8-4V7.5M12 11v9"/></svg></div><h3>Склад и инвентар</h3><p>Ковчези, урни, венци и всичко останало. Доставки, изписване по заявка, покупни и продажни цени, среднопретеглена себестойност и предупреждение при изчерпване.</p></article>
+      <article class="card rv"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 20V4M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/></svg></div><h3>Финанси и отчети</h3><p>Оборот, разходи, неплатени суми и чиста печалба по заявка и по месеци. Справка за счетоводителя в Excel с едно натискане.</p></article>
+      <article class="card rv"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></div><h3>Некролози</h3><p>Брой поръчки, разходи и печалба от некролозите, ценоразпис по вид: цветна, черно-бяла или без снимка. Всичко се отчита само.</p></article>
+      <article class="card rv"><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h3>Помени и календар</h3><p>9 дни, 40 дни, 6 месеца и година се смятат сами. Напомняния към близките по SMS и Viber, за да не изпускате повторните поръчки. Общ календар на ритуалите.</p></article>
+      <article class="card rv"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 7l14 10M19 7 5 17"/></svg></div><h3>Хладилна камера</h3><p>Регистър на телата в камерата: име, клетка, дата на влизане и извеждане, дни престой и свободни места. Ясно кой е вътре и колко време.</p></article>
+      <article class="card rv"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3.5"/><path d="M3 19c.8-3 3.2-4.5 6-4.5s5.2 1.5 6 4.5"/><path d="M16 5.5a3 3 0 0 1 0 6M18 14.5c1.5.6 2.5 2 3 4.5"/></svg></div><h3>Клиенти и партньори</h3><p>Клиентски профили с история на заявките и засичане по телефон. Указател с гробищни паркове, храмове и доставчици, с всички телефони на едно място.</p></article>
+      <article class="card rv"><div class="ic"><svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></div><h3>Екип и права</h3><p>Няколко потребители с роли и права по раздели. Решавате кой какво вижда и какво може да променя, а историята пази кой какво е направил.</p></article>
     </div>
   </div>
 </section>
@@ -387,14 +391,14 @@ footer{border-top:1px solid var(--line);padding-block:56px calc(36px + env(safe-
       <h2>Дребните неща, които пестят часове</h2>
     </div>
     <div class="more-grid">
-      <div class="mi"><b>Документи на Word и PDF</b><p>Бланки и декларации на едно място, с отваряне и печат 1:1.</p></div>
-      <div class="mi"><b>Работни листове</b><p>Разходите и печалбата по всяко погребение, ясно и подредено.</p></div>
-      <div class="mi"><b>Разходи на агенцията</b><p>Заплати, наем, ток и планови разходи, с автомобилите поотделно.</p></div>
-      <div class="mi"><b>Линк към клиента</b><p>Оферта или молба за отзив, която близките отварят на телефона си.</p></div>
-      <div class="mi"><b>Плащания и аванси</b><p>Остатъци, аванси и сторно. Нищо не се забравя.</p></div>
-      <div class="mi"><b>Бързо търсене</b><p>Заявки, клиенти и партньори с едно натискане.</p></div>
-      <div class="mi"><b>Работи на телефона</b><p>Заявка направо от терен, без да сте в офиса.</p></div>
-      <div class="mi"><b>Архив по всяко време</b><p>Сваляте всичко, когато поискате. Данните са ваши.</p></div>
+      <div class="mi rv"><b>Документи на Word и PDF</b><p>Бланки и декларации на едно място, с отваряне и печат 1:1.</p></div>
+      <div class="mi rv"><b>Работни листове</b><p>Разходите и печалбата по всяко погребение, ясно и подредено.</p></div>
+      <div class="mi rv"><b>Разходи на агенцията</b><p>Заплати, наем, ток и планови разходи, с автомобилите поотделно.</p></div>
+      <div class="mi rv"><b>Линк към клиента</b><p>Оферта или молба за отзив, която близките отварят на телефона си.</p></div>
+      <div class="mi rv"><b>Плащания и аванси</b><p>Остатъци, аванси и сторно. Нищо не се забравя.</p></div>
+      <div class="mi rv"><b>Бързо търсене</b><p>Заявки, клиенти и партньори с едно натискане.</p></div>
+      <div class="mi rv"><b>Работи на телефона</b><p>Заявка направо от терен, без да сте в офиса.</p></div>
+      <div class="mi rv"><b>Архив по всяко време</b><p>Сваляте всичко, когато поискате. Данните са ваши.</p></div>
     </div>
   </div>
 </section>
@@ -409,9 +413,9 @@ footer{border-top:1px solid var(--line);padding-block:56px calc(36px + env(safe-
     </div>
     <div class="steps" id="steps">
       <div class="track" aria-hidden="true"><i id="trackFill"></i></div>
-      <div class="step"><div class="dot">1</div><h3>Регистрирате агенцията</h3><p>Натискате „Пробвай 14 дни безплатно“, въвеждате името на агенцията и влизате веднага с 14 дни пълен безплатен достъп.</p></div>
-      <div class="step"><div class="dot">2</div><h3>Кратко обучение в програмата</h3><p>При първия вход програмата ви превежда стъпка по стъпка. За минути сте готови за първата истинска заявка.</p></div>
-      <div class="step"><div class="dot">3</div><h3>Персонализираме по ваше желание</h3><p>Започвате с готов формат на заявката. При желание го нагласяме точно по вашата бланка. Вие само ни я пращате.</p></div>
+      <div class="step rv"><div class="dot">1</div><h3>Регистрирате агенцията</h3><p>Натискате „Пробвай 14 дни безплатно“, въвеждате името на агенцията и влизате веднага с 14 дни пълен безплатен достъп.</p></div>
+      <div class="step rv"><div class="dot">2</div><h3>Кратко обучение в програмата</h3><p>При първия вход програмата ви превежда стъпка по стъпка. За минути сте готови за първата истинска заявка.</p></div>
+      <div class="step rv"><div class="dot">3</div><h3>Персонализираме по ваше желание</h3><p>Започвате с готов формат на заявката. При желание го нагласяме точно по вашата бланка. Вие само ни я пращате.</p></div>
     </div>
   </div>
 </section>
@@ -449,7 +453,7 @@ footer{border-top:1px solid var(--line);padding-block:56px calc(36px + env(safe-
 <!-- ================= ПРИЗИВ ================= -->
 <section class="cta" id="kontakt">
   <div class="wrap">
-    <div class="cta-box">
+    <div class="cta-box rv">
       <div>
         <h2>Започнете с първата си заявка</h2>
         <p>14 дни безплатно, без банкова карта. Нужна е помощ при започването? Обадете се на екипа.</p>
@@ -478,6 +482,8 @@ footer{border-top:1px solid var(--line);padding-block:56px calc(36px + env(safe-
   </div>
 </footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script>
 (function(){
   // меню на телефон
@@ -487,6 +493,48 @@ footer{border-top:1px solid var(--line);padding-block:56px calc(36px + env(safe-
   // линия под навигацията след скрол
   var onS=function(){nav.classList.toggle("scrolled",window.scrollY>8)};onS();window.addEventListener("scroll",onS,{passive:true});
 
+
+  var reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(reduce||!window.gsap||!window.ScrollTrigger)return; // без анимации всичко е видимо по подразбиране
+  gsap.registerPlugin(ScrollTrigger);
+
+  // прогрес на четене
+  gsap.to("#progress",{scaleX:1,ease:"none",scrollTrigger:{start:0,end:"max",scrub:.3}});
+
+  // заглавието: думите изплуват бързо (цялото е видимо за под секунда)
+  var h1=document.querySelector(".hero h1");
+  (function split(el){[].slice.call(el.childNodes).forEach(function(n){
+    if(n.nodeType===3){var f=document.createDocumentFragment();n.textContent.split(/(\s+)/).forEach(function(t){
+        if(!t)return;if(/^\s+$/.test(t)){f.appendChild(document.createTextNode(t));return}
+        var w=document.createElement("span");w.className="w";var i=document.createElement("span");i.textContent=t;w.appendChild(i);f.appendChild(w)});
+      n.parentNode.replaceChild(f,n)}
+    else if(n.nodeType===1)split(n)})})(h1);
+  var tl=gsap.timeline({defaults:{ease:"power3.out"}});
+  tl.from(".hero .eyebrow",{y:8,opacity:0,duration:.35})
+    .from(".hero h1 .w>span",{yPercent:105,duration:.55,stagger:.035},"-=.2")
+    .from(".hero p.lead,.hero .ctas,.hero .free,.hero .trust",{y:12,opacity:0,duration:.45,stagger:.05},"-=.35")
+    .from("#mock",{y:32,opacity:0,rotateX:10,duration:.8,ease:"power2.out"},"-=.7")
+    .from(".sheet",{y:24,opacity:0,rotate:-9,duration:.7,ease:"power2.out"},"-=.45")
+    .from(".mock-cap",{opacity:0,duration:.3},"-=.3");
+
+  // прегледът леко се накланя при скрол
+  gsap.to("#mock",{rotateX:-6,y:-24,ease:"none",scrollTrigger:{trigger:".hero",start:"top top",end:"bottom top",scrub:.6}});
+
+  // секциите се появяват плавно, на групи; започва по-рано, за да не остава нищо бледо на телефона
+  gsap.set(".rv",{y:24,opacity:0});
+  ScrollTrigger.batch(".rv",{start:"top 98%",once:true,
+    onEnter:function(els){gsap.to(els,{y:0,opacity:1,duration:.6,ease:"power3.out",stagger:.06,overwrite:true})}});
+  gsap.utils.toArray(".sec-head").forEach(function(h){
+    gsap.set(h.children,{y:18,opacity:0});
+    ScrollTrigger.create({trigger:h,start:"top 98%",once:true,onEnter:function(){gsap.to(h.children,{y:0,opacity:1,duration:.6,stagger:.06,ease:"power3.out"})}});
+  });
+  // линията между стъпките се изтегля при скрол
+  gsap.fromTo("#trackFill",{scaleX:0,scaleY:0},{scaleX:1,scaleY:1,ease:"none",scrollTrigger:{trigger:"#steps",start:"top 80%",end:"bottom 60%",scrub:.5}});
+  window.addEventListener("load",function(){ScrollTrigger.refresh()});
+  // предпазител: нищо на екрана не остава скрито (напр. при възстановен скрол след презареждане)
+  function show(){document.querySelectorAll(".rv,.sec-head>*").forEach(function(el){var r=el.getBoundingClientRect();
+    if(r.top<innerHeight&&r.bottom>0&&parseFloat(getComputedStyle(el).opacity)<.1)gsap.to(el,{y:0,opacity:1,duration:.4,ease:"power2.out"})})}
+  setTimeout(show,900);window.addEventListener("scroll",function(){clearTimeout(show.t);show.t=setTimeout(show,250)},{passive:true});
 })();
 </script>
 </body>
